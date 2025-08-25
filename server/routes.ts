@@ -10,6 +10,7 @@ import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
 import { sendEmail, emailTemplates } from './emailService';
+import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -923,6 +924,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch emails" });
     }
   });
+
+  // Manual check for incoming emails route
+  app.post('/api/emails/check-incoming', isAuthenticated, async (req: any, res) => {
+    try {
+      await checkIncomingEmails();
+      res.json({ success: true, message: "בדיקת מיילים נכנסים הושלמה" });
+    } catch (error) {
+      console.error("Error checking incoming emails:", error);
+      res.status(500).json({ message: "Failed to check incoming emails" });
+    }
+  });
+
+  // Start automatic email monitoring
+  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+    console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
+    startEmailMonitoring();
+  }
 
   const httpServer = createServer(app);
   return httpServer;

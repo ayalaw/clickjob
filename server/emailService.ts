@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { google } from 'googleapis';
 
 if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
   console.warn("Gmail credentials not set. Email functionality will be disabled.");
@@ -12,6 +13,22 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_PASS,
   },
 });
+
+// Gmail API setup for reading incoming emails
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  'http://localhost:3000/oauth2callback'
+);
+
+if (process.env.GMAIL_ACCESS_TOKEN && process.env.GMAIL_REFRESH_TOKEN) {
+  oauth2Client.setCredentials({
+    access_token: process.env.GMAIL_ACCESS_TOKEN,
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+  });
+}
+
+export const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
 interface EmailParams {
   to: string;

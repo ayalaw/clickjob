@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, Send, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Mail, Send, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Download } from "lucide-react";
 import type { Email } from "@shared/schema";
 
 export default function Emails() {
@@ -31,6 +33,29 @@ export default function Emails() {
   const { data: emailsData, isLoading: emailsLoading } = useQuery<{ emails: Email[] }>({
     queryKey: ["/api/emails"],
     enabled: isAuthenticated,
+  });
+
+  const checkIncomingEmailsMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest(`/api/emails/check-incoming`, {
+        method: "POST",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "בדיקה הושלמה! ✅",
+        description: "בדיקת מיילים נכנסים הושלמה בהצלחה",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה בבדיקה",
+        description: error.message || "לא ניתן לבדוק מיילים נכנסים",
+        variant: "destructive",
+      });
+    },
   });
 
   const getStatusColor = (status: string) => {
@@ -106,12 +131,37 @@ export default function Emails() {
             <div className="flex items-center gap-3 mb-2">
               <Mail className="h-8 w-8 text-blue-600" />
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                היסטוריית מיילים
+                מערכת מיילים
               </h1>
             </div>
             <p className="text-gray-600 dark:text-gray-300">
-              צפה בכל המיילים שנשלחו מהמערכת
+              ניהול מיילים יוצאים ונכנסים - שליחה אוטומטית וקליטת מועמדים חדשים
             </p>
+          </div>
+
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  <Download className="h-5 w-5 inline ml-2" />
+                  מיילים נכנסים - קליטה אוטומטית של מועמדים
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  המערכת בודקת כל 5 דקות מיילים נכנסים עם קורות חיים ומוסיפה מועמדים חדשים אוטומטית.
+                  <br />
+                  זיהוי קודי משרות, יצירת מועמדויות, וחילוץ פרטי קשר אוטומטי.
+                </p>
+              </div>
+              <Button
+                onClick={() => checkIncomingEmailsMutation.mutate()}
+                disabled={checkIncomingEmailsMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="button-check-incoming-emails"
+              >
+                <RefreshCw className={`h-4 w-4 ml-2 ${checkIncomingEmailsMutation.isPending ? 'animate-spin' : ''}`} />
+                {checkIncomingEmailsMutation.isPending ? 'בודק...' : 'בדוק עכשיו'}
+              </Button>
+            </div>
           </div>
 
           {emailsLoading ? (
