@@ -375,15 +375,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          console.log('📑 PDF file detected - לחילוץ אוטומטי שמור כ-DOCX או TXT');
-          const extractedData = {
-            firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
-            nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
-            gender: "", maritalStatus: "", drivingLicense: "", profession: "",
-            experience: null, achievements: ""
-          };
-          console.log('📑 PDF requires manual input - convert to DOCX/TXT for auto-extraction');
-          return res.json(extractedData);
+          console.log('📑 PDF file detected - attempting basic text extraction');
+          try {
+            // ניסיון לחלץ טקסט בסיסי מ-PDF באמצעות strings
+            const { execSync } = require('child_process');
+            const stringsOutput = execSync(`strings "${req.file.path}"`, { encoding: 'utf8' });
+            
+            // ניקוי וחיבור השורות
+            const lines = stringsOutput.split('\n').filter(line => 
+              line.trim().length > 2 && 
+              /[\u0590-\u05FF]/.test(line) || // Hebrew characters
+              /@/.test(line) || // Email
+              /05\d/.test(line) // Mobile phone
+            );
+            
+            fileText = lines.join(' ');
+            console.log('📑 PDF basic text extracted, length:', fileText.length);
+            console.log('📑 PDF content preview:', fileText.substring(0, 300) + '...');
+            
+            if (fileText.length < 10) {
+              console.log('📑 PDF - insufficient text extracted, returning empty data');
+              const extractedData = {
+                firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+                nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+                gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+                experience: null, achievements: ""
+              };
+              return res.json(extractedData);
+            }
+          } catch (error) {
+            console.log('❌ Error extracting PDF text:', error instanceof Error ? error.message : 'Unknown error');
+            fileText = '';
+          }
         } else if (req.file.mimetype.includes('application/vnd.openxmlformats') || 
                    req.file.mimetype.includes('application/msword')) {
           console.log('📄 DOC/DOCX file detected - attempting to extract text');
