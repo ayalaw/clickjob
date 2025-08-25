@@ -357,7 +357,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Section - Left Side */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 lg:order-1">
             <Card>
               <CardHeader>
                 <CardTitle>פרטים אישיים</CardTitle>
@@ -575,7 +575,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           </div>
 
           {/* CV Upload & Display Section - Right Side - BIGGER */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 lg:order-2">
             <Card className="sticky top-6">
               <CardHeader>
                 <CardTitle className="text-center text-gray-700">
