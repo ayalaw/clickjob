@@ -11,7 +11,7 @@ export default function ActiveJobsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 5; // Show only 5 jobs on dashboard
 
-  const { data: jobsData, isLoading } = useQuery({
+  const { data: jobsData, isLoading } = useQuery<{ jobs: JobWithClient[]; total: number }>({
     queryKey: ["/api/jobs", { limit, offset: (currentPage - 1) * limit }],
   });
 
@@ -160,7 +160,7 @@ export default function ActiveJobsTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {jobsData?.jobs?.length > 0 ? (
+              {jobsData?.jobs && jobsData.jobs.length > 0 ? (
                 jobsData.jobs.slice(0, 5).map((job: JobWithClient) => (
                   <tr key={job.id} className="table-row-hover" data-testid={`row-job-${job.id}`}>
                     <td className="p-4">
@@ -185,7 +185,7 @@ export default function ActiveJobsTable() {
                     </td>
                     <td className="p-4">
                       <p className="text-secondary dark:text-white" data-testid={`text-job-deadline-${job.id}`}>
-                        {job.deadline ? formatDate(job.deadline) : "לא צוין"}
+                        {job.deadline ? formatDate(job.deadline.toString()) : "לא צוין"}
                       </p>
                     </td>
                     <td className="p-4">
@@ -239,9 +239,9 @@ export default function ActiveJobsTable() {
           </table>
         </div>
         
-        {jobsData?.jobs?.length > 0 && (
+        {jobsData?.jobs && jobsData.jobs.length > 0 && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
-            <p>מציג {Math.min(5, jobsData.jobs.length)} מתוך {jobsData.total || jobsData.jobs.length} משרות</p>
+            <p>מציג {Math.min(5, jobsData?.jobs?.length || 0)} מתוך {jobsData?.total || jobsData?.jobs?.length || 0} משרות</p>
             <Button 
               variant="outline" 
               size="sm"

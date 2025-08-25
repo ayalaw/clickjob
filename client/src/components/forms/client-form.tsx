@@ -19,7 +19,7 @@ interface ClientFormProps {
 export default function ClientForm({ client, onSuccess }: ClientFormProps) {
   const { toast } = useToast();
 
-  const form = useForm<InsertClient>({
+  const form = useForm({
     resolver: zodResolver(insertClientSchema),
     defaultValues: {
       companyName: client?.companyName || "",
@@ -163,7 +163,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
               <FormItem>
                 <FormLabel>טלפון</FormLabel>
                 <FormControl>
-                  <Input placeholder="05X-XXXXXXX" {...field} data-testid="input-phone" />
+                  <Input placeholder="05X-XXXXXXX" {...field} value={field.value || ""} data-testid="input-phone" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -178,7 +178,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
             <FormItem>
               <FormLabel>כתובת</FormLabel>
               <FormControl>
-                <Input placeholder="כתובת החברה" {...field} data-testid="input-address" />
+                <Input placeholder="כתובת החברה" {...field} value={field.value || ""} data-testid="input-address" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -193,7 +193,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
               <FormItem>
                 <FormLabel>אתר אינטרנט</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://company.com" {...field} data-testid="input-website" />
+                  <Input placeholder="https://company.com" {...field} value={field.value || ""} data-testid="input-website" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -207,7 +207,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
               <FormItem>
                 <FormLabel>תחום פעילות</FormLabel>
                 <FormControl>
-                  <Input placeholder="הייטק, פיננסים, וכו'" {...field} data-testid="input-industry" />
+                  <Input placeholder="הייטק, פיננסים, וכו'" {...field} value={field.value || ""} data-testid="input-industry" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -227,6 +227,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
                     type="number" 
                     placeholder="15"
                     {...field}
+                    value={field.value || ""}
                     onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                     data-testid="input-commission-rate"
                   />
@@ -243,7 +244,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
               <FormItem>
                 <FormLabel>תנאי תשלום</FormLabel>
                 <FormControl>
-                  <Input placeholder="שוטף+30, מראש, וכו'" {...field} data-testid="input-payment-terms" />
+                  <Input placeholder="שוטף+30, מראש, וכו'" {...field} value={field.value || ""} data-testid="input-payment-terms" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -262,6 +263,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
                   placeholder="הערות נוספות על הלקוח"
                   className="min-h-[100px]"
                   {...field}
+                  value={field.value || ""}
                   data-testid="textarea-notes"
                 />
               </FormControl>
@@ -277,7 +279,7 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
             <FormItem className="flex flex-row items-start space-x-3 space-x-reverse space-y-0">
               <FormControl>
                 <Checkbox
-                  checked={field.value}
+                  checked={field.value || false}
                   onCheckedChange={field.onChange}
                   data-testid="checkbox-is-active"
                 />
