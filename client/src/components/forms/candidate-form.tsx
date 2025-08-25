@@ -228,10 +228,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       const formData = new FormData();
       formData.append("cv", file);
 
-      const result = await apiRequest("/api/extract-cv-data", {
+      const response = await fetch("/api/extract-cv-data", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status}: ${text}`);
+      }
+
+      const result = await response.json();
 
       if (result.extractedData) {
         setExtractedData(result.extractedData);
