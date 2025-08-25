@@ -212,6 +212,7 @@ export class DatabaseStorage implements IStorage {
     const jobResults = await db
       .select({
         id: jobs.id,
+        jobCode: jobs.jobCode,
         title: jobs.title,
         description: jobs.description,
         requirements: jobs.requirements,
@@ -265,6 +266,7 @@ export class DatabaseStorage implements IStorage {
     const [job] = await db
       .select({
         id: jobs.id,
+        jobCode: jobs.jobCode,
         title: jobs.title,
         description: jobs.description,
         requirements: jobs.requirements,
@@ -304,7 +306,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createJob(job: InsertJob): Promise<Job> {
-    const [newJob] = await db.insert(jobs).values(job).returning();
+    // יצירת קוד משרה אוטומטי בן 7 ספרות
+    let jobCode: string;
+    let isUnique = false;
+    
+    while (!isUnique) {
+      // יצירת קוד בן 7 ספרות (אותיות גדולות ומספרים)
+      jobCode = Array.from({ length: 7 }, () => 
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]
+      ).join('');
+      
+      // בדיקה שהקוד לא קיים
+      const existing = await db.select().from(jobs).where(eq(jobs.jobCode, jobCode)).limit(1);
+      isUnique = existing.length === 0;
+    }
+    
+    const jobWithCode = { ...job, jobCode };
+    const [newJob] = await db.insert(jobs).values(jobWithCode).returning();
     return newJob;
   }
 
@@ -530,6 +548,7 @@ export class DatabaseStorage implements IStorage {
       candidate: candidates,
       job: {
         id: jobs.id,
+        jobCode: jobs.jobCode,
         title: jobs.title,
         description: jobs.description,
         requirements: jobs.requirements,
@@ -586,6 +605,7 @@ export class DatabaseStorage implements IStorage {
       candidate: candidates,
       job: {
         id: jobs.id,
+        jobCode: jobs.jobCode,
         title: jobs.title,
         description: jobs.description,
         requirements: jobs.requirements,
@@ -693,6 +713,7 @@ export class DatabaseStorage implements IStorage {
       candidate: candidates,
       job: {
         id: jobs.id,
+        jobCode: jobs.jobCode,
         title: jobs.title,
         description: jobs.description,
         requirements: jobs.requirements,
