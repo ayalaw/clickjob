@@ -765,7 +765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.success) {
         // Save email to database
         await storage.createEmail({
-          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
           to,
           cc,
           subject: template.subject,
@@ -780,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ success: true });
       } else {
         await storage.createEmail({
-          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
           to,
           cc,
           subject: template.subject,
@@ -822,7 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (result.success) {
         await storage.createEmail({
-          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
           to: candidate.email,
           subject: template.subject,
           body: template.html,
@@ -836,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ success: true });
       } else {
         await storage.createEmail({
-          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
           to: candidate.email,
           subject: template.subject,
           body: template.html,
@@ -881,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (result.success) {
         await storage.createEmail({
-          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
           to,
           cc,
           subject: template.subject,
@@ -895,7 +895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ success: true });
       } else {
         await storage.createEmail({
-          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
           to,
           cc,
           subject: template.subject,

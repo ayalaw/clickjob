@@ -1,13 +1,17 @@
-import { MailService } from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.warn("SENDGRID_API_KEY environment variable not set. Email functionality will be disabled.");
+if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+  console.warn("Gmail credentials not set. Email functionality will be disabled.");
 }
 
-const mailService = new MailService();
-if (process.env.SENDGRID_API_KEY) {
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
-}
+// Create Gmail transporter
+const transporter = nodemailer.createTransporter({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
+});
 
 interface EmailParams {
   to: string;
@@ -17,21 +21,21 @@ interface EmailParams {
   text?: string;
   html?: string;
   attachments?: Array<{
-    content: string;
     filename: string;
-    type?: string;
+    content: string;
+    contentType?: string;
   }>;
 }
 
 export async function sendEmail(params: EmailParams): Promise<{ success: boolean; error?: string }> {
-  if (!process.env.SENDGRID_API_KEY) {
-    return { success: false, error: "SendGrid API key not configured" };
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+    return { success: false, error: "Gmail credentials not configured" };
   }
 
   try {
-    const msg = {
+    const mailOptions = {
+      from: params.from || process.env.GMAIL_USER,
       to: params.to,
-      from: params.from || process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
       cc: params.cc,
       subject: params.subject,
       text: params.text,
@@ -39,10 +43,10 @@ export async function sendEmail(params: EmailParams): Promise<{ success: boolean
       attachments: params.attachments,
     };
 
-    await mailService.send(msg);
+    await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (error) {
-    console.error('SendGrid email error:', error);
+    console.error('Gmail email error:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown email error'
