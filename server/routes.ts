@@ -8,6 +8,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobApplicationSchema, insertTaskSchema } from "@shared/schema";
 import { z } from "zod";
 import mammoth from 'mammoth';
+import { execSync } from 'child_process';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -378,7 +379,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('📑 PDF file detected - attempting basic text extraction');
           try {
             // ניסיון לחלץ טקסט בסיסי מ-PDF באמצעות strings
-            const { execSync } = require('child_process');
             const stringsOutput = execSync(`strings "${req.file.path}"`, { encoding: 'utf8' });
             
             // ניקוי וחיבור השורות
