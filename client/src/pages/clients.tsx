@@ -168,53 +168,38 @@ export default function Clients() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50 dark:bg-gray-900">
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם החברה</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">איש קשר</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">אימייל</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מק"ח</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">לחזור</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">תחום</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סטטוס</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {clientsData.clients.map((client: Client) => (
                         <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`row-client-${client.id}`}>
+                          <TableCell data-testid={`text-client-contact-${client.id}`}>
+                            {client.contactName || "-"}
+                          </TableCell>
                           <TableCell className="font-medium">
                             <div>
                               <p className="text-secondary dark:text-white" data-testid={`text-client-name-${client.id}`}>
                                 {client.companyName}
                               </p>
-                              {client.website && (
-                                <a 
-                                  href={client.website} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:underline"
-                                  data-testid={`link-client-website-${client.id}`}
-                                >
-                                  <Globe className="inline h-3 w-3 ml-1" />
-                                  אתר
-                                </a>
+                              {client.email && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {client.email}
+                                </p>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell data-testid={`text-client-contact-${client.id}`}>
-                            {client.contactName || "-"}
-                          </TableCell>
-                          <TableCell data-testid={`text-client-email-${client.id}`}>
-                            {client.email}
-                          </TableCell>
-                          <TableCell data-testid={`text-client-phone-${client.id}`}>
-                            {client.phone || "-"}
+                          <TableCell>
+                            <Badge className={client.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}>
+                              {client.isActive ? 'לחזור' : 'הושלם'}
+                            </Badge>
                           </TableCell>
                           <TableCell data-testid={`text-client-industry-${client.id}`}>
                             {client.industry || "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={client.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}>
-                              {client.isActive ? 'פעיל' : 'לא פעיל'}
-                            </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2 space-x-reverse">
