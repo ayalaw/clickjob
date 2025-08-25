@@ -398,82 +398,59 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       )}
                     </div>
 
-                    {/* File Viewer */}
+                    {/* File Viewer - Actual CV Content */}
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
                         <h4 className="font-medium text-gray-800">תצוגת קורות החיים</h4>
+                        <div className="flex gap-2">
+                          <a 
+                            href={URL.createObjectURL(uploadedFile)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                          >
+                            פתח בחלון חדש
+                          </a>
+                          <a 
+                            href={URL.createObjectURL(uploadedFile)} 
+                            download={uploadedFile.name}
+                            className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                          >
+                            הורד
+                          </a>
+                        </div>
                       </div>
-                      <div className="p-4">
+                      
+                      <div className="h-[600px] bg-white">
                         {uploadedFile.type === 'application/pdf' ? (
-                          // PDF Viewer
-                          <div className="space-y-3">
-                            <div className="w-full h-96 border border-gray-300 rounded bg-gray-100 flex items-center justify-center">
-                              <div className="text-center">
-                                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                <p className="text-gray-600 text-sm">קובץ PDF</p>
-                                <p className="text-gray-500 text-xs">{uploadedFile.name}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <a 
-                                href={URL.createObjectURL(uploadedFile)} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded text-sm hover:bg-blue-700"
-                              >
-                                פתח בחלון חדש
-                              </a>
-                              <a 
-                                href={URL.createObjectURL(uploadedFile)} 
-                                download={uploadedFile.name}
-                                className="flex-1 bg-gray-600 text-white text-center py-2 px-4 rounded text-sm hover:bg-gray-700"
-                              >
-                                הורד קובץ
-                              </a>
-                            </div>
-                          </div>
+                          // PDF Embedded Viewer
+                          <iframe
+                            src={URL.createObjectURL(uploadedFile)}
+                            className="w-full h-full border-0"
+                            title="CV Preview"
+                          />
                         ) : uploadedFile.type.includes('document') ? (
-                          // DOC/DOCX Viewer
-                          <div className="space-y-3">
-                            <div className="w-full h-96 border border-gray-300 rounded bg-blue-50 flex items-center justify-center">
-                              <div className="text-center">
-                                <FileText className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-                                <p className="text-blue-700 text-sm font-medium">מסמך Word</p>
-                                <p className="text-blue-600 text-xs">{uploadedFile.name}</p>
-                                <p className="text-blue-500 text-xs mt-2">
-                                  לצפייה מלאה - פתח בחלון חדש
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <a 
-                                href={URL.createObjectURL(uploadedFile)} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded text-sm hover:bg-blue-700"
-                              >
-                                פתח בחלון חדש
-                              </a>
-                              <a 
-                                href={URL.createObjectURL(uploadedFile)} 
-                                download={uploadedFile.name}
-                                className="flex-1 bg-gray-600 text-white text-white text-center py-2 px-4 rounded text-sm hover:bg-gray-700"
-                              >
-                                הורד קובץ
-                              </a>
-                            </div>
-                          </div>
+                          // DOC/DOCX - Use Google Docs Viewer
+                          <iframe
+                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(URL.createObjectURL(uploadedFile))}&embedded=true`}
+                            className="w-full h-full border-0"
+                            title="CV Preview"
+                            onError={() => {
+                              // Fallback to file download if viewer fails
+                              console.log('Google Docs Viewer failed, falling back to download link');
+                            }}
+                          />
                         ) : (
-                          // Other file types
-                          <div className="w-full h-96 border border-gray-300 rounded bg-gray-50 flex items-center justify-center">
+                          // Fallback for unsupported file types
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50">
                             <div className="text-center">
-                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                              <p className="text-gray-600 text-sm">קובץ לא נתמך לתצוגה</p>
-                              <p className="text-gray-500 text-xs">{uploadedFile.name}</p>
+                              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                              <p className="text-gray-600 text-lg font-medium mb-2">לא ניתן להציג קובץ זה</p>
+                              <p className="text-gray-500 text-sm mb-4">{uploadedFile.name}</p>
                               <a 
                                 href={URL.createObjectURL(uploadedFile)} 
                                 download={uploadedFile.name}
-                                className="mt-3 inline-block bg-gray-600 text-white py-2 px-4 rounded text-sm hover:bg-gray-700"
+                                className="inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
                               >
                                 הורד קובץ
                               </a>
@@ -483,153 +460,34 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
 
-                    {/* CV Visual Display */}
+                    {/* Quick Summary of Extracted Data */}
                     {extractedData && !extractedData.candidateCreated && (
-                      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                        {/* Header with candidate name */}
-                        <div className="border-b border-gray-200 pb-4 mb-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-bold text-lg">
-                                {extractedData.firstName?.charAt(0) || '?'}
-                              </span>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+                          <Check className="w-4 h-4" />
+                          נתונים שחולצו מהקובץ
+                        </h4>
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          {extractedData.firstName && extractedData.lastName && (
+                            <div className="text-blue-700">
+                              <span className="font-medium">שם:</span> {extractedData.firstName} {extractedData.lastName}
                             </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-900">
-                                {extractedData.firstName && extractedData.lastName 
-                                  ? `${extractedData.firstName} ${extractedData.lastName}` 
-                                  : 'מועמד חדש'}
-                              </h3>
-                              {extractedData.profession && (
-                                <p className="text-gray-600 font-medium">{extractedData.profession}</p>
-                              )}
+                          )}
+                          {extractedData.email && (
+                            <div className="text-blue-700">
+                              <span className="font-medium">מייל:</span> {extractedData.email}
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Contact Information */}
-                        <div className="space-y-4">
-                          <h4 className="font-semibold text-gray-800 border-r-4 border-blue-500 pr-3">
-                            פרטי התקשרות
-                          </h4>
-                          
-                          <div className="grid gap-3">
-                            {extractedData.email && (
-                              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <Mail className="w-5 h-5 text-blue-600" />
-                                <div>
-                                  <div className="text-sm text-gray-600">דואר אלקטרוני</div>
-                                  <div className="font-medium">{extractedData.email}</div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {extractedData.mobile && (
-                              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <Phone className="w-5 h-5 text-green-600" />
-                                <div>
-                                  <div className="text-sm text-gray-600">טלפון נייד</div>
-                                  <div className="font-medium">{extractedData.mobile}</div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {extractedData.phone && (
-                              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <Phone className="w-5 h-5 text-gray-600" />
-                                <div>
-                                  <div className="text-sm text-gray-600">טלפון בית</div>
-                                  <div className="font-medium">{extractedData.phone}</div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Personal Information */}
-                        {(extractedData.city || extractedData.nationalId || extractedData.drivingLicense) && (
-                          <div className="space-y-4 mt-6">
-                            <h4 className="font-semibold text-gray-800 border-r-4 border-green-500 pr-3">
-                              פרטים אישיים
-                            </h4>
-                            
-                            <div className="grid gap-3">
-                              {extractedData.city && (
-                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-600">עיר מגורים</div>
-                                    <div className="font-medium">{extractedData.city}</div>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {extractedData.nationalId && (
-                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-600">תעודת זהות</div>
-                                    <div className="font-medium">{extractedData.nationalId}</div>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {extractedData.drivingLicense && (
-                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-600">רישיון נהיגה</div>
-                                    <div className="font-medium">{extractedData.drivingLicense}</div>
-                                  </div>
-                                </div>
-                              )}
+                          )}
+                          {extractedData.mobile && (
+                            <div className="text-blue-700">
+                              <span className="font-medium">נייד:</span> {extractedData.mobile}
                             </div>
-                          </div>
-                        )}
-
-                        {/* Professional Information */}
-                        {(extractedData.profession || extractedData.experience) && (
-                          <div className="space-y-4 mt-6">
-                            <h4 className="font-semibold text-gray-800 border-r-4 border-purple-500 pr-3">
-                              פרטים מקצועיים
-                            </h4>
-                            
-                            <div className="grid gap-3">
-                              {extractedData.profession && (
-                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                                  <Briefcase className="w-5 h-5 text-purple-600" />
-                                  <div>
-                                    <div className="text-sm text-gray-600">תחום התמחות</div>
-                                    <div className="font-medium">{extractedData.profession}</div>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {extractedData.experience && (
-                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                                  <Briefcase className="w-5 h-5 text-purple-600" />
-                                  <div>
-                                    <div className="text-sm text-gray-600">שנות ניסיון</div>
-                                    <div className="font-medium">{extractedData.experience} שנים</div>
-                                  </div>
-                                </div>
-                              )}
+                          )}
+                          {extractedData.profession && (
+                            <div className="text-blue-700">
+                              <span className="font-medium">מקצוע:</span> {extractedData.profession}
                             </div>
-                          </div>
-                        )}
-
-                        {/* Status Badge */}
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                            נתונים חולצו בהצלחה
-                          </div>
+                          )}
                         </div>
                       </div>
                     )}
