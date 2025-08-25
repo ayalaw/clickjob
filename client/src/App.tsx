@@ -11,6 +11,7 @@ import Candidates from "@/pages/candidates";
 import Clients from "@/pages/clients";
 import Jobs from "@/pages/jobs";
 import Interviews from "@/pages/interviews";
+import JobInterviews from "@/pages/job-interviews";
 import Emails from "@/pages/emails";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/clients" component={Clients} />
           <Route path="/jobs" component={Jobs} />
           <Route path="/interviews" component={Interviews} />
+          <Route path="/interviews/:jobId" component={JobInterviews} />
           <Route path="/emails" component={Emails} />
         </>
       )}
