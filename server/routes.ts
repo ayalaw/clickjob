@@ -630,9 +630,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const jobId = req.query.jobId as string;
       const candidateId = req.query.candidateId as string;
+      const forReview = req.query.forReview as string;
       
-      const applications = await storage.getJobApplications(jobId, candidateId);
-      res.json(applications);
+      let applications;
+      if (forReview === 'true') {
+        applications = await storage.getJobApplicationsForReview();
+      } else {
+        applications = await storage.getJobApplications(jobId, candidateId);
+      }
+      
+      res.json({ applications });
     } catch (error) {
       console.error("Error fetching job applications:", error);
       res.status(500).json({ message: "Failed to fetch job applications" });
@@ -663,6 +670,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
+      res.status(500).json({ message: "Failed to update job application" });
+    }
+  });
+
+  // PATCH route for partial updates (used by interviews page)
+  app.patch('/api/job-applications/:id', isAuthenticated, async (req, res) => {
+    try {
+      const updates = req.body;
+      const application = await storage.updateJobApplication(req.params.id, updates);
+      res.json(application);
+    } catch (error) {
+      console.error("Error updating job application:", error);
       res.status(500).json({ message: "Failed to update job application" });
     }
   });
@@ -936,11 +955,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start automatic email monitoring
-  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-    console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-    startEmailMonitoring();
-  }
+  // Start automatic email monitoring (disabled temporarily)
+  // if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+  //   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
+  //   startEmailMonitoring();
+  // }
 
   const httpServer = createServer(app);
   return httpServer;

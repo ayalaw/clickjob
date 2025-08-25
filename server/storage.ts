@@ -55,6 +55,7 @@ export interface IStorage {
 
   // Job application operations
   getJobApplications(jobId?: string, candidateId?: string): Promise<JobApplicationWithDetails[]>;
+  getJobApplicationsForReview(): Promise<JobApplicationWithDetails[]>;
   createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
   updateJobApplication(id: string, application: Partial<InsertJobApplication>): Promise<JobApplication>;
   deleteJobApplication(id: string): Promise<void>;
@@ -399,6 +400,96 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(jobs, eq(jobApplications.jobId, jobs.id))
       .leftJoin(clients, eq(jobs.clientId, clients.id))
       .where(whereCondition)
+      .orderBy(desc(jobApplications.appliedAt));
+
+    return results as JobApplicationWithDetails[];
+  }
+
+  async getJobApplicationsForReview(): Promise<JobApplicationWithDetails[]> {
+    const results = await db
+      .select({
+        id: jobApplications.id,
+        candidateId: jobApplications.candidateId,
+        jobId: jobApplications.jobId,
+        status: jobApplications.status,
+        appliedAt: jobApplications.appliedAt,
+        interviewDate: jobApplications.interviewDate,
+        notes: jobApplications.notes,
+        clientFeedback: jobApplications.clientFeedback,
+        reviewerFeedback: jobApplications.reviewerFeedback,
+        rejectionReason: jobApplications.rejectionReason,
+        reviewedAt: jobApplications.reviewedAt,
+        sentToClient: jobApplications.sentToClient,
+        candidate: {
+          id: candidates.id,
+          firstName: candidates.firstName,
+          lastName: candidates.lastName,
+          email: candidates.email,
+          mobile: candidates.mobile,
+          phone: candidates.phone,
+          phone2: candidates.phone2,
+          nationalId: candidates.nationalId,
+          city: candidates.city,
+          street: candidates.street,
+          houseNumber: candidates.houseNumber,
+          zipCode: candidates.zipCode,
+          address: candidates.address,
+          gender: candidates.gender,
+          maritalStatus: candidates.maritalStatus,
+          drivingLicense: candidates.drivingLicense,
+          receptionArea: candidates.receptionArea,
+          profession: candidates.profession,
+          experience: candidates.experience,
+          achievements: candidates.achievements,
+          recruitmentSource: candidates.recruitmentSource,
+          expectedSalary: candidates.expectedSalary,
+          cvPath: candidates.cvPath,
+          status: candidates.status,
+          rating: candidates.rating,
+          notes: candidates.notes,
+          tags: candidates.tags,
+          createdAt: candidates.createdAt,
+          updatedAt: candidates.updatedAt,
+        },
+        job: {
+          id: jobs.id,
+          title: jobs.title,
+          description: jobs.description,
+          requirements: jobs.requirements,
+          location: jobs.location,
+          salaryRange: jobs.salaryRange,
+          jobType: jobs.jobType,
+          isRemote: jobs.isRemote,
+          status: jobs.status,
+          priority: jobs.priority,
+          deadline: jobs.deadline,
+          clientId: jobs.clientId,
+          positions: jobs.positions,
+          createdAt: jobs.createdAt,
+          updatedAt: jobs.updatedAt,
+          client: {
+            id: clients.id,
+            companyName: clients.companyName,
+            contactName: clients.contactName,
+            email: clients.email,
+            phone: clients.phone,
+            address: clients.address,
+            website: clients.website,
+            industry: clients.industry,
+            commissionRate: clients.commissionRate,
+            paymentTerms: clients.paymentTerms,
+            notes: clients.notes,
+            isActive: clients.isActive,
+            createdAt: clients.createdAt,
+            updatedAt: clients.updatedAt,
+          },
+        }
+      })
+      .from(jobApplications)
+      .leftJoin(candidates, eq(jobApplications.candidateId, candidates.id))
+      .leftJoin(jobs, eq(jobApplications.jobId, jobs.id))
+      .leftJoin(clients, eq(jobs.clientId, clients.id))
+      .where(eq(jobApplications.status, 'submitted'))
       .orderBy(desc(jobApplications.appliedAt));
 
     return results as JobApplicationWithDetails[];

@@ -40,6 +40,7 @@ export const users = pgTable("users", {
 export const candidateStatusEnum = pgEnum('candidate_status', ['available', 'employed', 'inactive', 'blacklisted']);
 export const jobStatusEnum = pgEnum('job_status', ['active', 'paused', 'closed']);
 export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'rejected', 'accepted']);
+export const rejectionReasonEnum = pgEnum('rejection_reason', ['lack_of_experience', 'geographic_mismatch', 'salary_demands', 'qualifications_mismatch', 'other']);
 export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'failed', 'delivered', 'bounced']);
 
 // Candidates table
@@ -122,6 +123,10 @@ export const jobApplications = pgTable("job_applications", {
   interviewDate: timestamp("interview_date"),
   notes: text("notes"),
   clientFeedback: text("client_feedback"),
+  reviewerFeedback: text("reviewer_feedback"), // חוות דעת המגייס
+  rejectionReason: rejectionReasonEnum("rejection_reason"), // סיבת פסילה
+  reviewedAt: timestamp("reviewed_at"), // תאריך הסקירה
+  sentToClient: boolean("sent_to_client").default(false), // האם נשלח ללקוח
 });
 
 // Tasks table

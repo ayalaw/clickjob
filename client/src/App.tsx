@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import Candidates from "@/pages/candidates";
 import Clients from "@/pages/clients";
 import Jobs from "@/pages/jobs";
+import Interviews from "@/pages/interviews";
 import Emails from "@/pages/emails";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
           <Route path="/candidates" component={Candidates} />
           <Route path="/clients" component={Clients} />
           <Route path="/jobs" component={Jobs} />
+          <Route path="/interviews" component={Interviews} />
           <Route path="/emails" component={Emails} />
         </>
       )}
