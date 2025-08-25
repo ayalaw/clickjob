@@ -207,6 +207,34 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           form.setValue('experience', extractedData.experience);
           console.log('Set experience:', extractedData.experience);
         }
+        if (extractedData.phone2) {
+          form.setValue('phone2', extractedData.phone2);
+          console.log('Set phone2:', extractedData.phone2);
+        }
+        if (extractedData.nationalId) {
+          form.setValue('nationalId', extractedData.nationalId);
+          console.log('Set nationalId:', extractedData.nationalId);
+        }
+        if (extractedData.zipCode) {
+          form.setValue('zipCode', extractedData.zipCode);
+          console.log('Set zipCode:', extractedData.zipCode);
+        }
+        if (extractedData.gender) {
+          form.setValue('gender', extractedData.gender);
+          console.log('Set gender:', extractedData.gender);
+        }
+        if (extractedData.maritalStatus) {
+          form.setValue('maritalStatus', extractedData.maritalStatus);
+          console.log('Set maritalStatus:', extractedData.maritalStatus);
+        }
+        if (extractedData.drivingLicense) {
+          form.setValue('drivingLicense', extractedData.drivingLicense);
+          console.log('Set drivingLicense:', extractedData.drivingLicense);
+        }
+        if (extractedData.achievements) {
+          form.setValue('achievements', extractedData.achievements);
+          console.log('Set achievements:', extractedData.achievements);
+        }
         
         // בדיקה אם יש נתונים שנחלצו
         const hasExtractedData = extractedData.firstName || extractedData.lastName || extractedData.email;
@@ -523,6 +551,21 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           <FormLabel className="text-right">נצחונות:</FormLabel>
                           <FormControl>
                             <Input {...field} value={field.value || ""} placeholder="הישגים ונצחונות" data-testid="input-achievements" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Recruitment Source */}
+                    <FormField
+                      control={form.control}
+                      name="recruitmentSource"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">מקור גיוס:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder="מקור הגיוס (מתמלא אוטומטית)" data-testid="input-recruitment-source" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -50,11 +50,18 @@ function extractDataFromText(text: string) {
     email: "",
     mobile: "",
     phone: "",
+    phone2: "",
+    nationalId: "",
     city: "",
     street: "",
     houseNumber: "",
+    zipCode: "",
+    gender: "",
+    maritalStatus: "",
+    drivingLicense: "",
     profession: "",
-    experience: null as number | null
+    experience: null as number | null,
+    achievements: ""
   };
 
   // חילוץ אימייל (מכיל @)
@@ -84,6 +91,25 @@ function extractDataFromText(text: string) {
   );
   if (cityFound) {
     result.city = cityFound;
+  }
+
+  // חילוץ כתובת רחוב ומספר בית
+  const streetPattern = /(?:רחוב|רח['"]|דרך|שדרות|שד['"])\s*([א-ת\s]+)\s*(\d+)/i;
+  const streetMatch = upperThird.match(streetPattern);
+  if (streetMatch) {
+    result.street = streetMatch[1].trim();
+    result.houseNumber = streetMatch[2];
+  }
+
+  // חילוץ מיקוד (5-7 ספרות)
+  const zipPattern = /\b(\d{5,7})\b/;
+  const zipMatch = upperThird.match(zipPattern);
+  if (zipMatch && !result.mobile.includes(zipMatch[1]) && !result.phone.includes(zipMatch[1])) {
+    // וודא שזה לא חלק ממספר טלפון
+    const zipCode = zipMatch[1];
+    if (zipCode.length >= 5 && zipCode.length <= 7) {
+      result.zipCode = zipCode;
+    }
   }
 
   // חילוץ שם פרטי ושם משפחה (מחפשים מילים בעברית ובאנגלית)
@@ -117,6 +143,58 @@ function extractDataFromText(text: string) {
   const experienceMatch = text.match(experiencePattern);
   if (experienceMatch) {
     result.experience = parseInt(experienceMatch[1]);
+  }
+
+  // חילוץ תעודת זהות (9 ספרות)
+  const nationalIdPattern = /\b(\d{9})\b/;
+  const nationalIdMatch = upperThird.match(nationalIdPattern);
+  if (nationalIdMatch) {
+    result.nationalId = nationalIdMatch[1];
+  }
+
+  // חילוץ מין/מגדר
+  const genderKeywords = ['זכר', 'נקבה', 'גבר', 'אישה', 'male', 'female', 'man', 'woman'];
+  const genderFound = genderKeywords.find(gender => 
+    text.toLowerCase().includes(gender.toLowerCase())
+  );
+  if (genderFound) {
+    result.gender = genderFound;
+  }
+
+  // חילוץ מצב משפחתי
+  const maritalKeywords = ['נשוי', 'רווק', 'גרוש', 'אלמן', 'נשואה', 'רווקה', 'גרושה', 'אלמנה', 'married', 'single', 'divorced', 'widowed'];
+  const maritalFound = maritalKeywords.find(marital => 
+    text.toLowerCase().includes(marital.toLowerCase())
+  );
+  if (maritalFound) {
+    result.maritalStatus = maritalFound;
+  }
+
+  // חילוץ רישיון נהיגה
+  const licensePattern = /רישיון\s*נהיגה|ר\.?\s*נ\.?|driving\s*license/i;
+  if (text.match(licensePattern)) {
+    result.drivingLicense = "כן";
+  }
+
+  // חילוץ טלפון נוסף (מחפש טלפון שני)
+  const phonePattern2 = /(0[2-9][-\s]?\d{7})/g;
+  const phoneMatches = upperThird.match(phonePattern2);
+  if (phoneMatches && phoneMatches.length > 1 && phoneMatches[1] !== result.phone) {
+    result.phone2 = phoneMatches[1].replace(/[-\s]/g, '');
+  }
+
+  // חילוץ הישגים (חיפוש אחר מילות מפתח)
+  const achievementKeywords = ['הישגים', 'פרסים', 'הכרה', 'הצטיינות', 'achievements', 'awards', 'recognition'];
+  const achievementFound = achievementKeywords.find(achievement => 
+    text.toLowerCase().includes(achievement.toLowerCase())
+  );
+  if (achievementFound) {
+    // מחפש את השורות שמכילות את המילה ולוקח כמה שורות אחריה
+    const achievementIndex = text.toLowerCase().indexOf(achievementFound.toLowerCase());
+    if (achievementIndex !== -1) {
+      const achievementSection = text.substring(achievementIndex, achievementIndex + 300);
+      result.achievements = achievementSection.trim();
+    }
   }
 
   return result;
@@ -216,6 +294,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         candidateData.cvPath = req.file.path;
       }
       
+      // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
+      if (!candidateData.recruitmentSource && req.user?.claims) {
+        const userFirstName = req.user.claims.first_name || '';
+        const userLastName = req.user.claims.last_name || '';
+        const userName = `${userFirstName} ${userLastName}`.trim() || req.user.claims.email;
+        candidateData.recruitmentSource = userName;
+      }
+      
       const candidate = await storage.createCandidate(candidateData);
       res.status(201).json(candidate);
     } catch (error) {
@@ -283,12 +369,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // בינתיים נשתמש בטקסט דוגמה שמכיל דפוסים אמיתיים
         const sampleText = `
-        יוסי כהן
-        מפתח תוכנה בכיר
-        דוא"ל: yossi.cohen@gmail.com
-        נייד: 050-1234567
-        כתובת: רחוב דיזנגוף 100, תל אביב
-        5 שנות ניסיון בפיתוח
+        שרה לוי
+        מהנדסת תוכנה
+        דוא"ל: sarah.levi@gmail.com  
+        נייד: 052-9876543
+        טלפון: 03-5551234
+        כתובת: רחוב הרצל 25, חיפה 31000
+        רישיון נהיגה: כן
+        מצב משפחתי: נשואה
+        7 שנות ניסיון בפיתוח
+        הישגים: זוכת פרס מצוינות בחברה הקודמת
         `;
         
         // חילוץ נתונים מהטקסט
@@ -305,11 +395,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "",
           mobile: "",
           phone: "",
+          phone2: "",
+          nationalId: "",
           city: "",
           street: "",
           houseNumber: "",
+          zipCode: "",
+          gender: "",
+          maritalStatus: "",
+          drivingLicense: "",
           profession: "",
-          experience: null
+          experience: null,
+          achievements: ""
         };
         res.json(emptyData);
       }

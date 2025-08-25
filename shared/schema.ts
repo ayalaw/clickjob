@@ -62,6 +62,8 @@ export const candidates = pgTable("candidates", {
   receptionArea: varchar("reception_area"), // איזור קליטה אופטימליות (מוסר)
   profession: varchar("profession"),
   experience: integer("experience"), // years of experience
+  achievements: text("achievements"), // הישגים
+  recruitmentSource: varchar("recruitment_source"), // מקור גיוס
   expectedSalary: integer("expected_salary"),
   cvPath: varchar("cv_path"), // file path for uploaded CV
   status: candidateStatusEnum("status").default('available'),
