@@ -37,7 +37,7 @@ export default function Clients() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: clientsData, isLoading: clientsLoading } = useQuery({
+  const { data: clientsData, isLoading: clientsLoading } = useQuery<{ clients: Client[]; total: number }>({
     queryKey: ["/api/clients", { search }],
     enabled: isAuthenticated,
   });

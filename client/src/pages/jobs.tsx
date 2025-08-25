@@ -249,7 +249,7 @@ export default function Jobs() {
                         {job.deadline && (
                           <div className="flex items-center text-sm text-gray-600">
                             <Calendar className="h-4 w-4 ml-2" />
-                            <span>תאריך יעד: {format(new Date(job.deadline), 'dd/MM/yyyy')}</span>
+                            <span>תאריך יעד: {format(new Date(job.deadline.toString()), 'dd/MM/yyyy')}</span>
                           </div>
                         )}
                         <div className="flex items-center text-sm text-blue-600">
