@@ -41,8 +41,12 @@ const israeliCities = [
 
 // פונקציה לחילוץ נתונים מטקסט
 function extractDataFromText(text: string) {
+  console.log('📄 Starting text extraction, text length:', text.length);
+  console.log('📄 First 100 chars of text:', text.substring(0, 100));
+  
   // לוקחים את 30% העליון של הטקסט
   const upperThird = text.substring(0, Math.floor(text.length * 0.3));
+  console.log('📄 Upper third length:', upperThird.length);
   
   const result = {
     firstName: "",
@@ -351,15 +355,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No CV file uploaded" });
       }
       
-      console.log('Processing CV file:', req.file.filename);
+      console.log('🔍 Processing CV file:', req.file.filename);
+      console.log('🔍 Original filename:', req.file.originalname);
       
       try {
         // קריאת תוכן הקובץ
         const fileBuffer = fs.readFileSync(req.file.path);
         let fileText = '';
         
-        console.log('File type:', req.file.mimetype);
-        console.log('File size:', fileBuffer.length, 'bytes');
+        console.log('📁 File type:', req.file.mimetype);
+        console.log('📁 File size:', fileBuffer.length, 'bytes');
+        console.log('📁 File path:', req.file.path);
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
@@ -389,7 +395,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // קבצי טקסט רגילים או קבצים שניתן לקרוא כטקסט
           try {
             fileText = fileBuffer.toString('utf8');
-            console.log('Text file content preview:', fileText.substring(0, 200) + '...');
+            console.log('📝 Text file detected! Content preview:', fileText.substring(0, 200) + '...');
+            console.log('📝 Full text length:', fileText.length);
           } catch (error) {
             console.log('Error reading as text:', error instanceof Error ? error.message : 'Unknown error');
             fileText = '';
