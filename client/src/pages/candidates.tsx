@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CandidateForm from "@/components/forms/candidate-form";
 import SearchFilter from "@/components/search-filter";
-import { Plus, Search, Phone, Mail, FileText, Edit, Trash2 } from "lucide-react";
+import { EmailDialog } from "@/components/email-dialog";
+import { Plus, Search, Phone, Mail, FileText, Edit, Trash2, Send, Users } from "lucide-react";
 import type { Candidate } from "@shared/schema";
 
 export default function Candidates() {
@@ -22,6 +23,17 @@ export default function Candidates() {
   const [search, setSearch] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [emailDialog, setEmailDialog] = useState<{
+    isOpen: boolean;
+    type: "candidate" | "interview" | "shortlist";
+    candidateId?: string;
+    candidateIds?: string[];
+    candidateName?: string;
+  }>({
+    isOpen: false,
+    type: "candidate",
+  });
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -254,7 +266,41 @@ export default function Candidates() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-2 space-x-reverse">
+                            <div className="flex space-x-1 space-x-reverse">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEmailDialog({
+                                    isOpen: true,
+                                    type: "candidate",
+                                    candidateId: candidate.id,
+                                    candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                                  });
+                                }}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                data-testid={`button-email-profile-${candidate.id}`}
+                                title="שלח פרופיל במייל"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEmailDialog({
+                                    isOpen: true,
+                                    type: "interview",
+                                    candidateId: candidate.id,
+                                    candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                                  });
+                                }}
+                                className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                                data-testid={`button-interview-invite-${candidate.id}`}
+                                title="שלח הזמנה לראיון"
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -296,6 +342,15 @@ export default function Candidates() {
           )}
         </main>
       </div>
+
+      <EmailDialog
+        isOpen={emailDialog.isOpen}
+        onClose={() => setEmailDialog({ ...emailDialog, isOpen: false })}
+        type={emailDialog.type}
+        candidateId={emailDialog.candidateId}
+        candidateIds={emailDialog.candidateIds}
+        candidateName={emailDialog.candidateName}
+      />
     </div>
   );
 }

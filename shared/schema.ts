@@ -40,6 +40,7 @@ export const users = pgTable("users", {
 export const candidateStatusEnum = pgEnum('candidate_status', ['available', 'employed', 'inactive', 'blacklisted']);
 export const jobStatusEnum = pgEnum('job_status', ['active', 'paused', 'closed']);
 export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'rejected', 'accepted']);
+export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'failed', 'delivered', 'bounced']);
 
 // Candidates table
 export const candidates = pgTable("candidates", {
@@ -217,6 +218,31 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Email table for tracking sent emails
+export const emails = pgTable("emails", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  from: varchar("from").notNull(),
+  to: varchar("to").notNull(),
+  cc: varchar("cc"),
+  subject: varchar("subject").notNull(),
+  body: text("body").notNull(),
+  isHtml: boolean("is_html").default(true),
+  status: emailStatusEnum("status").default('pending'),
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  candidateId: varchar("candidate_id").references(() => candidates.id),
+  jobId: varchar("job_id").references(() => jobs.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  sentBy: varchar("sent_by").references(() => users.id),
+  errorMessage: text("error_message"),
+  attachments: text("attachments").array(), // array of file paths
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEmailSchema = createInsertSchema(emails);
+export type InsertEmail = z.infer<typeof insertEmailSchema>;
+export type Email = typeof emails.$inferSelect;
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;

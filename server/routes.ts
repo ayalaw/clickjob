@@ -5,10 +5,11 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobApplicationSchema, insertTaskSchema } from "@shared/schema";
+import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobApplicationSchema, insertTaskSchema, insertEmailSchema } from "@shared/schema";
 import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
+import { sendEmail, emailTemplates } from './emailService';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -738,6 +739,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting task:", error);
       res.status(500).json({ message: "Failed to delete task" });
+    }
+  });
+
+  // Email routes
+  app.post('/api/emails/send-candidate-profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const { candidateId, to, cc, notes } = req.body;
+      
+      const candidate = await storage.getCandidate(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const template = emailTemplates.candidateProfile(candidate);
+      const emailData = {
+        to,
+        cc,
+        subject: template.subject,
+        html: template.html,
+      };
+
+      const result = await sendEmail(emailData);
+      
+      if (result.success) {
+        // Save email to database
+        await storage.createEmail({
+          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          to,
+          cc,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'sent',
+          sentAt: new Date(),
+          candidateId,
+          sentBy: req.user.claims.sub,
+        });
+        
+        res.json({ success: true });
+      } else {
+        await storage.createEmail({
+          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          to,
+          cc,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'failed',
+          candidateId,
+          sentBy: req.user.claims.sub,
+          errorMessage: result.error,
+        });
+        
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error sending candidate profile email:", error);
+      res.status(500).json({ message: "Failed to send email" });
+    }
+  });
+
+  app.post('/api/emails/send-interview-invitation', isAuthenticated, async (req: any, res) => {
+    try {
+      const { candidateId, jobTitle, date, time, location, interviewer, notes } = req.body;
+      
+      const candidate = await storage.getCandidate(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const interviewDetails = { jobTitle, date, time, location, interviewer, notes };
+      const template = emailTemplates.interviewInvitation(candidate, interviewDetails);
+      
+      const emailData = {
+        to: candidate.email,
+        subject: template.subject,
+        html: template.html,
+      };
+
+      const result = await sendEmail(emailData);
+      
+      if (result.success) {
+        await storage.createEmail({
+          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          to: candidate.email,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'sent',
+          sentAt: new Date(),
+          candidateId,
+          sentBy: req.user.claims.sub,
+        });
+        
+        res.json({ success: true });
+      } else {
+        await storage.createEmail({
+          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          to: candidate.email,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'failed',
+          candidateId,
+          sentBy: req.user.claims.sub,
+          errorMessage: result.error,
+        });
+        
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error sending interview invitation:", error);
+      res.status(500).json({ message: "Failed to send interview invitation" });
+    }
+  });
+
+  app.post('/api/emails/send-candidate-shortlist', isAuthenticated, async (req: any, res) => {
+    try {
+      const { candidateIds, to, cc, jobTitle } = req.body;
+      
+      const candidates = await Promise.all(
+        candidateIds.map((id: string) => storage.getCandidate(id))
+      );
+      
+      const validCandidates = candidates.filter(Boolean);
+      if (validCandidates.length === 0) {
+        return res.status(404).json({ message: "No candidates found" });
+      }
+
+      const template = emailTemplates.candidateShortlist(validCandidates, jobTitle);
+      
+      const emailData = {
+        to,
+        cc,
+        subject: template.subject,
+        html: template.html,
+      };
+
+      const result = await sendEmail(emailData);
+      
+      if (result.success) {
+        await storage.createEmail({
+          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          to,
+          cc,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'sent',
+          sentAt: new Date(),
+          sentBy: req.user.claims.sub,
+        });
+        
+        res.json({ success: true });
+      } else {
+        await storage.createEmail({
+          from: process.env.DEFAULT_FROM_EMAIL || 'noreply@yourcompany.com',
+          to,
+          cc,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'failed',
+          sentBy: req.user.claims.sub,
+          errorMessage: result.error,
+        });
+        
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error sending candidate shortlist:", error);
+      res.status(500).json({ message: "Failed to send candidate shortlist" });
+    }
+  });
+
+  app.get('/api/emails', isAuthenticated, async (req: any, res) => {
+    try {
+      const emails = await storage.getEmails();
+      res.json({ emails });
+    } catch (error) {
+      console.error("Error fetching emails:", error);
+      res.status(500).json({ message: "Failed to fetch emails" });
     }
   });
 

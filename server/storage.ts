@@ -5,6 +5,7 @@ import {
   jobs,
   jobApplications,
   tasks,
+  emails,
   type User,
   type UpsertUser,
   type Candidate,
@@ -20,6 +21,8 @@ import {
   type Task,
   type TaskWithDetails,
   type InsertTask,
+  type Email,
+  type InsertEmail,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
@@ -74,6 +77,11 @@ export interface IStorage {
   // Recent activity
   getRecentCandidates(limit?: number): Promise<Candidate[]>;
   getUrgentTasks(limit?: number): Promise<TaskWithDetails[]>;
+
+  // Email operations
+  getEmails(): Promise<Email[]>;
+  createEmail(email: InsertEmail): Promise<Email>;
+  updateEmail(id: string, email: Partial<InsertEmail>): Promise<Email>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -623,6 +631,32 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
 
     return results as TaskWithDetails[];
+  }
+
+  // Email operations
+  async getEmails(): Promise<Email[]> {
+    const emailList = await db
+      .select()
+      .from(emails)
+      .orderBy(desc(emails.createdAt));
+    return emailList;
+  }
+
+  async createEmail(email: InsertEmail): Promise<Email> {
+    const [newEmail] = await db
+      .insert(emails)
+      .values(email)
+      .returning();
+    return newEmail;
+  }
+
+  async updateEmail(id: string, email: Partial<InsertEmail>): Promise<Email> {
+    const [updatedEmail] = await db
+      .update(emails)
+      .set(email)
+      .where(eq(emails.id, id))
+      .returning();
+    return updatedEmail;
   }
 }
 
