@@ -478,16 +478,39 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             title="CV Preview"
                           />
                         ) : uploadedFile.type.includes('document') ? (
-                          // DOC/DOCX - Use Google Docs Viewer
-                          <iframe
-                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(URL.createObjectURL(uploadedFile))}&embedded=true`}
-                            className="w-full h-full border-0"
-                            title="CV Preview"
-                            onError={() => {
-                              // Fallback to file download if viewer fails
-                              console.log('Google Docs Viewer failed, falling back to download link');
-                            }}
-                          />
+                          // DOC/DOCX - Display file info and download options
+                          <div className="w-full h-full flex items-center justify-center bg-blue-50 p-8">
+                            <div className="text-center max-w-md">
+                              <FileText className="w-20 h-20 text-blue-600 mx-auto mb-6" />
+                              <h3 className="text-xl font-bold text-blue-800 mb-2">מסמך Word</h3>
+                              <p className="text-blue-700 font-medium mb-4">{uploadedFile.name}</p>
+                              <p className="text-blue-600 text-sm mb-6">
+                                גודל הקובץ: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                              
+                              <div className="space-y-3">
+                                <a 
+                                  href={URL.createObjectURL(uploadedFile)} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                >
+                                  פתח לצפייה מלאה
+                                </a>
+                                <a 
+                                  href={URL.createObjectURL(uploadedFile)} 
+                                  download={uploadedFile.name}
+                                  className="block w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                                >
+                                  הורד למחשב
+                                </a>
+                              </div>
+                              
+                              <p className="text-blue-500 text-xs mt-4">
+                                קבצי Word מוצגים בחלון נפרד לצפייה מלאה
+                              </p>
+                            </div>
+                          </div>
                         ) : uploadedFile.type.startsWith('image/') ? (
                           // Image Files Viewer
                           <div className="w-full h-full flex items-center justify-center bg-gray-50 p-4">
