@@ -837,7 +837,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     {/* Option to upload different file */}
                     <Button 
                       variant="outline" 
-                      className="w-full"
+                      className="w-full mb-4"
                       onClick={() => {
                         setUploadedFile(null);
                         setExtractedData(null);
@@ -851,6 +851,39 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-center gap-4 mt-8 pt-6 border-t">
+          <Button 
+            type="submit" 
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-medium"
+            disabled={mutation.isPending}
+            data-testid="button-submit-candidate"
+          >
+            {mutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                שומר מועמד...
+              </>
+            ) : (
+              "הוסף מועמד חדש"
+            )}
+          </Button>
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="px-8 py-3 text-lg"
+            onClick={() => {
+              form.reset();
+              setUploadedFile(null);
+              setExtractedData(null);
+            }}
+            data-testid="button-reset-form"
+          >
+            נקה טופס
+          </Button>
         </div>
       </div>
     </div>
