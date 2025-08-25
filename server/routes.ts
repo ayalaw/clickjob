@@ -295,10 +295,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
-      if (!candidateData.recruitmentSource && req.user?.claims) {
-        const userFirstName = req.user.claims.first_name || '';
-        const userLastName = req.user.claims.last_name || '';
-        const userName = `${userFirstName} ${userLastName}`.trim() || req.user.claims.email;
+      if (!candidateData.recruitmentSource && (req.user as any)?.claims) {
+        const userClaims = (req.user as any).claims;
+        const userFirstName = userClaims.first_name || '';
+        const userLastName = userClaims.last_name || '';
+        const userName = `${userFirstName} ${userLastName}`.trim() || userClaims.email;
         candidateData.recruitmentSource = userName;
       }
       
@@ -355,34 +356,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // קריאת תוכן הקובץ
         const fileBuffer = fs.readFileSync(req.file.path);
-        
-        // המרה לטקסט (זה פשטני - בפרודקשן נשתמש בספריות OCR)
         let fileText = '';
         
+        console.log('File type:', req.file.mimetype);
+        console.log('File size:', fileBuffer.length, 'bytes');
+        
+        // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          // לPDF נצטרך ספרייה מיוחדת כמו pdf-parse
-          fileText = "מסמך PDF - זיהוי טקסט דורש ספרייה נוספת";
+          console.log('PDF file detected - תדרש ספרייה מיוחדת לחילוץ טקסט');
+          // חזרה לנתונים ריקים עבור PDF עד שנתקין ספרייה מתאימה
+          const extractedData = {
+            firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+            nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+            gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+            experience: null, achievements: ""
+          };
+          console.log('PDF - returning empty data for manual fill');
+          return res.json(extractedData);
+        } else if (req.file.mimetype.includes('application/vnd.openxmlformats') || 
+                   req.file.mimetype.includes('application/msword')) {
+          console.log('DOC/DOCX file detected - תדרש ספרייה מיוחדת לחילוץ טקסט');
+          // חזרה לנתונים ריקים עבור DOC/DOCX עד שנתקין ספרייה מתאימה
+          const extractedData = {
+            firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+            nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+            gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+            experience: null, achievements: ""
+          };
+          console.log('DOC/DOCX - returning empty data for manual fill');
+          return res.json(extractedData);
         } else {
-          // לקבצי DOC/DOCX או טקסט רגיל
-          fileText = fileBuffer.toString('utf8');
+          // קבצי טקסט רגילים או קבצים שניתן לקרוא כטקסט
+          try {
+            fileText = fileBuffer.toString('utf8');
+            console.log('Text file content preview:', fileText.substring(0, 200) + '...');
+          } catch (error) {
+            console.log('Error reading as text:', error instanceof Error ? error.message : 'Unknown error');
+            fileText = '';
+          }
         }
         
-        // בינתיים נשתמש בטקסט דוגמה שמכיל דפוסים אמיתיים
-        const sampleText = `
-        שרה לוי
-        מהנדסת תוכנה
-        דוא"ל: sarah.levi@gmail.com  
-        נייד: 052-9876543
-        טלפון: 03-5551234
-        כתובת: רחוב הרצל 25, חיפה 31000
-        רישיון נהיגה: כן
-        מצב משפחתי: נשואה
-        7 שנות ניסיון בפיתוח
-        הישגים: זוכת פרס מצוינות בחברה הקודמת
-        `;
+        // אם אין תוכן טקסט, נחזיר נתונים ריקים
+        if (!fileText || fileText.trim().length === 0) {
+          console.log('No readable text content found');
+          const extractedData = {
+            firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+            nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+            gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+            experience: null, achievements: ""
+          };
+          return res.json(extractedData);
+        }
         
-        // חילוץ נתונים מהטקסט
-        const extractedData = extractDataFromText(sampleText);
+        // חילוץ נתונים מהטקסט האמיתי
+        const extractedData = extractDataFromText(fileText);
         
         console.log('Extracted data from CV:', extractedData);
         res.json(extractedData);

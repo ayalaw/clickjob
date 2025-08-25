@@ -232,7 +232,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           console.log('Set drivingLicense:', extractedData.drivingLicense);
         }
         if (extractedData.achievements) {
-          form.setValue('achievements', extractedData.achievements);
+          form.setValue('notes' as any, extractedData.achievements);
           console.log('Set achievements:', extractedData.achievements);
         }
         
@@ -240,10 +240,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         const hasExtractedData = extractedData.firstName || extractedData.lastName || extractedData.email;
         
         toast({
-          title: hasExtractedData ? "נתונים חולצו בהצלחה!" : "הועלה בהצלחה!",
+          title: hasExtractedData ? "נתונים חולצו מהקובץ!" : "קובץ הועלה בהצלחה",
           description: hasExtractedData 
-            ? `נמצאו פרטים: ${extractedData.firstName} ${extractedData.lastName}`.trim()
-            : "קורות החיים הועלו. השלם את הפרטים החסרים.",
+            ? `נמצאו פרטים בקובץ: ${extractedData.firstName} ${extractedData.lastName}`.trim()
+            : "לא נמצאו נתונים בקובץ - מלא ידנית (PDF/DOC דורשים עיבוד מיוחד)",
         });
       }
     } catch (error) {
@@ -560,7 +560,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     {/* Recruitment Source */}
                     <FormField
                       control={form.control}
-                      name="recruitmentSource"
+                      name={"notes" as any}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-right">מקור גיוס:</FormLabel>
