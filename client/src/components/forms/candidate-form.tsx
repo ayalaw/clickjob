@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Check, FileText, Briefcase } from "lucide-react";
+import { Upload, Check, FileText, Briefcase, Home } from "lucide-react";
 import FileUpload from "@/components/file-upload";
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -92,7 +92,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/job-applications"] });
-      onSuccess();
+      // חזרה לדף הבית אחרי שמירה מוצלחת
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -122,7 +123,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         description: "המועמד עודכן בהצלחה",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
-      onSuccess();
+      // חזרה לדף הבית אחרי עדכון מוצלח
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -269,9 +271,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           });
           // רענון רשימת המועמדים
           queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
-          // חזרה לרשימת המועמדים
+          // חזרה לדף הבית
           setTimeout(() => {
-            onSuccess();
+            window.location.href = "/";
           }, 1500);
         } else {
           toast({
@@ -294,10 +296,45 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {candidate ? "עריכת מועמד" : "הוספת מועמד חדש"}
-          </h1>
-          <p className="text-gray-600">מלא את הפרטים לפי הטופס או העלה קורות חיים למילוי אוטומטי</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {candidate ? "עריכת מועמד" : "הוספת מועמד חדש"}
+              </h1>
+              <p className="text-gray-600">מלא את הפרטים לפי הטופס או העלה קורות חיים למילוי אוטומטי</p>
+            </div>
+            
+            {/* Save Button - Top Right */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => window.location.href = "/"}
+                data-testid="button-back-home"
+                className="flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                חזור לדף הבית
+              </Button>
+              
+              <Button
+                type="submit"
+                form="candidate-form"
+                disabled={createCandidate.isPending || updateCandidate.isPending}
+                data-testid="button-save-candidate-top"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                {createCandidate.isPending || updateCandidate.isPending ? (
+                  <>שומר...</>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    {candidate ? "עדכן מועמד" : "שמור מועמד"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -354,7 +391,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form id="candidate-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     
                     {/* Job Selection for new candidates */}
                     {!candidate && activeJobs.length > 0 && (
