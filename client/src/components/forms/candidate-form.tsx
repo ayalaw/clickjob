@@ -669,38 +669,56 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       
                       <div className="h-[800px] bg-white overflow-auto">
                         {uploadedFile.type === 'application/pdf' ? (
-                          // PDF Display - Chrome Compatible
-                          <div className="w-full h-full flex items-center justify-center bg-blue-50 p-8">
-                            <div className="text-center max-w-md">
-                              <FileText className="w-20 h-20 text-blue-600 mx-auto mb-6" />
-                              <h3 className="text-xl font-bold text-blue-800 mb-2">קובץ PDF</h3>
-                              <p className="text-blue-700 font-medium mb-4">{uploadedFile.name}</p>
-                              <p className="text-blue-600 text-sm mb-6">
-                                גודל הקובץ: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                              
-                              <div className="space-y-3">
+                          // PDF Display - Show content directly
+                          <div className="w-full h-full bg-white overflow-auto">
+                            <div className="p-4 border-b bg-red-50">
+                              <div className="flex items-center gap-3 mb-2">
+                                <FileText className="w-6 h-6 text-red-600" />
+                                <div>
+                                  <h3 className="font-bold text-red-800">{uploadedFile.name}</h3>
+                                  <p className="text-sm text-red-600">
+                                    קובץ PDF - {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
                                 <a 
                                   href={URL.createObjectURL(uploadedFile)} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                  className="text-xs bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 transition-colors"
                                 >
-                                  פתח PDF בטאב חדש
+                                  פתח בחלון חדש
                                 </a>
                                 <a 
                                   href={URL.createObjectURL(uploadedFile)} 
                                   download={uploadedFile.name}
-                                  className="block w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                                  className="text-xs bg-gray-600 text-white py-1 px-3 rounded hover:bg-gray-700 transition-colors"
                                 >
-                                  הורד למחשב
+                                  הורד
                                 </a>
                               </div>
-                              
-                              <p className="text-blue-500 text-xs mt-4">
-                                ה-PDF יפתח בטאב חדש לצפייה מלאה
-                              </p>
                             </div>
+                            
+                            {fileContent ? (
+                              <div className="p-6">
+                                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
+                                  {fileContent}
+                                </pre>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center h-64">
+                                <div className="text-center">
+                                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                  <p className="text-gray-500">מחלץ תוכן הקובץ...</p>
+                                  {isProcessingCV && (
+                                    <div className="mt-2">
+                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : uploadedFile.type.includes('document') ? (
                           // DOC/DOCX - Display content directly
