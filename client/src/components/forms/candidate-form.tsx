@@ -228,7 +228,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       const formData = new FormData();
       formData.append("cv", file);
 
-      const result = await apiRequest("/api/candidates/extract-cv", {
+      const result = await apiRequest("/api/extract-cv-data", {
         method: "POST",
         body: formData,
       });
@@ -655,12 +655,39 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       
                       <div className="h-[800px] bg-white overflow-auto">
                         {uploadedFile.type === 'application/pdf' ? (
-                          // PDF Embedded Viewer
-                          <iframe
-                            src={URL.createObjectURL(uploadedFile)}
-                            className="w-full h-full border-0"
-                            title="CV Preview"
-                          />
+                          // PDF Display - Chrome Compatible
+                          <div className="w-full h-full flex items-center justify-center bg-blue-50 p-8">
+                            <div className="text-center max-w-md">
+                              <FileText className="w-20 h-20 text-blue-600 mx-auto mb-6" />
+                              <h3 className="text-xl font-bold text-blue-800 mb-2">קובץ PDF</h3>
+                              <p className="text-blue-700 font-medium mb-4">{uploadedFile.name}</p>
+                              <p className="text-blue-600 text-sm mb-6">
+                                גודל הקובץ: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                              
+                              <div className="space-y-3">
+                                <a 
+                                  href={URL.createObjectURL(uploadedFile)} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                >
+                                  פתח PDF בטאב חדש
+                                </a>
+                                <a 
+                                  href={URL.createObjectURL(uploadedFile)} 
+                                  download={uploadedFile.name}
+                                  className="block w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                                >
+                                  הורד למחשב
+                                </a>
+                              </div>
+                              
+                              <p className="text-blue-500 text-xs mt-4">
+                                ה-PDF יפתח בטאב חדש לצפייה מלאה
+                              </p>
+                            </div>
+                          </div>
                         ) : uploadedFile.type.includes('document') ? (
                           // DOC/DOCX - Display file info and download options
                           <div className="w-full h-full flex items-center justify-center bg-blue-50 p-8">
