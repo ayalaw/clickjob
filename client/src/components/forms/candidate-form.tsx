@@ -120,6 +120,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [isProcessingCV, setIsProcessingCV] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [fileContent, setFileContent] = useState<string>("");
 
   // Fetch active jobs for new candidates
   const { data: jobsData } = useQuery({
@@ -243,6 +244,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
       if (result.extractedData) {
         setExtractedData(result.extractedData);
+        
+        // Save file content for display
+        if (result.fileContent) {
+          setFileContent(result.fileContent);
+        }
 
         // Auto-fill form with extracted data
         if (result.extractedData.firstName) {
@@ -697,38 +703,51 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             </div>
                           </div>
                         ) : uploadedFile.type.includes('document') ? (
-                          // DOC/DOCX - Display file info and download options
-                          <div className="w-full h-full flex items-center justify-center bg-blue-50 p-8">
-                            <div className="text-center max-w-md">
-                              <FileText className="w-20 h-20 text-blue-600 mx-auto mb-6" />
-                              <h3 className="text-xl font-bold text-blue-800 mb-2">מסמך Word</h3>
-                              <p className="text-blue-700 font-medium mb-4">{uploadedFile.name}</p>
-                              <p className="text-blue-600 text-sm mb-6">
-                                גודל הקובץ: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                              
-                              <div className="space-y-3">
+                          // DOC/DOCX - Display content directly
+                          <div className="w-full h-full bg-white overflow-auto">
+                            <div className="p-4 border-b bg-blue-50">
+                              <div className="flex items-center gap-3 mb-2">
+                                <FileText className="w-6 h-6 text-blue-600" />
+                                <div>
+                                  <h3 className="font-bold text-blue-800">{uploadedFile.name}</h3>
+                                  <p className="text-sm text-blue-600">
+                                    מסמך Word - {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
                                 <a 
                                   href={URL.createObjectURL(uploadedFile)} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                  className="text-xs bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 transition-colors"
                                 >
-                                  פתח לצפייה מלאה
+                                  פתח בחלון חדש
                                 </a>
                                 <a 
                                   href={URL.createObjectURL(uploadedFile)} 
                                   download={uploadedFile.name}
-                                  className="block w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                                  className="text-xs bg-gray-600 text-white py-1 px-3 rounded hover:bg-gray-700 transition-colors"
                                 >
-                                  הורד למחשב
+                                  הורד
                                 </a>
                               </div>
-                              
-                              <p className="text-blue-500 text-xs mt-4">
-                                קבצי Word מוצגים בחלון נפרד לצפייה מלאה
-                              </p>
                             </div>
+                            
+                            {fileContent ? (
+                              <div className="p-6">
+                                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
+                                  {fileContent}
+                                </pre>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center h-64">
+                                <div className="text-center">
+                                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                  <p className="text-gray-500">מחלץ תוכן הקובץ...</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : uploadedFile.type.startsWith('image/') ? (
                           // Image Files Viewer

@@ -531,7 +531,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 candidateId: candidate.id,
                 candidateName: `${candidate.firstName} ${candidate.lastName}`,
                 message: "מועמד נוצר אוטומטית מקורות החיים!"
-              }
+              },
+              fileContent: fileText
             });
             
           } catch (candidateError) {
@@ -542,7 +543,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 ...extractedData,
                 candidateCreated: false,
                 error: "נתונים חולצו בהצלחה אך יצירת המועמד נכשלה"
-              }
+              },
+              fileContent: fileText
             });
           }
         } else {
@@ -552,7 +554,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ...extractedData,
               candidateCreated: false,
               message: "נתונים חולצו אך חסרים פרטים ליצירת מועמד אוטומטית"
-            }
+            },
+            fileContent: fileText
           });
         }
       } catch (fileError) {
