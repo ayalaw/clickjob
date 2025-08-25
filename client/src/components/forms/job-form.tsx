@@ -128,268 +128,336 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>כותרת המשרה *</FormLabel>
-              <FormControl>
-                <Input placeholder="מפתח Full Stack Senior" {...field} data-testid="input-job-title" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>תיאור המשרה *</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="תיאור מפורט של המשרה, האחריות והמטלות"
-                  className="min-h-[120px]"
-                  {...field}
-                  data-testid="textarea-job-description"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="requirements"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>דרישות המשרה</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="השכלה, ניסיון, כישורים טכניים נדרשים"
-                  className="min-h-[100px]"
-                  {...field}
-                  data-testid="textarea-job-requirements"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>מיקום</FormLabel>
-                <FormControl>
-                  <Input placeholder="תל אביב, רמת גן, וכו'" {...field} data-testid="input-job-location" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="salaryRange"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>טווח שכר</FormLabel>
-                <FormControl>
-                  <Input placeholder="₪15,000-₪25,000" {...field} data-testid="input-salary-range" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="bg-gray-50 min-h-screen" dir="rtl">
+      <div className="max-w-4xl mx-auto pt-8 pb-12">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm text-blue-600 mb-4">
+            <span>לקוחות</span>
+            <span>›</span>
+            <span>אימון פיתוח</span>
+            <span>›</span>
+            <span className="text-gray-600">משרה חדשה</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">פרסום משרה</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="jobType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>סוג משרה</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger data-testid="select-job-type">
-                      <SelectValue placeholder="בחר סוג משרה" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="full-time">משרה מלאה</SelectItem>
-                    <SelectItem value="part-time">משרה חלקית</SelectItem>
-                    <SelectItem value="contract">חוזה</SelectItem>
-                    <SelectItem value="freelance">פרילנס</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* פרטי משרה */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-blue-600">
+                פרטי משרה
+                <span className="text-sm text-blue-600 font-normal mr-4">אימון פיתוח</span>
+              </h2>
 
-          <FormField
-            control={form.control}
-            name="positions"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>מספר משרות פתוחות</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    min="1"
-                    placeholder="1"
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
-                    data-testid="input-positions"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="isRemote"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-x-reverse space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  data-testid="checkbox-is-remote"
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">שם תפקיד:</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-job-title" className="text-right" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>עבודה מהבית</FormLabel>
+
+                <FormField
+                  control={form.control}
+                  name="deadline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">תאריך סיום:</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="date" 
+                            {...field}
+                            data-testid="input-deadline"
+                            className="text-right"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="clientId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">*לקוח נשרת ראשית:</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-client" className="text-right">
+                            <SelectValue placeholder="" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clientsData?.clients?.map((client: Client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.companyName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="jobType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">סוג נשרת תפקידי:</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-job-type" className="text-right">
+                            <SelectValue placeholder="" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full-time">משרה מלאה</SelectItem>
+                          <SelectItem value="part-time">משרה חלקית</SelectItem>
+                          <SelectItem value="contract">חוזה</SelectItem>
+                          <SelectItem value="freelance">פרילנס</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="positions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">*מיועש קטני:</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
+                          data-testid="input-positions"
+                          className="text-right"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">*תיאור:</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field}
+                          data-testid="textarea-job-description"
+                          className="min-h-[120px] text-right"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="requirements"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">*תאור נשרת פנימיות:</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field}
+                          data-testid="textarea-job-requirements"
+                          className="min-h-[120px] text-right"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isRemote"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-x-reverse space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-is-remote"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>האם נערכה פגישת בעלים ראשונים</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
               </div>
-            </FormItem>
-          )}
-        />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>סטטוס המשרה</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger data-testid="select-job-status">
-                      <SelectValue placeholder="בחר סטטוס" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="active">פעילה</SelectItem>
-                    <SelectItem value="paused">מושהית</SelectItem>
-                    <SelectItem value="closed">סגורה</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            {/* עדות אדמיניסטרטיביים */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">עדות אדמיניסטרטיביים</h2>
 
-          <FormField
-            control={form.control}
-            name="priority"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>עדיפות</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger data-testid="select-job-priority">
-                      <SelectValue placeholder="בחר עדיפות" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="low">נמוכה</SelectItem>
-                    <SelectItem value="medium">בינונית</SelectItem>
-                    <SelectItem value="high">גבוהה</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">רמת צניון אנטיביו:</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-job-priority" className="text-right">
+                            <SelectValue placeholder="טלפוני" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">נמוכה</SelectItem>
+                          <SelectItem value="medium">בינונית</SelectItem>
+                          <SelectItem value="high">גבוהה</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="clientId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>לקוח</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger data-testid="select-client">
-                      <SelectValue placeholder="בחר לקוח" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {clientsData?.clients?.map((client: Client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.companyName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">יסטת שלווה:</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-job-status" className="text-right">
+                            <SelectValue placeholder="האייל" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">פעילה</SelectItem>
+                          <SelectItem value="paused">מושהית</SelectItem>
+                          <SelectItem value="closed">סגורה</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <FormField
-            control={form.control}
-            name="deadline"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>תאריך יעד</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="date" 
-                    {...field}
-                    data-testid="input-deadline"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+                <FormField
+                  control={form.control}
+                  name="salaryRange"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">שילוח תחתותני:</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="text-right">
+                            <SelectValue placeholder="כן" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="yes">כן</SelectItem>
+                          <SelectItem value="no">לא</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-        <div className="flex justify-end space-x-4 space-x-reverse">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onSuccess}
-            data-testid="button-cancel"
-          >
-            ביטול
-          </Button>
-          <Button 
-            type="submit" 
-            className="btn-primary"
-            disabled={createJob.isPending || updateJob.isPending}
-            data-testid="button-save-job"
-          >
-            {createJob.isPending || updateJob.isPending ? "שומר..." : job ? "עדכן" : "שמור"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">רכב עטמני:</FormLabel>
+                      <Select>
+                        <FormControl>
+                          <SelectTrigger className="text-right">
+                            <SelectValue placeholder="..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="option1">אופציה 1</SelectItem>
+                          <SelectItem value="option2">אופציה 2</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1">
+                  <FormItem>
+                    <FormLabel className="text-right">רכב תוכן:</FormLabel>
+                    <Select>
+                      <FormControl>
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="option1">אופציה 1</SelectItem>
+                        <SelectItem value="option2">אופציה 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                </div>
+
+                <div>
+                  <FormLabel className="text-right">תקים פתוחים:</FormLabel>
+                  <Input className="mt-2 text-right" />
+                </div>
+
+                <div className="flex items-center gap-8">
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox />
+                    <span>נשרת רחוקה</span>
+                  </div>
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox />
+                    <span>נשרת מופר טלפוני</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* כפתור שמירה */}
+            <div className="flex justify-center">
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg"
+                disabled={createJob.isPending || updateJob.isPending}
+                data-testid="button-save-job"
+              >
+                {createJob.isPending || updateJob.isPending ? "שומר..." : job ? "עדכן משרה" : "צור משרה המזל"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </div>
   );
 }
