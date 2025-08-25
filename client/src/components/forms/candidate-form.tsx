@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Check, FileText, Briefcase, Home } from "lucide-react";
+import { Upload, Check, FileText, Briefcase, Home, Mail, Phone } from "lucide-react";
 import FileUpload from "@/components/file-upload";
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -398,59 +398,153 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       )}
                     </div>
 
-                    {/* Extracted Data Display */}
+                    {/* CV Visual Display */}
                     {extractedData && !extractedData.candidateCreated && (
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-800 mb-3">נתונים שחולצו:</h4>
-                        <div className="space-y-2 text-sm">
-                          {extractedData.firstName && (
-                            <div>
-                              <span className="text-gray-600">שם פרטי:</span>
-                              <span className="font-medium mr-2">{extractedData.firstName}</span>
+                      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        {/* Header with candidate name */}
+                        <div className="border-b border-gray-200 pb-4 mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-bold text-lg">
+                                {extractedData.firstName?.charAt(0) || '?'}
+                              </span>
                             </div>
-                          )}
-                          {extractedData.lastName && (
                             <div>
-                              <span className="text-gray-600">שם משפחה:</span>
-                              <span className="font-medium mr-2">{extractedData.lastName}</span>
+                              <h3 className="text-xl font-bold text-gray-900">
+                                {extractedData.firstName && extractedData.lastName 
+                                  ? `${extractedData.firstName} ${extractedData.lastName}` 
+                                  : 'מועמד חדש'}
+                              </h3>
+                              {extractedData.profession && (
+                                <p className="text-gray-600 font-medium">{extractedData.profession}</p>
+                              )}
                             </div>
-                          )}
-                          {extractedData.email && (
-                            <div>
-                              <span className="text-gray-600">אימייל:</span>
-                              <span className="font-medium mr-2">{extractedData.email}</span>
+                          </div>
+                        </div>
+
+                        {/* Contact Information */}
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-gray-800 border-r-4 border-blue-500 pr-3">
+                            פרטי התקשרות
+                          </h4>
+                          
+                          <div className="grid gap-3">
+                            {extractedData.email && (
+                              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <Mail className="w-5 h-5 text-blue-600" />
+                                <div>
+                                  <div className="text-sm text-gray-600">דואר אלקטרוני</div>
+                                  <div className="font-medium">{extractedData.email}</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {extractedData.mobile && (
+                              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <Phone className="w-5 h-5 text-green-600" />
+                                <div>
+                                  <div className="text-sm text-gray-600">טלפון נייד</div>
+                                  <div className="font-medium">{extractedData.mobile}</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {extractedData.phone && (
+                              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <Phone className="w-5 h-5 text-gray-600" />
+                                <div>
+                                  <div className="text-sm text-gray-600">טלפון בית</div>
+                                  <div className="font-medium">{extractedData.phone}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Personal Information */}
+                        {(extractedData.city || extractedData.nationalId || extractedData.drivingLicense) && (
+                          <div className="space-y-4 mt-6">
+                            <h4 className="font-semibold text-gray-800 border-r-4 border-green-500 pr-3">
+                              פרטים אישיים
+                            </h4>
+                            
+                            <div className="grid gap-3">
+                              {extractedData.city && (
+                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-600">עיר מגורים</div>
+                                    <div className="font-medium">{extractedData.city}</div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {extractedData.nationalId && (
+                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-600">תעודת זהות</div>
+                                    <div className="font-medium">{extractedData.nationalId}</div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {extractedData.drivingLicense && (
+                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-600">רישיון נהיגה</div>
+                                    <div className="font-medium">{extractedData.drivingLicense}</div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {extractedData.mobile && (
-                            <div>
-                              <span className="text-gray-600">נייד:</span>
-                              <span className="font-medium mr-2">{extractedData.mobile}</span>
+                          </div>
+                        )}
+
+                        {/* Professional Information */}
+                        {(extractedData.profession || extractedData.experience) && (
+                          <div className="space-y-4 mt-6">
+                            <h4 className="font-semibold text-gray-800 border-r-4 border-purple-500 pr-3">
+                              פרטים מקצועיים
+                            </h4>
+                            
+                            <div className="grid gap-3">
+                              {extractedData.profession && (
+                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                                  <Briefcase className="w-5 h-5 text-purple-600" />
+                                  <div>
+                                    <div className="text-sm text-gray-600">תחום התמחות</div>
+                                    <div className="font-medium">{extractedData.profession}</div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {extractedData.experience && (
+                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                                  <Briefcase className="w-5 h-5 text-purple-600" />
+                                  <div>
+                                    <div className="text-sm text-gray-600">שנות ניסיון</div>
+                                    <div className="font-medium">{extractedData.experience} שנים</div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {extractedData.phone && (
-                            <div>
-                              <span className="text-gray-600">טלפון:</span>
-                              <span className="font-medium mr-2">{extractedData.phone}</span>
-                            </div>
-                          )}
-                          {extractedData.city && (
-                            <div>
-                              <span className="text-gray-600">עיר:</span>
-                              <span className="font-medium mr-2">{extractedData.city}</span>
-                            </div>
-                          )}
-                          {extractedData.profession && (
-                            <div>
-                              <span className="text-gray-600">מקצוע:</span>
-                              <span className="font-medium mr-2">{extractedData.profession}</span>
-                            </div>
-                          )}
-                          {extractedData.experience && (
-                            <div>
-                              <span className="text-gray-600">ניסיון:</span>
-                              <span className="font-medium mr-2">{extractedData.experience} שנים</span>
-                            </div>
-                          )}
+                          </div>
+                        )}
+
+                        {/* Status Badge */}
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                            נתונים חולצו בהצלחה
+                          </div>
                         </div>
                       </div>
                     )}
