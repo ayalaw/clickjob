@@ -375,8 +375,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          console.log('📑 PDF file detected - PDF parsing is complex, returning empty data for manual fill');
-          fileText = '';  // For now, require manual entry for PDFs
+          console.log('📑 PDF file detected - יש לשמור כ-DOCX או TXT לחילוץ אוטומטי של נתונים');
+          const extractedData = {
+            firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+            nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+            gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+            experience: null, achievements: ""
+          };
+          console.log('📑 PDF - returning empty data, please convert to DOCX/TXT for auto-extraction');
+          return res.json(extractedData);
         } else if (req.file.mimetype.includes('application/vnd.openxmlformats') || 
                    req.file.mimetype.includes('application/msword')) {
           console.log('📄 DOC/DOCX file detected - attempting to extract text');
