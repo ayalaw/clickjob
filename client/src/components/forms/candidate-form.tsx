@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Check, FileText } from "lucide-react";
+import { Upload, Check, FileText, Briefcase } from "lucide-react";
 import FileUpload from "@/components/file-upload";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { insertCandidateSchema, type Candidate, type InsertCandidate } from "@shared/schema";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { insertCandidateSchema, type Candidate, type InsertCandidate, type JobWithClient } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { apiRequest } from "@/lib/queryClient";
@@ -29,6 +29,15 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   const { toast } = useToast();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessingCV, setIsProcessingCV] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
+
+  // Fetch active jobs for selection
+  const { data: jobsData } = useQuery<{ jobs: JobWithClient[] }>({
+    queryKey: ["/api/jobs"],
+    enabled: !candidate, // Only fetch for new candidates
+  });
+
+  const activeJobs = jobsData?.jobs.filter(job => job.status === 'active') || [];
 
   const form = useForm({
     resolver: zodResolver(insertCandidateSchema),
@@ -74,11 +83,15 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       return response.json();
     },
     onSuccess: () => {
+      const hasSelectedJob = selectedJobId && !candidate;
       toast({
         title: "הצלחה!",
-        description: "המועמד נוסף בהצלחה",
+        description: hasSelectedJob 
+          ? "המועמד נוסף ונשלח לראיונות בהצלחה! 🎯"
+          : "המועמד נוסף בהצלחה",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/job-applications"] });
       onSuccess();
     },
     onError: (error: Error) => {
@@ -133,6 +146,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         }
       }
     });
+
+    // Add selected job for new candidates
+    if (!candidate && selectedJobId) {
+      formData.append('jobId', selectedJobId);
+    }
 
     // Add uploaded file if present
     if (uploadedFile) {
@@ -324,6 +342,35 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     
+                    {/* Job Selection for new candidates */}
+                    {!candidate && activeJobs.length > 0 && (
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Briefcase className="h-4 w-4 text-blue-600" />
+                          <h3 className="font-medium text-blue-800">בחירת משרה</h3>
+                        </div>
+                        <p className="text-sm text-blue-600 mb-3">
+                          בחר משרה כדי שהמועמד יופיע אוטומטית בעמוד הראיונות
+                        </p>
+                        <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+                          <SelectTrigger className="bg-white" data-testid="select-job">
+                            <SelectValue placeholder="בחר משרה לצירוף המועמד..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {activeJobs.map((job) => (
+                              <SelectItem key={job.id} value={job.id}>
+                                <div className="text-right">
+                                  <div className="font-medium">{job.title}</div>
+                                  <div className="text-sm text-gray-500">
+                                    {job.client.companyName} - {job.jobCode}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {/* First Name */}
                     <FormField

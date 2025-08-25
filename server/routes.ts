@@ -295,6 +295,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Extract jobId if provided
+      const jobId = bodyData.jobId;
+      delete bodyData.jobId; // Remove from candidate data
+      
       const candidateData = insertCandidateSchema.parse(bodyData);
       
       // If CV file was uploaded, add the path
@@ -312,6 +316,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const candidate = await storage.createCandidate(candidateData);
+      
+      // Create job application automatically if jobId is provided
+      if (jobId) {
+        try {
+          await storage.createJobApplication({
+            candidateId: candidate.id,
+            jobId: jobId,
+            status: 'submitted',
+            appliedAt: new Date(),
+          });
+        } catch (error) {
+          console.error("Error creating job application:", error);
+          // Don't fail the candidate creation, just log the error
+        }
+      }
+      
       res.status(201).json(candidate);
     } catch (error) {
       console.error("Error creating candidate:", error);
