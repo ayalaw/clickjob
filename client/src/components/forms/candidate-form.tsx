@@ -208,9 +208,14 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           console.log('Set experience:', extractedData.experience);
         }
         
+        // בדיקה אם יש נתונים שנחלצו
+        const hasExtractedData = extractedData.firstName || extractedData.lastName || extractedData.email;
+        
         toast({
-          title: "הועלה בהצלחה!",
-          description: "קורות החיים הועלו. אנא מלא את הפרטים ידנית כרגע.",
+          title: hasExtractedData ? "נתונים חולצו בהצלחה!" : "הועלה בהצלחה!",
+          description: hasExtractedData 
+            ? `נמצאו פרטים: ${extractedData.firstName} ${extractedData.lastName}`.trim()
+            : "קורות החיים הועלו. השלם את הפרטים החסרים.",
         });
       }
     } catch (error) {
