@@ -20,7 +20,7 @@ interface JobFormProps {
 export default function JobForm({ job, onSuccess }: JobFormProps) {
   const { toast } = useToast();
 
-  const { data: clientsData } = useQuery({
+  const { data: clientsData } = useQuery<{ clients: Client[]; total: number }>({
     queryKey: ["/api/clients"],
   });
 
