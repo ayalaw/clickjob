@@ -390,8 +390,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* CV Upload & Display Section - Left Side */}
-          <div className="lg:col-span-1">
+          {/* CV Upload & Display Section - Left Side - BIGGER */}
+          <div className="lg:col-span-2">
             <Card className="sticky top-6">
               <CardHeader>
                 <CardTitle className="text-center text-gray-700">
@@ -469,7 +469,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         </div>
                       </div>
                       
-                      <div className="h-[600px] bg-white overflow-auto">
+                      <div className="h-[800px] bg-white overflow-auto">
                         {uploadedFile.type === 'application/pdf' ? (
                           // PDF Embedded Viewer
                           <iframe
@@ -597,7 +597,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           </div>
 
           {/* Form Section - Right Side */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle>פרטים אישיים</CardTitle>
