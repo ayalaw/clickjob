@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Check, FileText, Briefcase, Home, Mail, Phone } from "lucide-react";
 import FileUpload from "@/components/file-upload";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { insertCandidateSchema, type Candidate, type InsertCandidate, type JobWithClient } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +23,54 @@ import { apiRequest } from "@/lib/queryClient";
 interface CandidateFormProps {
   candidate?: Candidate | null;
   onSuccess: () => void;
+}
+
+// Component to display text file content
+function TextFileViewer({ file }: { file: File }) {
+  const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      setContent(text);
+      setLoading(false);
+    };
+    
+    reader.onerror = () => {
+      setError('שגיאה בקריאת הקובץ');
+      setLoading(false);
+    };
+    
+    reader.readAsText(file, 'UTF-8');
+  }, [file]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-500">טוען קובץ...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full">
+      <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
+        {content}
+      </pre>
+    </div>
+  );
 }
 
 export default function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
@@ -359,7 +407,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <p className="text-xs text-gray-500 mb-4">או</p>
                     <FileUpload 
                       onFileSelect={handleFileUpload} 
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                       maxSize={10 * 1024 * 1024}
                     />
                     <Button 
@@ -421,7 +469,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         </div>
                       </div>
                       
-                      <div className="h-[600px] bg-white">
+                      <div className="h-[600px] bg-white overflow-auto">
                         {uploadedFile.type === 'application/pdf' ? (
                           // PDF Embedded Viewer
                           <iframe
@@ -440,6 +488,21 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                               console.log('Google Docs Viewer failed, falling back to download link');
                             }}
                           />
+                        ) : uploadedFile.type.startsWith('image/') ? (
+                          // Image Files Viewer
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50 p-4">
+                            <img
+                              src={URL.createObjectURL(uploadedFile)}
+                              alt="CV Image"
+                              className="max-w-full max-h-full object-contain"
+                              style={{ maxHeight: '550px' }}
+                            />
+                          </div>
+                        ) : uploadedFile.type === 'text/plain' ? (
+                          // Text Files Viewer
+                          <div className="w-full h-full p-4 overflow-auto">
+                            <TextFileViewer file={uploadedFile} />
+                          </div>
                         ) : (
                           // Fallback for unsupported file types
                           <div className="w-full h-full flex items-center justify-center bg-gray-50">
