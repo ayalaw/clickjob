@@ -164,22 +164,53 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       
       if (response.ok) {
         const extractedData = await response.json();
+        console.log('Received extracted data:', extractedData);
         
         // Auto-fill form fields with extracted data
-        if (extractedData.firstName) form.setValue('firstName', extractedData.firstName);
-        if (extractedData.lastName) form.setValue('lastName', extractedData.lastName);
-        if (extractedData.email) form.setValue('email', extractedData.email);
-        if (extractedData.mobile) form.setValue('mobile', extractedData.mobile);
-        if (extractedData.phone) form.setValue('phone', extractedData.phone);
-        if (extractedData.city) form.setValue('city', extractedData.city);
-        if (extractedData.street) form.setValue('street', extractedData.street);
-        if (extractedData.houseNumber) form.setValue('houseNumber', extractedData.houseNumber);
-        if (extractedData.profession) form.setValue('profession', extractedData.profession);
-        if (extractedData.experience) form.setValue('experience', extractedData.experience);
+        if (extractedData.firstName) {
+          form.setValue('firstName', extractedData.firstName);
+          console.log('Set firstName:', extractedData.firstName);
+        }
+        if (extractedData.lastName) {
+          form.setValue('lastName', extractedData.lastName);
+          console.log('Set lastName:', extractedData.lastName);
+        }
+        if (extractedData.email) {
+          form.setValue('email', extractedData.email);
+          console.log('Set email:', extractedData.email);
+        }
+        if (extractedData.mobile) {
+          form.setValue('mobile', extractedData.mobile);
+          console.log('Set mobile:', extractedData.mobile);
+        }
+        if (extractedData.phone) {
+          form.setValue('phone', extractedData.phone);
+          console.log('Set phone:', extractedData.phone);
+        }
+        if (extractedData.city) {
+          form.setValue('city', extractedData.city);
+          console.log('Set city:', extractedData.city);
+        }
+        if (extractedData.street) {
+          form.setValue('street', extractedData.street);
+          console.log('Set street:', extractedData.street);
+        }
+        if (extractedData.houseNumber) {
+          form.setValue('houseNumber', extractedData.houseNumber);
+          console.log('Set houseNumber:', extractedData.houseNumber);
+        }
+        if (extractedData.profession) {
+          form.setValue('profession', extractedData.profession);
+          console.log('Set profession:', extractedData.profession);
+        }
+        if (extractedData.experience) {
+          form.setValue('experience', extractedData.experience);
+          console.log('Set experience:', extractedData.experience);
+        }
         
         toast({
-          title: "הצלחה",
-          description: "פרטים חולצו מקורות החיים ומולאו אוטומטית",
+          title: "הצלחה!",
+          description: `נתונים חולצו בהצלחה: ${extractedData.firstName} ${extractedData.lastName}`,
         });
       }
     } catch (error) {
