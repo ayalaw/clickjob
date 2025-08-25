@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Briefcase, UserPlus, Handshake, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function StatsCards() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<{
+    activeJobs: number;
+    newCandidates: number;
+    placements: number;
+    revenue: number;
+  }>({
     queryKey: ["/api/dashboard/stats"],
   });
+  const [, setLocation] = useLocation();
 
   const statsData = [
     {
@@ -17,6 +24,7 @@ export default function StatsCards() {
       change: "+12%",
       changeText: "מהחודש שעבר",
       isPositive: true,
+      link: "/jobs",
     },
     {
       title: "מועמדים חדשים",
@@ -27,6 +35,7 @@ export default function StatsCards() {
       change: "+8%",
       changeText: "השבוע",
       isPositive: true,
+      link: "/candidates",
     },
     {
       title: "השמות החודש",
@@ -37,6 +46,7 @@ export default function StatsCards() {
       change: "-3%",
       changeText: "מהחודש שעבר",
       isPositive: false,
+      link: "/candidates",
     },
     {
       title: "הכנסות חודשיות",
@@ -47,6 +57,7 @@ export default function StatsCards() {
       change: "+15%",
       changeText: "מהחודש שעבר",
       isPositive: true,
+      link: "/clients",
     },
   ];
 
@@ -73,7 +84,12 @@ export default function StatsCards() {
         const ChangeIcon = stat.isPositive ? TrendingUp : TrendingDown;
         
         return (
-          <Card key={index} className="stat-card">
+          <Card 
+            key={index} 
+            className="stat-card cursor-pointer hover:shadow-lg transition-shadow" 
+            onClick={() => setLocation(stat.link)}
+            data-testid={`card-stat-${index}`}
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
