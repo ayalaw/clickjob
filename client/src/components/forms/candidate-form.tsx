@@ -379,7 +379,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 ) : (
                   // File display when uploaded
                   <div className="space-y-4">
-                    {/* File Info */}
+                    {/* File Header */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <FileText className="w-6 h-6 text-green-600" />
@@ -396,6 +396,91 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           מעבד קורות חיים...
                         </div>
                       )}
+                    </div>
+
+                    {/* File Viewer */}
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                        <h4 className="font-medium text-gray-800">תצוגת קורות החיים</h4>
+                      </div>
+                      <div className="p-4">
+                        {uploadedFile.type === 'application/pdf' ? (
+                          // PDF Viewer
+                          <div className="space-y-3">
+                            <div className="w-full h-96 border border-gray-300 rounded bg-gray-100 flex items-center justify-center">
+                              <div className="text-center">
+                                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-600 text-sm">קובץ PDF</p>
+                                <p className="text-gray-500 text-xs">{uploadedFile.name}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <a 
+                                href={URL.createObjectURL(uploadedFile)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded text-sm hover:bg-blue-700"
+                              >
+                                פתח בחלון חדש
+                              </a>
+                              <a 
+                                href={URL.createObjectURL(uploadedFile)} 
+                                download={uploadedFile.name}
+                                className="flex-1 bg-gray-600 text-white text-center py-2 px-4 rounded text-sm hover:bg-gray-700"
+                              >
+                                הורד קובץ
+                              </a>
+                            </div>
+                          </div>
+                        ) : uploadedFile.type.includes('document') ? (
+                          // DOC/DOCX Viewer
+                          <div className="space-y-3">
+                            <div className="w-full h-96 border border-gray-300 rounded bg-blue-50 flex items-center justify-center">
+                              <div className="text-center">
+                                <FileText className="w-12 h-12 text-blue-500 mx-auto mb-2" />
+                                <p className="text-blue-700 text-sm font-medium">מסמך Word</p>
+                                <p className="text-blue-600 text-xs">{uploadedFile.name}</p>
+                                <p className="text-blue-500 text-xs mt-2">
+                                  לצפייה מלאה - פתח בחלון חדש
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <a 
+                                href={URL.createObjectURL(uploadedFile)} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded text-sm hover:bg-blue-700"
+                              >
+                                פתח בחלון חדש
+                              </a>
+                              <a 
+                                href={URL.createObjectURL(uploadedFile)} 
+                                download={uploadedFile.name}
+                                className="flex-1 bg-gray-600 text-white text-white text-center py-2 px-4 rounded text-sm hover:bg-gray-700"
+                              >
+                                הורד קובץ
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          // Other file types
+                          <div className="w-full h-96 border border-gray-300 rounded bg-gray-50 flex items-center justify-center">
+                            <div className="text-center">
+                              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                              <p className="text-gray-600 text-sm">קובץ לא נתמך לתצוגה</p>
+                              <p className="text-gray-500 text-xs">{uploadedFile.name}</p>
+                              <a 
+                                href={URL.createObjectURL(uploadedFile)} 
+                                download={uploadedFile.name}
+                                className="mt-3 inline-block bg-gray-600 text-white py-2 px-4 rounded text-sm hover:bg-gray-700"
+                              >
+                                הורד קובץ
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* CV Visual Display */}
