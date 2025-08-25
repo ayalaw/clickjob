@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import JobForm from "@/components/forms/job-form";
 import SearchFilter from "@/components/search-filter";
 import { Plus, Search, MapPin, Calendar, Building2, Edit, Trash2, Users } from "lucide-react";
@@ -190,99 +190,109 @@ export default function Jobs() {
           </div>
 
           {jobsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardContent className="p-6">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-4"></div>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                ))}
+              </div>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {jobsData?.jobs?.map((job: JobWithClient) => (
-                  <Card key={job.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900" data-testid={`text-job-title-${job.id}`}>
-                            {job.title}
-                          </h3>
-                          <p className="text-sm text-gray-600" data-testid={`text-job-client-${job.id}`}>
-                            {job.client?.companyName}
-                          </p>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <Badge className={getStatusColor(job.status || 'active')}>
-                            {getStatusText(job.status || 'active')}
-                          </Badge>
-                          <Badge className={getPriorityColor(job.priority || 'medium')}>
-                            {getPriorityText(job.priority || 'medium')}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        {job.location && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin className="h-4 w-4 ml-2" />
-                            <span data-testid={`text-job-location-${job.id}`}>
-                              {job.location}
-                              {job.isRemote && " (עבודה מהבית)"}
-                            </span>
-                          </div>
-                        )}
-                        {job.salaryRange && (
-                          <div className="text-sm text-gray-600">
-                            <span>שכר: {job.salaryRange}</span>
-                          </div>
-                        )}
-                        {job.jobType && (
-                          <div className="text-sm text-gray-600">
-                            <span>סוג משרה: {job.jobType}</span>
-                          </div>
-                        )}
-                        {job.deadline && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Calendar className="h-4 w-4 ml-2" />
-                            <span>תאריך יעד: {format(new Date(job.deadline.toString()), 'dd/MM/yyyy')}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center text-sm text-blue-600">
-                          <Users className="h-4 w-4 ml-2" />
-                          <span>{job.positions} משרות פתוחות</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end space-x-2 space-x-reverse">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditJob(job)}
-                          data-testid={`button-edit-job-${job.id}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteJob(job.id)}
-                          className="text-red-600 hover:text-red-700"
-                          data-testid={`button-delete-job-${job.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {jobsData?.jobs?.length === 0 && (
+              {jobsData?.jobs && jobsData.jobs.length > 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 dark:bg-gray-900">
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">כותרת המשרה</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">לקוח</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מיקום</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שכר</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סוג משרה</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סטטוס</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">עדיפות</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">תאריך יעד</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">פעולות</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {jobsData.jobs.map((job: JobWithClient) => (
+                        <TableRow key={job.id} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`row-job-${job.id}`}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="text-secondary dark:text-white" data-testid={`text-job-title-${job.id}`}>
+                                {job.title}
+                              </p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                <Users className="inline h-3 w-3 ml-1" />
+                                {job.positions} משרות
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell data-testid={`text-job-client-${job.id}`}>
+                            {job.client?.companyName || "-"}
+                          </TableCell>
+                          <TableCell data-testid={`text-job-location-${job.id}`}>
+                            {job.location ? (
+                              <div className="flex items-center">
+                                <MapPin className="h-3 w-3 ml-1" />
+                                {job.location}{job.isRemote && " (מהבית)"}
+                              </div>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {job.salaryRange || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {job.jobType || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(job.status || 'active')}>
+                              {getStatusText(job.status || 'active')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getPriorityColor(job.priority || 'medium')}>
+                              {getPriorityText(job.priority || 'medium')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {job.deadline ? (
+                              <div className="flex items-center">
+                                <Calendar className="h-3 w-3 ml-1" />
+                                {format(new Date(job.deadline.toString()), 'dd/MM/yyyy')}
+                              </div>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2 space-x-reverse">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditJob(job)}
+                                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                data-testid={`button-edit-job-${job.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteJob(job.id)}
+                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                data-testid={`button-delete-job-${job.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-lg">לא נמצאו משרות</p>
                   <Button 

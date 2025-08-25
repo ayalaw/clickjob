@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ClientForm from "@/components/forms/client-form";
 import SearchFilter from "@/components/search-filter";
 import { Plus, Search, Phone, Mail, Globe, Building2, Edit, Trash2 } from "lucide-react";
@@ -153,95 +153,97 @@ export default function Clients() {
           </div>
 
           {clientsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardContent className="p-6">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-4"></div>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                ))}
+              </div>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clientsData?.clients?.map((client: Client) => (
-                  <Card key={client.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900" data-testid={`text-client-name-${client.id}`}>
-                            {client.companyName}
-                          </h3>
-                          <p className="text-sm text-gray-600" data-testid={`text-client-contact-${client.id}`}>
-                            איש קשר: {client.contactName}
-                          </p>
-                        </div>
-                        <Badge className={client.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                          {client.isActive ? 'פעיל' : 'לא פעיל'}
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Mail className="h-4 w-4 ml-2" />
-                          <span data-testid={`text-client-email-${client.id}`}>{client.email}</span>
-                        </div>
-                        {client.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="h-4 w-4 ml-2" />
-                            <span data-testid={`text-client-phone-${client.id}`}>{client.phone}</span>
-                          </div>
-                        )}
-                        {client.industry && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Building2 className="h-4 w-4 ml-2" />
-                            <span data-testid={`text-client-industry-${client.id}`}>{client.industry}</span>
-                          </div>
-                        )}
-                        {client.website && (
-                          <div className="flex items-center text-sm text-blue-600">
-                            <Globe className="h-4 w-4 ml-2" />
-                            <a 
-                              href={client.website} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="hover:underline"
-                              data-testid={`link-client-website-${client.id}`}
-                            >
-                              אתר האינטרנט
-                            </a>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex justify-end space-x-2 space-x-reverse">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditClient(client)}
-                          data-testid={`button-edit-client-${client.id}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClient(client.id)}
-                          className="text-red-600 hover:text-red-700"
-                          data-testid={`button-delete-client-${client.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {clientsData?.clients?.length === 0 && (
+              {clientsData?.clients && clientsData.clients.length > 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 dark:bg-gray-900">
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם החברה</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">איש קשר</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">אימייל</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">תחום</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סטטוס</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">פעולות</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clientsData.clients.map((client: Client) => (
+                        <TableRow key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`row-client-${client.id}`}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="text-secondary dark:text-white" data-testid={`text-client-name-${client.id}`}>
+                                {client.companyName}
+                              </p>
+                              {client.website && (
+                                <a 
+                                  href={client.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:underline"
+                                  data-testid={`link-client-website-${client.id}`}
+                                >
+                                  <Globe className="inline h-3 w-3 ml-1" />
+                                  אתר
+                                </a>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell data-testid={`text-client-contact-${client.id}`}>
+                            {client.contactName || "-"}
+                          </TableCell>
+                          <TableCell data-testid={`text-client-email-${client.id}`}>
+                            {client.email}
+                          </TableCell>
+                          <TableCell data-testid={`text-client-phone-${client.id}`}>
+                            {client.phone || "-"}
+                          </TableCell>
+                          <TableCell data-testid={`text-client-industry-${client.id}`}>
+                            {client.industry || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={client.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}>
+                              {client.isActive ? 'פעיל' : 'לא פעיל'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2 space-x-reverse">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditClient(client)}
+                                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                data-testid={`button-edit-client-${client.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteClient(client.id)}
+                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                data-testid={`button-delete-client-${client.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-lg">לא נמצאו לקוחות</p>
                   <Button 
