@@ -858,16 +858,16 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           <Button 
             type="submit" 
             className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-medium"
-            disabled={mutation.isPending}
+            disabled={createCandidate.isPending || updateCandidate.isPending}
             data-testid="button-submit-candidate"
           >
-            {mutation.isPending ? (
+            {(createCandidate.isPending || updateCandidate.isPending) ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                שומר מועמד...
+                {candidate ? "מעדכן מועמד..." : "שומר מועמד..."}
               </>
             ) : (
-              "הוסף מועמד חדש"
+              candidate ? "עדכן מועמד" : "הוסף מועמד חדש"
             )}
           </Button>
           
