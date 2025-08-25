@@ -30,6 +30,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessingCV, setIsProcessingCV] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [extractedData, setExtractedData] = useState<any>(null);
 
   // Fetch active jobs for selection
   const { data: jobsData } = useQuery<{ jobs: JobWithClient[] }>({
@@ -263,6 +264,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         // בדיקה אם יש נתונים שנחלצו
         const hasExtractedData = extractedData.firstName || extractedData.lastName || extractedData.email;
         
+        // שמירת הנתונים המחולצים להצגה
+        setExtractedData(extractedData);
+        
         // בדיקה אם נוצר מועמד אוטומטית
         if (extractedData.candidateCreated) {
           toast({
@@ -338,47 +342,133 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* CV Upload Section - Left Side */}
+          {/* CV Upload & Display Section - Left Side */}
           <div className="lg:col-span-1">
             <Card className="sticky top-6">
               <CardHeader>
-                <CardTitle className="text-center text-gray-700">העלאת קורות חיים</CardTitle>
+                <CardTitle className="text-center text-gray-700">
+                  {uploadedFile ? "קורות החיים שהועלה" : "העלאת קורות חיים"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
-                  <Upload className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">להעלאת קובץ לחץ כאן</p>
-                  <p className="text-xs text-gray-500 mb-4">או</p>
-                  <FileUpload 
-                    onFileSelect={handleFileUpload} 
-                    accept=".pdf,.doc,.docx"
-                    maxSize={10 * 1024 * 1024}
-                  />
-                  <Button 
-                    variant="outline" 
-                    className="mt-4 w-full"
-                    onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-                  >
-                    בחירת קובץ
-                  </Button>
-                  
-                  {isProcessingCV && (
-                    <div className="mt-4 p-3 bg-blue-100 rounded text-sm text-blue-700">
-                      מעבד קורות חיים...
+                {!uploadedFile ? (
+                  // Upload area when no file is uploaded
+                  <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
+                    <Upload className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-2">להעלאת קובץ לחץ כאן</p>
+                    <p className="text-xs text-gray-500 mb-4">או</p>
+                    <FileUpload 
+                      onFileSelect={handleFileUpload} 
+                      accept=".pdf,.doc,.docx"
+                      maxSize={10 * 1024 * 1024}
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="mt-4 w-full"
+                      onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
+                    >
+                      בחירת קובץ
+                    </Button>
+                    
+                    {candidate?.cvPath && (
+                      <div className="mt-4 p-3 bg-gray-100 rounded text-sm text-gray-700">
+                        קורות חיים קיימים
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // File display when uploaded
+                  <div className="space-y-4">
+                    {/* File Info */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <FileText className="w-6 h-6 text-green-600" />
+                        <div>
+                          <p className="font-medium text-green-800">{uploadedFile.name}</p>
+                          <p className="text-sm text-green-600">
+                            {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {isProcessingCV && (
+                        <div className="bg-blue-100 border border-blue-200 rounded p-3 text-sm text-blue-700">
+                          מעבד קורות חיים...
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {uploadedFile && !isProcessingCV && (
-                    <div className="mt-4 p-3 bg-green-100 rounded text-sm text-green-700 flex items-center justify-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      {uploadedFile.name}
-                    </div>
-                  )}
-                  {candidate?.cvPath && !uploadedFile && (
-                    <div className="mt-4 p-3 bg-gray-100 rounded text-sm text-gray-700">
-                      קורות חיים קיימים
-                    </div>
-                  )}
-                </div>
+
+                    {/* Extracted Data Display */}
+                    {extractedData && !extractedData.candidateCreated && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-800 mb-3">נתונים שחולצו:</h4>
+                        <div className="space-y-2 text-sm">
+                          {extractedData.firstName && (
+                            <div>
+                              <span className="text-gray-600">שם פרטי:</span>
+                              <span className="font-medium mr-2">{extractedData.firstName}</span>
+                            </div>
+                          )}
+                          {extractedData.lastName && (
+                            <div>
+                              <span className="text-gray-600">שם משפחה:</span>
+                              <span className="font-medium mr-2">{extractedData.lastName}</span>
+                            </div>
+                          )}
+                          {extractedData.email && (
+                            <div>
+                              <span className="text-gray-600">אימייל:</span>
+                              <span className="font-medium mr-2">{extractedData.email}</span>
+                            </div>
+                          )}
+                          {extractedData.mobile && (
+                            <div>
+                              <span className="text-gray-600">נייד:</span>
+                              <span className="font-medium mr-2">{extractedData.mobile}</span>
+                            </div>
+                          )}
+                          {extractedData.phone && (
+                            <div>
+                              <span className="text-gray-600">טלפון:</span>
+                              <span className="font-medium mr-2">{extractedData.phone}</span>
+                            </div>
+                          )}
+                          {extractedData.city && (
+                            <div>
+                              <span className="text-gray-600">עיר:</span>
+                              <span className="font-medium mr-2">{extractedData.city}</span>
+                            </div>
+                          )}
+                          {extractedData.profession && (
+                            <div>
+                              <span className="text-gray-600">מקצוע:</span>
+                              <span className="font-medium mr-2">{extractedData.profession}</span>
+                            </div>
+                          )}
+                          {extractedData.experience && (
+                            <div>
+                              <span className="text-gray-600">ניסיון:</span>
+                              <span className="font-medium mr-2">{extractedData.experience} שנים</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Option to upload different file */}
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        setUploadedFile(null);
+                        setExtractedData(null);
+                        (document.querySelector('input[type="file"]') as HTMLInputElement).value = '';
+                      }}
+                    >
+                      העלה קובץ אחר
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
