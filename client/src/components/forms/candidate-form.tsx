@@ -209,8 +209,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         }
         
         toast({
-          title: "הצלחה!",
-          description: `נתונים חולצו בהצלחה: ${extractedData.firstName} ${extractedData.lastName}`,
+          title: "הועלה בהצלחה!",
+          description: "קורות החיים הועלו. אנא מלא את הפרטים ידנית כרגע.",
         });
       }
     } catch (error) {
