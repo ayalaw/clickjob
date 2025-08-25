@@ -29,19 +29,18 @@ export default function Sidebar() {
             
             return (
               <li key={item.name}>
-                <Link href={item.href}>
-                  <a 
-                    className={cn(
-                      "flex items-center p-3 rounded-lg transition-colors",
-                      isActive 
-                        ? "text-primary bg-blue-50 dark:bg-blue-900/20" 
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    )}
-                    data-testid={`link-nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`}
-                  >
-                    <Icon className="h-5 w-5 ml-3" />
-                    {item.name}
-                  </a>
+                <Link 
+                  href={item.href}
+                  className={cn(
+                    "flex items-center p-3 rounded-lg transition-colors",
+                    isActive 
+                      ? "text-primary bg-blue-50 dark:bg-blue-900/20" 
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                  data-testid={`link-nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`}
+                >
+                  <Icon className="h-5 w-5 ml-3" />
+                  {item.name}
                 </Link>
               </li>
             );

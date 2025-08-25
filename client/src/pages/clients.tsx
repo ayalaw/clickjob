@@ -8,7 +8,7 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ClientForm from "@/components/forms/client-form";
@@ -138,11 +138,14 @@ export default function Clients() {
                   הוסף לקוח
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="sr-only">
                   <DialogTitle>
                     {selectedClient ? "עריכת לקוח" : "הוספת לקוח חדש"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {selectedClient ? "ערוך פרטי הלקוח" : "הוסף לקוח חדש למאגר"}
+                  </DialogDescription>
                 </DialogHeader>
                 <ClientForm 
                   client={selectedClient}
