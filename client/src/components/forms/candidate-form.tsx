@@ -1,20 +1,24 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { insertCandidateSchema, type InsertCandidate, type Candidate } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { Button } from "@/components/ui/button";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  Form,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { Upload, Check, FileText } from "lucide-react";
 import FileUpload from "@/components/file-upload";
-import { User, Mail, Phone, MapPin, Briefcase, Upload, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { insertCandidateSchema, type Candidate, type InsertCandidate } from "@shared/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CandidateFormProps {
   candidate?: Candidate | null;
@@ -32,7 +36,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       firstName: candidate?.firstName || "",
       lastName: candidate?.lastName || "",
       email: candidate?.email || "",
+      mobile: candidate?.mobile || "",
       phone: candidate?.phone || "",
+      phone2: candidate?.phone2 || "",
+      nationalId: candidate?.nationalId || "",
+      city: candidate?.city || "",
+      street: candidate?.street || "",
+      houseNumber: candidate?.houseNumber || "",
+      zipCode: candidate?.zipCode || "",
+      gender: candidate?.gender || "",
+      maritalStatus: candidate?.maritalStatus || "",
+      drivingLicense: candidate?.drivingLicense || "",
+      receptionArea: candidate?.receptionArea || "",
       address: candidate?.address || "",
       profession: candidate?.profession || "",
       experience: candidate?.experience || undefined,
@@ -44,48 +59,33 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     },
   });
 
+  const queryClient = useQueryClient();
+
   const createCandidate = useMutation({
     mutationFn: async (data: FormData) => {
       const response = await fetch("/api/candidates", {
         method: "POST",
         body: data,
-        credentials: "include",
+        credentials: 'include',
       });
-      
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("401: Unauthorized");
-        }
-        const errorText = await response.text();
-        throw new Error(`${response.status}: ${errorText}`);
+        const error = await response.text();
+        throw new Error(error || "Failed to create candidate");
       }
-      
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/recent-candidates"] });
       toast({
-        title: "הצלחה",
-        description: "המועמד נוצר בהצלחה",
+        title: "הצלחה!",
+        description: "המועמד נוסף בהצלחה",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       onSuccess();
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "לא מורשה",
-          description: "אתה מנותק. מתחבר שוב...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+    onError: (error: Error) => {
       toast({
         title: "שגיאה",
-        description: "שגיאה ביצירת המועמד",
+        description: "לא ניתן ליצור מועמד. אנא נסה שוב.",
         variant: "destructive",
       });
     },
@@ -96,43 +96,26 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       const response = await fetch(`/api/candidates/${candidate!.id}`, {
         method: "PUT",
         body: data,
-        credentials: "include",
+        credentials: 'include',
       });
-      
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("401: Unauthorized");
-        }
-        const errorText = await response.text();
-        throw new Error(`${response.status}: ${errorText}`);
+        const error = await response.text();
+        throw new Error(error || "Failed to update candidate");
       }
-      
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/recent-candidates"] });
       toast({
-        title: "הצלחה",
+        title: "הצלחה!",
         description: "המועמד עודכן בהצלחה",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       onSuccess();
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "לא מורשה",
-          description: "אתה מנותק. מתחבר שוב...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+    onError: (error: Error) => {
       toast({
         title: "שגיאה",
-        description: "שגיאה בעדכון המועמד",
+        description: "לא ניתן לעדכן מועמד. אנא נסה שוב.",
         variant: "destructive",
       });
     },
@@ -144,7 +127,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     // Add all form fields
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
+        if (key === 'tags' && Array.isArray(value)) {
           formData.append(key, JSON.stringify(value));
         } else {
           formData.append(key, value.toString());
@@ -152,7 +135,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       }
     });
 
-    // Add file if uploaded
+    // Add uploaded file if present
     if (uploadedFile) {
       formData.append('cv', uploadedFile);
     }
@@ -205,303 +188,393 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   };
 
   return (
-    <div className="w-full p-6" dir="rtl">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {candidate ? "עריכת מועמד" : "הוספת מועמד חדש"}
-        </h1>
-        <p className="text-gray-600">מלא את כל הפרטים או העלה קורות חיים למילוי אוטומטי</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {candidate ? "עריכת מועמד" : "הוספת מועמד חדש"}
+          </h1>
+          <p className="text-gray-600">מלא את הפרטים לפי הטופס או העלה קורות חיים למילוי אוטומטי</p>
+        </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          
-          {/* File Upload Section - First */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-blue-600" />
-                העלאת קורות חיים
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 mb-2">גרור קובץ או לחץ לבחירה</p>
-                <p className="text-xs text-gray-500 mb-4">PDF, DOC, DOCX עד 10MB - הפרטים ימולאו אוטומטית</p>
-                <FileUpload 
-                  onFileSelect={handleFileUpload} 
-                  accept=".pdf,.doc,.docx"
-                  maxSize={10 * 1024 * 1024}
-                />
-                {isProcessingCV && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
-                    מעבד קורות חיים...
-                  </div>
-                )}
-                {uploadedFile && !isProcessingCV && (
-                  <div className="mt-2 p-2 bg-green-50 rounded text-sm text-green-700">
-                    נבחר: {uploadedFile.name}
-                  </div>
-                )}
-                {candidate?.cvPath && !uploadedFile && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-700">
-                    קורות חיים קיימים מועלים
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Personal Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5 text-blue-600" />
-                פרטים אישיים
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>שם פרטי *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="הכנס שם פרטי" {...field} data-testid="input-first-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* CV Upload Section - Left Side */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="text-center text-gray-700">העלאת קורות חיים</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
+                  <Upload className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">להעלאת קובץ לחץ כאן</p>
+                  <p className="text-xs text-gray-500 mb-4">או</p>
+                  <FileUpload 
+                    onFileSelect={handleFileUpload} 
+                    accept=".pdf,.doc,.docx"
+                    maxSize={10 * 1024 * 1024}
+                  />
+                  <Button 
+                    variant="outline" 
+                    className="mt-4 w-full"
+                    onClick={() => document.querySelector('input[type="file"]')?.click()}
+                  >
+                    בחירת קובץ
+                  </Button>
+                  
+                  {isProcessingCV && (
+                    <div className="mt-4 p-3 bg-blue-100 rounded text-sm text-blue-700">
+                      מעבד קורות חיים...
+                    </div>
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>שם משפחה *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="הכנס שם משפחה" {...field} data-testid="input-last-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {uploadedFile && !isProcessingCV && (
+                    <div className="mt-4 p-3 bg-green-100 rounded text-sm text-green-700 flex items-center justify-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      {uploadedFile.name}
+                    </div>
                   )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        כתובת אימייל *
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="example@email.com" {...field} data-testid="input-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {candidate?.cvPath && !uploadedFile && (
+                    <div className="mt-4 p-3 bg-gray-100 rounded text-sm text-gray-700">
+                      קורות חיים קיימים
+                    </div>
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        מספר טלפון נייד
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="05X-XXXXXXX" {...field} value={field.value || ""} data-testid="input-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      כתובת מגורים
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="עיר, רחוב ומספר בית" {...field} value={field.value || ""} data-testid="input-address" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Professional Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-blue-600" />
-                מידע מקצועי
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="profession"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>תחום התמחות</FormLabel>
-                    <FormControl>
-                      <Input placeholder="למשל: מפתח תוכנה, מעצב גרפי" {...field} value={field.value || ""} data-testid="input-profession" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="experience"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>שנות ניסיון</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} defaultValue={field.value?.toString()}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-experience">
-                            <SelectValue placeholder="בחר מספר שנים" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0">ללא ניסיון</SelectItem>
-                          <SelectItem value="1">שנה אחת</SelectItem>
-                          <SelectItem value="2">2-3 שנים</SelectItem>
-                          <SelectItem value="5">4-6 שנים</SelectItem>
-                          <SelectItem value="10">7+ שנים</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="expectedSalary"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>שכר צפוי (₪)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="15000"
-                          {...field}
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                          data-testid="input-expected-salary"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>סטטוס</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || "available"}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-status">
-                          <SelectValue placeholder="בחר סטטוס" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="available">זמין לעבודה</SelectItem>
-                        <SelectItem value="employed">מועסק כעת</SelectItem>
-                        <SelectItem value="inactive">לא פעיל</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>הערות נוספות על המועמד</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="הערות או מידע נוסף על המועמד - כישורים, התרשמות מראיון, וכו'"
-                        className="min-h-[120px]"
-                        {...field}
-                        value={field.value || ""}
-                        data-testid="textarea-notes"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Hidden compatibility fields */}
-              <div style={{ display: 'none' }}>
-                <FormField
-                  control={form.control}
-                  name="rating"
-                  render={({ field }) => <Input {...field} value={field.value || ""} />}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onSuccess}
-              data-testid="button-cancel"
-            >
-              ביטול
-            </Button>
-
-            <Button
-              type="submit"
-              disabled={createCandidate.isPending || updateCandidate.isPending}
-              data-testid="button-save-candidate"
-              className="flex items-center gap-2"
-            >
-              {createCandidate.isPending || updateCandidate.isPending ? (
-                <>שומר...</>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  {candidate ? "עדכן מועמד" : "שמור מועמד"}
-                </>
-              )}
-            </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </form>
-      </Form>
+
+          {/* Form Section - Right Side */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>פרטים אישיים</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    
+                    {/* Reception Area */}
+                    <FormField
+                      control={form.control}
+                      name="receptionArea"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">
+                            איזור קליטה אופטימליות: <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-reception-area">
+                                <SelectValue placeholder="בחר אזור קליטה אופטימליות" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="תל אביב">תל אביב</SelectItem>
+                              <SelectItem value="ירושלים">ירושלים</SelectItem>
+                              <SelectItem value="חיפה">חיפה</SelectItem>
+                              <SelectItem value="באר שבע">באר שבע</SelectItem>
+                              <SelectItem value="כל הארץ">כל הארץ</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* First Name */}
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">
+                            שם פרטי: <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} data-testid="input-first-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Last Name */}
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">
+                            שם משפחה: <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} data-testid="input-last-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Mobile */}
+                    <FormField
+                      control={form.control}
+                      name="mobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">נייד:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-mobile" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Email */}
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">
+                            מאימיל: <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} data-testid="input-email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Phone 1 */}
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">טלפון נ':</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-phone" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Phone 2 */}
+                    <FormField
+                      control={form.control}
+                      name="phone2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">טלפון נ' 2:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-phone2" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* National ID */}
+                    <FormField
+                      control={form.control}
+                      name="nationalId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">תעודת זהות:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-national-id" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* City */}
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">
+                            עיר: <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-city" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Street */}
+                    <FormField
+                      control={form.control}
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">רחוב:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-street" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* House Number */}
+                    <FormField
+                      control={form.control}
+                      name="houseNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">מס' בית:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-house-number" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Zip Code */}
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">מיקוד:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} data-testid="input-zip-code" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Gender */}
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">מין:</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-gender">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="זכר">זכר</SelectItem>
+                              <SelectItem value="נקבה">נקבה</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Marital Status */}
+                    <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">מצב משפחתי:</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-marital-status">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="רווק/ה">רווק/ה</SelectItem>
+                              <SelectItem value="נשוי/אה">נשוי/אה</SelectItem>
+                              <SelectItem value="גרוש/ה">גרוש/ה</SelectItem>
+                              <SelectItem value="אלמן/ה">אלמן/ה</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Achievements (נצחונות) */}
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">נצחונות:</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder="הישגים ונצחונות" data-testid="input-achievements" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Driving License */}
+                    <FormField
+                      control={form.control}
+                      name="drivingLicense"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">רישיון נהיגה:</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-driving-license">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="כן">כן</SelectItem>
+                              <SelectItem value="לא">לא</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-4 pt-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onSuccess}
+                        data-testid="button-cancel"
+                      >
+                        ביטול
+                      </Button>
+
+                      <Button
+                        type="submit"
+                        disabled={createCandidate.isPending || updateCandidate.isPending}
+                        data-testid="button-save-candidate"
+                        className="flex items-center gap-2"
+                      >
+                        {createCandidate.isPending || updateCandidate.isPending ? (
+                          <>שומר...</>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4" />
+                            {candidate ? "עדכן מועמד" : "שמור מועמד"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

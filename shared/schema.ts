@@ -47,8 +47,19 @@ export const candidates = pgTable("candidates", {
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   email: varchar("email").unique().notNull(),
-  phone: varchar("phone"),
-  address: text("address"),
+  mobile: varchar("mobile"), // נייד
+  phone: varchar("phone"), // טלפון נ'
+  phone2: varchar("phone2"), // טלפון נ' 2
+  nationalId: varchar("national_id"), // תעודת זהות
+  city: varchar("city").notNull(), // עיר*
+  street: varchar("street"), // רחוב
+  houseNumber: varchar("house_number"), // מס' בית
+  zipCode: varchar("zip_code"), // מיקוד
+  address: text("address"), // כתובת מלאה (נשאר לתאימות לאחור)
+  gender: varchar("gender"), // מין
+  maritalStatus: varchar("marital_status"), // מצב משפחתי
+  drivingLicense: varchar("driving_license"), // רישיון נהיגה
+  receptionArea: varchar("reception_area").notNull(), // איזור קליטה אופטימליות*
   profession: varchar("profession"),
   experience: integer("experience"), // years of experience
   expectedSalary: integer("expected_salary"),

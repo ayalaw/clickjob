@@ -104,7 +104,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/candidates', isAuthenticated, upload.single('cv'), async (req, res) => {
     try {
-      const candidateData = insertCandidateSchema.parse(req.body);
+      // Handle tags array conversion if it comes as a string
+      const bodyData = { ...req.body };
+      if (bodyData.tags && typeof bodyData.tags === 'string') {
+        try {
+          bodyData.tags = JSON.parse(bodyData.tags);
+        } catch {
+          bodyData.tags = []; // Default to empty array if parsing fails
+        }
+      }
+      
+      const candidateData = insertCandidateSchema.parse(bodyData);
       
       // If CV file was uploaded, add the path
       if (req.file) {
@@ -124,7 +134,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/candidates/:id', isAuthenticated, upload.single('cv'), async (req, res) => {
     try {
-      const candidateData = insertCandidateSchema.partial().parse(req.body);
+      // Handle tags array conversion if it comes as a string
+      const bodyData = { ...req.body };
+      if (bodyData.tags && typeof bodyData.tags === 'string') {
+        try {
+          bodyData.tags = JSON.parse(bodyData.tags);
+        } catch {
+          bodyData.tags = []; // Default to empty array if parsing fails
+        }
+      }
+      
+      const candidateData = insertCandidateSchema.partial().parse(bodyData);
       
       // If CV file was uploaded, add the path
       if (req.file) {
@@ -139,6 +159,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update candidate" });
+    }
+  });
+
+  // CV Data Extraction endpoint
+  app.post('/api/extract-cv-data', isAuthenticated, upload.single('cv'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No CV file uploaded" });
+      }
+      
+      // For now, return a mock response since we don't have actual CV parsing
+      // In a real implementation, you would use OCR/AI services to extract data
+      const mockExtractedData = {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        address: "",
+        profession: "",
+        experience: null
+      };
+      
+      res.json(mockExtractedData);
+    } catch (error) {
+      console.error("Error extracting CV data:", error);
+      res.status(500).json({ message: "Failed to extract CV data" });
     }
   });
 
