@@ -8,7 +8,7 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import JobForm from "@/components/forms/job-form";
@@ -175,11 +175,14 @@ export default function Jobs() {
                   הוסף משרה
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
+              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="sr-only">
                   <DialogTitle>
                     {selectedJob ? "עריכת משרה" : "הוספת משרה חדשה"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {selectedJob ? "ערוך פרטי המשרה" : "הוסף משרה חדשה למאגר"}
+                  </DialogDescription>
                 </DialogHeader>
                 <JobForm 
                   job={selectedJob}
