@@ -423,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 gender: "", maritalStatus: "", drivingLicense: "", profession: "",
                 experience: null, achievements: ""
               };
-              return res.json(extractedData);
+              return res.json({ extractedData });
             }
           } catch (error) {
             console.log('❌ Error extracting PDF text:', error instanceof Error ? error.message : 'Unknown error');
@@ -525,28 +525,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // החזרת הנתונים כולל מידע על המועמד החדש
             res.json({
-              ...extractedData,
-              candidateCreated: true,
-              candidateId: candidate.id,
-              candidateName: `${candidate.firstName} ${candidate.lastName}`,
-              message: "מועמד נוצר אוטומטית מקורות החיים!"
+              extractedData: {
+                ...extractedData,
+                candidateCreated: true,
+                candidateId: candidate.id,
+                candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                message: "מועמד נוצר אוטומטית מקורות החיים!"
+              }
             });
             
           } catch (candidateError) {
             console.error('❌ Error creating candidate from CV:', candidateError);
             // אם נכשלנו ביצירת המועמד, עדיין נחזיר את הנתונים שחילצנו
             res.json({
-              ...extractedData,
-              candidateCreated: false,
-              error: "נתונים חולצו בהצלחה אך יצירת המועמד נכשלה"
+              extractedData: {
+                ...extractedData,
+                candidateCreated: false,
+                error: "נתונים חולצו בהצלחה אך יצירת המועמד נכשלה"
+              }
             });
           }
         } else {
           console.log('⚠️ Insufficient data for auto-candidate creation');
           res.json({
-            ...extractedData,
-            candidateCreated: false,
-            message: "נתונים חולצו אך חסרים פרטים ליצירת מועמד אוטומטית"
+            extractedData: {
+              ...extractedData,
+              candidateCreated: false,
+              message: "נתונים חולצו אך חסרים פרטים ליצירת מועמד אוטומטית"
+            }
           });
         }
       } catch (fileError) {
@@ -571,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           experience: null,
           achievements: ""
         };
-        res.json(emptyData);
+        res.json({ extractedData: emptyData });
       }
     } catch (error) {
       console.error("Error extracting CV data:", error);
