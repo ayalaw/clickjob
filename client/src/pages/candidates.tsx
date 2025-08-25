@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CandidateForm from "@/components/forms/candidate-form";
 import SearchFilter from "@/components/search-filter";
 import { Plus, Search, Phone, Mail, FileText, Edit, Trash2 } from "lucide-react";
@@ -37,7 +37,7 @@ export default function Candidates() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: candidatesData, isLoading: candidatesLoading } = useQuery({
+  const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: Candidate[]; total: number }>({
     queryKey: ["/api/candidates", { search }],
     enabled: isAuthenticated,
   });
@@ -173,86 +173,111 @@ export default function Candidates() {
           </div>
 
           {candidatesLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardContent className="p-6">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-4"></div>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                ))}
+              </div>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {candidatesData?.candidates?.map((candidate: Candidate) => (
-                  <Card key={candidate.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900" data-testid={`text-candidate-name-${candidate.id}`}>
-                            {candidate.firstName} {candidate.lastName}
-                          </h3>
-                          <p className="text-sm text-gray-600" data-testid={`text-candidate-profession-${candidate.id}`}>
-                            {candidate.profession}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(candidate.status || 'available')}>
-                          {getStatusText(candidate.status || 'available')}
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Mail className="h-4 w-4 ml-2" />
-                          <span data-testid={`text-candidate-email-${candidate.id}`}>{candidate.email}</span>
-                        </div>
-                        {candidate.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="h-4 w-4 ml-2" />
-                            <span data-testid={`text-candidate-phone-${candidate.id}`}>{candidate.phone}</span>
-                          </div>
-                        )}
-                        {candidate.experience && (
-                          <div className="text-sm text-gray-600">
-                            <span>ניסיון: {candidate.experience} שנים</span>
-                          </div>
-                        )}
-                        {candidate.cvPath && (
-                          <div className="flex items-center text-sm text-blue-600">
-                            <FileText className="h-4 w-4 ml-2" />
-                            <span>קורות חיים מועלה</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex justify-end space-x-2 space-x-reverse">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditCandidate(candidate)}
-                          data-testid={`button-edit-candidate-${candidate.id}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteCandidate(candidate.id)}
-                          className="text-red-600 hover:text-red-700"
-                          data-testid={`button-delete-candidate-${candidate.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {candidatesData?.candidates?.length === 0 && (
+              {candidatesData?.candidates && candidatesData.candidates.length > 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 dark:bg-gray-900">
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">תואר</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">ניסיון בתחום</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון נייד</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מקום מגורים</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">אימייל</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סטטוס</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">קורות חיים</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">פעולות</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {candidatesData.candidates.map((candidate: Candidate) => (
+                        <TableRow key={candidate.id} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`row-candidate-${candidate.id}`}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="text-secondary dark:text-white" data-testid={`text-candidate-name-${candidate.id}`}>
+                                {candidate.firstName} {candidate.lastName}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                ID: {candidate.id.slice(0, 8)}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell data-testid={`text-candidate-profession-${candidate.id}`}>
+                            {candidate.profession || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {candidate.experience ? `${candidate.experience} שנים` : "-"}
+                          </TableCell>
+                          <TableCell data-testid={`text-candidate-phone-${candidate.id}`}>
+                            {candidate.phone ? (
+                              <div className="flex items-center">
+                                <Phone className="h-3 w-3 ml-1" />
+                                {candidate.phone}
+                              </div>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {candidate.location || "-"}
+                          </TableCell>
+                          <TableCell data-testid={`text-candidate-email-${candidate.id}`}>
+                            <div className="flex items-center">
+                              <Mail className="h-3 w-3 ml-1" />
+                              {candidate.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(candidate.status || 'available')}>
+                              {getStatusText(candidate.status || 'available')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {candidate.cvPath ? (
+                              <div className="flex items-center text-blue-600">
+                                <FileText className="h-3 w-3 ml-1" />
+                                <span className="text-xs">הועלה</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">לא הועלה</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2 space-x-reverse">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditCandidate(candidate)}
+                                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                data-testid={`button-edit-candidate-${candidate.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteCandidate(candidate.id)}
+                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                data-testid={`button-delete-candidate-${candidate.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-lg">לא נמצאו מועמדים</p>
                   <Button 
