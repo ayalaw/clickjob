@@ -350,8 +350,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CV Data Extraction endpoint
   app.post('/api/extract-cv-data', isAuthenticated, upload.single('cv'), async (req, res) => {
+    console.log('🚀 CV extraction endpoint called!');
+    console.log('🚀 Request method:', req.method);
+    console.log('🚀 Request headers:', req.headers['content-type']);
+    
     try {
       if (!req.file) {
+        console.log('❌ No file uploaded');
         return res.status(400).json({ message: "No CV file uploaded" });
       }
       
