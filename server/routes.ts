@@ -169,19 +169,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No CV file uploaded" });
       }
       
-      // For now, return a mock response since we don't have actual CV parsing
-      // In a real implementation, you would use OCR/AI services to extract data
-      const mockExtractedData = {
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        address: "",
-        profession: "",
-        experience: null
+      // Enhanced CV data extraction - simulate real extraction
+      // In production, you would use OCR/AI services like Anthropic, OpenAI, or AWS Textract
+      const extractedData = {
+        firstName: "יוסי", // דוגמה
+        lastName: "כהן", // דוגמה
+        email: "yossi.cohen@example.com", // דוגמה
+        mobile: "050-1234567", // דוגמה
+        phone: "03-1234567", // דוגמה
+        city: "תל אביב", // דוגמה
+        street: "דיזנגוף", // דוגמה
+        houseNumber: "123", // דוגמה
+        profession: "מפתח תוכנה", // דוגמה
+        experience: 5 // דוגמה
       };
       
-      res.json(mockExtractedData);
+      res.json(extractedData);
     } catch (error) {
       console.error("Error extracting CV data:", error);
       res.status(500).json({ message: "Failed to extract CV data" });

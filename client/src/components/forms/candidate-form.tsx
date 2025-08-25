@@ -47,7 +47,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       gender: candidate?.gender || "",
       maritalStatus: candidate?.maritalStatus || "",
       drivingLicense: candidate?.drivingLicense || "",
-      receptionArea: candidate?.receptionArea || "",
       address: candidate?.address || "",
       profession: candidate?.profession || "",
       experience: candidate?.experience || undefined,
@@ -170,8 +169,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         if (extractedData.firstName) form.setValue('firstName', extractedData.firstName);
         if (extractedData.lastName) form.setValue('lastName', extractedData.lastName);
         if (extractedData.email) form.setValue('email', extractedData.email);
+        if (extractedData.mobile) form.setValue('mobile', extractedData.mobile);
         if (extractedData.phone) form.setValue('phone', extractedData.phone);
-        if (extractedData.address) form.setValue('address', extractedData.address);
+        if (extractedData.city) form.setValue('city', extractedData.city);
+        if (extractedData.street) form.setValue('street', extractedData.street);
+        if (extractedData.houseNumber) form.setValue('houseNumber', extractedData.houseNumber);
         if (extractedData.profession) form.setValue('profession', extractedData.profession);
         if (extractedData.experience) form.setValue('experience', extractedData.experience);
         
@@ -218,7 +220,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <Button 
                     variant="outline" 
                     className="mt-4 w-full"
-                    onClick={() => document.querySelector('input[type="file"]')?.click()}
+                    onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
                   >
                     בחירת קובץ
                   </Button>
@@ -254,33 +256,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     
-                    {/* Reception Area */}
-                    <FormField
-                      control={form.control}
-                      name="receptionArea"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-right">
-                            איזור קליטה אופטימליות: <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-reception-area">
-                                <SelectValue placeholder="בחר אזור קליטה אופטימליות" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="תל אביב">תל אביב</SelectItem>
-                              <SelectItem value="ירושלים">ירושלים</SelectItem>
-                              <SelectItem value="חיפה">חיפה</SelectItem>
-                              <SelectItem value="באר שבע">באר שבע</SelectItem>
-                              <SelectItem value="כל הארץ">כל הארץ</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     {/* First Name */}
                     <FormField

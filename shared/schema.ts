@@ -59,7 +59,7 @@ export const candidates = pgTable("candidates", {
   gender: varchar("gender"), // מין
   maritalStatus: varchar("marital_status"), // מצב משפחתי
   drivingLicense: varchar("driving_license"), // רישיון נהיגה
-  receptionArea: varchar("reception_area").notNull(), // איזור קליטה אופטימליות*
+  receptionArea: varchar("reception_area"), // איזור קליטה אופטימליות (מוסר)
   profession: varchar("profession"),
   experience: integer("experience"), // years of experience
   expectedSalary: integer("expected_salary"),
