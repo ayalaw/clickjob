@@ -5,7 +5,7 @@ if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
 }
 
 // Create Gmail transporter
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.GMAIL_USER,
