@@ -261,12 +261,26 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         // בדיקה אם יש נתונים שנחלצו
         const hasExtractedData = extractedData.firstName || extractedData.lastName || extractedData.email;
         
-        toast({
-          title: hasExtractedData ? "נתונים חולצו מהקובץ!" : "קובץ הועלה בהצלחה",
-          description: hasExtractedData 
-            ? `נמצאו פרטים בקובץ: ${extractedData.firstName} ${extractedData.lastName}`.trim()
-            : "לא נמצאו נתונים בקובץ - מלא ידנית (PDF/DOC דורשים עיבוד מיוחד)",
-        });
+        // בדיקה אם נוצר מועמד אוטומטית
+        if (extractedData.candidateCreated) {
+          toast({
+            title: "מועמד נוצר אוטומטית! 🎉",
+            description: `${extractedData.candidateName} נוסף למערכת מקורות החיים`,
+          });
+          // רענון רשימת המועמדים
+          queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+          // חזרה לרשימת המועמדים
+          setTimeout(() => {
+            onSuccess();
+          }, 1500);
+        } else {
+          toast({
+            title: hasExtractedData ? "נתונים חולצו מהקובץ!" : "קובץ הועלה בהצלחה",
+            description: hasExtractedData 
+              ? `נמצאו פרטים בקובץ: ${extractedData.firstName} ${extractedData.lastName}`.trim()
+              : "לא נמצאו נתונים בקובץ - מלא ידנית (PDF/DOC דורשים עיבוד מיוחד)",
+          });
+        }
       }
     } catch (error) {
       console.error('Error extracting CV data:', error);

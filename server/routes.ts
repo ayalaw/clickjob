@@ -472,7 +472,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const extractedData = extractDataFromText(fileText);
         
         console.log('Extracted data from CV:', extractedData);
-        res.json(extractedData);
+        
+        // בדיקה אם יש מספיק נתונים ליצירת מועמד אוטומטית
+        const hasRequiredData = extractedData.firstName && 
+                               extractedData.lastName && 
+                               (extractedData.mobile || extractedData.email);
+        
+        if (hasRequiredData) {
+          try {
+            console.log('🎯 Creating candidate automatically from CV data...');
+            
+            // הכנת נתוני המועמד
+            const candidateData = {
+              firstName: extractedData.firstName,
+              lastName: extractedData.lastName,
+              email: extractedData.email || "",
+              mobile: extractedData.mobile || "",
+              phone: extractedData.phone || "",
+              phone2: extractedData.phone2 || "",
+              nationalId: extractedData.nationalId || "",
+              city: extractedData.city || "",
+              street: extractedData.street || "",
+              houseNumber: extractedData.houseNumber || "",
+              zipCode: extractedData.zipCode || "",
+              gender: extractedData.gender || "",
+              maritalStatus: extractedData.maritalStatus || "",
+              drivingLicense: extractedData.drivingLicense || "",
+              address: `${extractedData.street || ""} ${extractedData.houseNumber || ""}`.trim(),
+              profession: extractedData.profession || "",
+              experience: extractedData.experience,
+              expectedSalary: undefined,
+              status: "available" as const,
+              rating: undefined,
+              notes: extractedData.achievements || "",
+              tags: [],
+              cvPath: req.file.path, // שמירת נתיב הקובץ
+              recruitmentSource: "העלאת קורות חיים אוטומטית"
+            };
+
+            // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
+            if ((req.user as any)?.claims) {
+              const userClaims = (req.user as any).claims;
+              const userFirstName = userClaims.first_name || '';
+              const userLastName = userClaims.last_name || '';
+              const userName = `${userFirstName} ${userLastName}`.trim() || userClaims.email;
+              candidateData.recruitmentSource = `${userName} - העלאת קורות חיים`;
+            }
+            
+            // יצירת המועמד
+            const candidate = await storage.createCandidate(candidateData);
+            console.log('✅ Candidate created successfully:', candidate.id);
+            
+            // החזרת הנתונים כולל מידע על המועמד החדש
+            res.json({
+              ...extractedData,
+              candidateCreated: true,
+              candidateId: candidate.id,
+              candidateName: `${candidate.firstName} ${candidate.lastName}`,
+              message: "מועמד נוצר אוטומטית מקורות החיים!"
+            });
+            
+          } catch (candidateError) {
+            console.error('❌ Error creating candidate from CV:', candidateError);
+            // אם נכשלנו ביצירת המועמד, עדיין נחזיר את הנתונים שחילצנו
+            res.json({
+              ...extractedData,
+              candidateCreated: false,
+              error: "נתונים חולצו בהצלחה אך יצירת המועמד נכשלה"
+            });
+          }
+        } else {
+          console.log('⚠️ Insufficient data for auto-candidate creation');
+          res.json({
+            ...extractedData,
+            candidateCreated: false,
+            message: "נתונים חולצו אך חסרים פרטים ליצירת מועמד אוטומטית"
+          });
+        }
       } catch (fileError) {
         console.error("Error reading file:", fileError);
         // אם יש בעיה בקריאת הקובץ, נחזיר נתונים ריקים
