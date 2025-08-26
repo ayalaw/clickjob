@@ -528,9 +528,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const candidateData = insertCandidateSchema.parse(bodyData);
       
-      // If CV file was uploaded, add the path
+      // If CV file was uploaded, add the path and extract content
       if (req.file) {
         candidateData.cvPath = req.file.path;
+        
+        // Extract text content from CV for search functionality
+        try {
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          
+          const fileBuffer = fs.readFileSync(req.file.path);
+          let fileText = '';
+          
+          if (req.file.mimetype === 'application/pdf') {
+            try {
+              const stringsOutput = execSync(`strings "${req.file.path}"`, { encoding: 'utf8' });
+              const lines = stringsOutput.split('\n').filter(line => 
+                line.trim().length > 2 && (
+                  /[\u0590-\u05FF]/.test(line) || // Hebrew characters
+                  /@/.test(line) || // Email
+                  /05\d/.test(line) // Mobile phone
+                )
+              );
+              fileText = lines.join(' ');
+            } catch (error) {
+              console.log('Error extracting PDF text for search:', error);
+            }
+          } else if (req.file.mimetype.includes('word')) {
+            try {
+              const mammoth = require('mammoth');
+              const result = await mammoth.extractRawText({ buffer: fileBuffer });
+              fileText = result.value;
+            } catch (error) {
+              console.log('Error extracting Word text for search:', error);
+            }
+          } else if (req.file.mimetype === 'text/plain') {
+            fileText = fileBuffer.toString('utf8');
+          }
+          
+          candidateData.cvContent = fileText;
+        } catch (error) {
+          console.log('Error processing CV file for search:', error);
+        }
       }
       
       // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
@@ -733,6 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               notes: extractedData.achievements || "",
               tags: [],
               cvPath: req.file.path, // שמירת נתיב הקובץ
+              cvContent: fileText, // שמירת תוכן הקובץ לחיפוש
               recruitmentSource: "העלאת קורות חיים אוטומטית"
             };
 
