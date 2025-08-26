@@ -128,7 +128,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     enabled: !candidate, // Only fetch for new candidates
   });
 
-  const activeJobs = jobsData?.jobs?.filter((job: Job) => job.status === "active") || [];
+  const activeJobs = Array.isArray(jobsData) ? jobsData.filter((job: Job) => job.status === "active") : [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -146,23 +146,17 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const createCandidate = useMutation({
     mutationFn: async (data: FormData & { cvPath?: string }) => {
-      const result = await apiRequest("/api/candidates", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      return result;
+      const result = await apiRequest("POST", "/api/candidates", data);
+      return await result.json();
     },
     onSuccess: async (result) => {
       // If a job was selected, create application
       if (selectedJobId && result.candidate) {
         try {
-          await apiRequest("/api/applications", {
-            method: "POST",
-            body: JSON.stringify({
-              candidateId: result.candidate.id,
-              jobId: selectedJobId,
-              status: "applied",
-            }),
+          await apiRequest("POST", "/api/applications", {
+            candidateId: result.candidate.id,
+            jobId: selectedJobId,
+            status: "applied",
           });
           toast({
             title: "מועמד נוצר בהצלחה",
@@ -198,10 +192,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const updateCandidate = useMutation({
     mutationFn: async (data: FormData & { cvPath?: string }) => {
-      const result = await apiRequest(`/api/candidates/${candidate!.id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      const result = await apiRequest("PUT", `/api/candidates/${candidate!.id}`, data);
+      return await result.json();
       return result;
     },
     onSuccess: (result) => {
@@ -299,12 +291,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         const formData = new FormData();
         formData.append("cv", uploadedFile);
 
-        const uploadResult = await apiRequest("/api/candidates/upload-cv", {
+        const uploadResult = await fetch("/api/candidates/upload-cv", {
           method: "POST",
           body: formData,
+          credentials: "include",
         });
 
-        cvPath = uploadResult.cvPath;
+        if (!uploadResult.ok) {
+          throw new Error("Failed to upload CV");
+        }
+
+        const result = await uploadResult.json();
+        cvPath = result.cvPath;
       }
 
       const candidateData = {
@@ -395,7 +393,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             <SelectValue placeholder="בחר משרה לצירוף המועמד..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {activeJobs.map((job) => (
+                            {activeJobs.map((job: Job) => (
                               <SelectItem key={job.id} value={job.id}>
                                 <div className="text-right">
                                   <div className="font-medium">{job.title}</div>
@@ -604,7 +602,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <p className="text-gray-600 mb-2">להעלאת קובץ לחץ כאן</p>
                     <p className="text-xs text-gray-500 mb-4">או</p>
                     <FileUpload 
-                      onFileSelect={handleFileUpload} 
+                      onFileSelect={(file: File | null) => file && handleFileUpload(file)} 
                       accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                       maxSize={10 * 1024 * 1024}
                     />

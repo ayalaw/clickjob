@@ -347,7 +347,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             candidateId: candidate.id,
             jobId: jobId,
             status: 'submitted',
-            appliedAt: new Date(),
           });
         } catch (error) {
           console.error("Error creating job application:", error);

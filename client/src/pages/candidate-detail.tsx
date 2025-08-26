@@ -24,34 +24,11 @@ import {
   Baby,
   Download
 } from "lucide-react";
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
+import Sidebar from "@/components/layout/sidebar";
+import Header from "@/components/layout/header";
 import { queryClient } from "@/lib/queryClient";
-import { CandidateForm } from "@/components/forms/candidate-form";
-
-interface Candidate {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  mobile?: string;
-  phone?: string;
-  phone2?: string;
-  nationalId?: string;
-  city?: string;
-  street?: string;
-  houseNumber?: string;
-  zipCode?: string;
-  gender?: string;
-  maritalStatus?: string;
-  drivingLicense?: string;
-  profession?: string;
-  experience?: number;
-  achievements?: string;
-  status: string;
-  createdAt: string;
-  cvPath?: string;
-}
+import CandidateForm from "@/components/forms/candidate-form";
+import type { Candidate } from "@shared/schema";
 
 export default function CandidateDetail() {
   const [, navigate] = useLocation();
