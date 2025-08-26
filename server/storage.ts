@@ -85,7 +85,7 @@ export interface IStorage {
   updateEmail(id: string, email: Partial<InsertEmail>): Promise<Email>;
 
   // CV Search operations
-  searchCandidatesByKeywords(keywords: string): Promise<Candidate[]>;
+  searchCandidatesByKeywords(keywords: string, limit?: number, offset?: number): Promise<{ candidates: Candidate[]; total: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -775,33 +775,81 @@ export class DatabaseStorage implements IStorage {
   }
 
   // CV Search operations
-  async searchCandidatesByKeywords(keywords: string): Promise<Candidate[]> {
+  async searchCandidatesByKeywords(keywords: string, limit = 50, offset = 0): Promise<{ candidates: Candidate[]; total: number }> {
     // Split keywords and search for exact matches in CV content
     const keywordList = keywords.split(' ').filter(k => k.trim().length > 0);
     
     if (keywordList.length === 0) {
-      return [];
+      return { candidates: [], total: 0 };
     }
 
-    // Create SQL condition that checks if CV content contains ALL keywords
-    const keywordConditions = keywordList.map(keyword => 
-      sql`${candidates.cvContent} ILIKE ${`%${keyword.trim()}%`}`
-    );
+    // Use PostgreSQL full-text search for better performance
+    const searchQuery = keywordList.map(k => k.trim()).join(' & ');
     
-    const searchCondition = keywordConditions.reduce((acc, condition) => 
-      acc ? sql`${acc} AND ${condition}` : condition
-    );
-
-    const results = await db
-      .select()
+    // Get total count for pagination
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)` })
       .from(candidates)
       .where(and(
         sql`${candidates.cvContent} IS NOT NULL`,
-        searchCondition
-      ))
-      .orderBy(asc(candidates.firstName), asc(candidates.lastName));
+        sql`to_tsvector('english', ${candidates.cvContent}) @@ to_tsquery('english', ${searchQuery})`
+      ));
 
-    return results;
+    const total = countResult?.count || 0;
+
+    if (total === 0) {
+      return { candidates: [], total: 0 };
+    }
+
+    // Get paginated results with ranking for relevance
+    const results = await db
+      .select({
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+        phone: candidates.phone,
+        phone2: candidates.phone2,
+        nationalId: candidates.nationalId,
+        city: candidates.city,
+        street: candidates.street,
+        houseNumber: candidates.houseNumber,
+        zipCode: candidates.zipCode,
+        address: candidates.address,
+        gender: candidates.gender,
+        maritalStatus: candidates.maritalStatus,
+        drivingLicense: candidates.drivingLicense,
+        receptionArea: candidates.receptionArea,
+        profession: candidates.profession,
+        experience: candidates.experience,
+        achievements: candidates.achievements,
+        recruitmentSource: candidates.recruitmentSource,
+        expectedSalary: candidates.expectedSalary,
+        cvPath: candidates.cvPath,
+        cvContent: candidates.cvContent,
+        status: candidates.status,
+        rating: candidates.rating,
+        notes: candidates.notes,
+        tags: candidates.tags,
+        createdAt: candidates.createdAt,
+        updatedAt: candidates.updatedAt,
+        // Add relevance ranking
+        rank: sql<number>`ts_rank(to_tsvector('english', ${candidates.cvContent}), to_tsquery('english', ${searchQuery}))`,
+      })
+      .from(candidates)
+      .where(and(
+        sql`${candidates.cvContent} IS NOT NULL`,
+        sql`to_tsvector('english', ${candidates.cvContent}) @@ to_tsquery('english', ${searchQuery})`
+      ))
+      .orderBy(sql`ts_rank(to_tsvector('english', ${candidates.cvContent}), to_tsquery('english', ${searchQuery})) DESC`)
+      .limit(limit)
+      .offset(offset);
+
+    // Remove the rank field from results before returning
+    const candidatesWithoutRank = results.map(({ rank, ...candidate }) => candidate);
+
+    return { candidates: candidatesWithoutRank, total };
   }
 }
 

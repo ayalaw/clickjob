@@ -75,7 +75,17 @@ export const candidates = pgTable("candidates", {
   tags: text("tags").array(), // array of tags
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  // Indexes for optimized search performance
+  index("candidates_name_idx").on(table.firstName, table.lastName),
+  index("candidates_email_idx").on(table.email),
+  index("candidates_profession_idx").on(table.profession),
+  index("candidates_city_idx").on(table.city),
+  index("candidates_status_idx").on(table.status),
+  index("candidates_created_at_idx").on(table.createdAt),
+  // Full-text search index for CV content
+  sql`CREATE INDEX IF NOT EXISTS candidates_cv_content_gin_idx ON candidates USING gin(to_tsvector('english', cv_content))`,
+]);
 
 // Clients table
 export const clients = pgTable("clients", {
@@ -113,7 +123,15 @@ export const jobs = pgTable("jobs", {
   positions: integer("positions").default(1),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  // Indexes for optimized search performance
+  index("jobs_job_code_idx").on(table.jobCode),
+  index("jobs_title_idx").on(table.title),
+  index("jobs_status_idx").on(table.status),
+  index("jobs_client_id_idx").on(table.clientId),
+  index("jobs_priority_idx").on(table.priority),
+  index("jobs_created_at_idx").on(table.createdAt),
+]);
 
 // Job Applications (many-to-many between candidates and jobs)
 export const jobApplications = pgTable("job_applications", {

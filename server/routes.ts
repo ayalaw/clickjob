@@ -1438,14 +1438,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CV Search routes
   app.get('/api/candidates/search', isAuthenticated, async (req, res) => {
     try {
-      const { keywords } = req.query;
+      const { keywords, page = '1', limit = '20' } = req.query;
       
       if (!keywords || typeof keywords !== 'string') {
         return res.status(400).json({ error: 'מילות מפתח נדרשות' });
       }
       
-      const searchResults = await storage.searchCandidatesByKeywords(keywords.trim());
-      res.json({ results: searchResults });
+      const pageNum = Math.max(1, parseInt(page as string, 10));
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10))); // Max 100 per page
+      const offset = (pageNum - 1) * limitNum;
+      
+      const searchResults = await storage.searchCandidatesByKeywords(keywords.trim(), limitNum, offset);
+      
+      res.json({
+        candidates: searchResults.candidates,
+        total: searchResults.total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(searchResults.total / limitNum)
+      });
     } catch (error) {
       console.error('שגיאה בחיפוש מועמדים:', error);
       res.status(500).json({ error: 'שגיאה בחיפוש מועמדים' });
