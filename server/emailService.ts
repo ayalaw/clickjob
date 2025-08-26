@@ -1,18 +1,44 @@
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 
-if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-  console.warn("Gmail credentials not set. Email functionality will be disabled.");
+// Check for cPanel or Gmail configuration
+const isCpanel = process.env.CPANEL_SMTP_HOST && process.env.CPANEL_EMAIL_USER && process.env.CPANEL_EMAIL_PASS;
+const isGmail = process.env.GMAIL_USER && process.env.GMAIL_PASS;
+
+if (!isCpanel && !isGmail) {
+  console.warn("No email credentials set. Email functionality will be disabled.");
 }
 
-// Create Gmail transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
-});
+// Create transporter based on configuration
+let transporter: nodemailer.Transporter;
+
+if (isCpanel) {
+  // cPanel SMTP configuration
+  transporter = nodemailer.createTransport({
+    host: process.env.CPANEL_SMTP_HOST, // e.g., mail.yourdomain.com
+    port: parseInt(process.env.CPANEL_SMTP_PORT || '587'),
+    secure: process.env.CPANEL_SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.CPANEL_EMAIL_USER, // your full email address
+      pass: process.env.CPANEL_EMAIL_PASS, // your email password
+    },
+    tls: {
+      // Don't fail on invalid certificates
+      rejectUnauthorized: false
+    }
+  });
+  console.log("📧 Email configured with cPanel SMTP");
+} else if (isGmail) {
+  // Gmail transporter (existing)
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
+    },
+  });
+  console.log("📧 Email configured with Gmail");
+}
 
 // Gmail API setup for reading incoming emails
 const oauth2Client = new google.auth.OAuth2(
@@ -45,8 +71,8 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<{ success: boolean; error?: string }> {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-    return { success: false, error: "Gmail credentials not configured" };
+  if (!isCpanel && !isGmail) {
+    return { success: false, error: "Email credentials not configured" };
   }
 
   try {

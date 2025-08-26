@@ -9,6 +9,7 @@ const navigation = [
   { name: "מאגר משרות", href: "/jobs", icon: Briefcase },
   { name: "סינון ראיונות", href: "/interviews", icon: UserCheck },
   { name: "מערכת מיילים", href: "/emails", icon: Mail },
+  { name: "הגדרות מייל", href: "/email-settings", icon: Settings },
   { name: "דוחות ואנליטיקה", href: "/reports", icon: BarChart3 },
   { name: "הגדרות מערכת", href: "/settings", icon: Settings },
 ];

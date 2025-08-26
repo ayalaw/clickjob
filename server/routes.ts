@@ -1285,6 +1285,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Configure email settings (cPanel)
+  app.post('/api/email/configure', isAuthenticated, async (req: any, res) => {
+    try {
+      const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass, imapHost, imapPort, imapSecure } = req.body;
+      
+      // Store configuration in environment (in production, you'd store this in database)
+      process.env.CPANEL_SMTP_HOST = smtpHost;
+      process.env.CPANEL_SMTP_PORT = smtpPort;
+      process.env.CPANEL_SMTP_SECURE = smtpSecure.toString();
+      process.env.CPANEL_EMAIL_USER = emailUser;
+      process.env.CPANEL_EMAIL_PASS = emailPass;
+      process.env.CPANEL_IMAP_HOST = imapHost;
+      process.env.CPANEL_IMAP_PORT = imapPort;
+      process.env.CPANEL_IMAP_SECURE = imapSecure.toString();
+      
+      res.json({ success: true, message: "הגדרות מייל נשמרו בהצלחה" });
+    } catch (error) {
+      console.error("Error configuring email:", error);
+      res.status(500).json({ message: "Failed to configure email settings" });
+    }
+  });
+
+  // Test email connection
+  app.post('/api/email/test', isAuthenticated, async (req: any, res) => {
+    try {
+      const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass } = req.body;
+      
+      // Create test transporter
+      const testTransporter = nodemailer.createTransporter({
+        host: smtpHost,
+        port: parseInt(smtpPort),
+        secure: smtpSecure,
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+      
+      // Test connection
+      await testTransporter.verify();
+      
+      res.json({ success: true, message: "החיבור לשרת המייל תקין" });
+    } catch (error) {
+      console.error("Email connection test failed:", error);
+      res.status(500).json({ message: "בדיקת החיבור נכשלה", error: error.message });
+    }
+  });
+
   // Start automatic email monitoring (disabled temporarily)
   // if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
   //   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');

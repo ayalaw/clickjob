@@ -15,6 +15,7 @@ import Jobs from "@/pages/jobs";
 import Interviews from "@/pages/interviews";
 import JobInterviews from "@/pages/job-interviews";
 import Emails from "@/pages/emails";
+import EmailSettings from "@/pages/email-settings";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -35,6 +36,7 @@ function Router() {
           <Route path="/interviews" component={Interviews} />
           <Route path="/interviews/:jobId" component={JobInterviews} />
           <Route path="/emails" component={Emails} />
+          <Route path="/email-settings" component={EmailSettings} />
         </>
       )}
       <Route component={NotFound} />
