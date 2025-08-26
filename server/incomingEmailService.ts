@@ -238,9 +238,9 @@ function extractEmailBody(payload: any): string {
 
 function isJobApplicationEmail(subject: string, body: string, from: string): boolean {
   const applicationKeywords = [
-    'קורות חיים', 'cv', 'resume', 'מועמדות', 'השתלמתי', 'התמחות',
+    'קורות חיים', 'קןרות חיים', 'cv', 'resume', 'מועמדות', 'השתלמתי', 'התמחות',
     'משרה', 'job', 'application', 'apply', 'candidate', 'נשלח מאתר',
-    'drushim', 'indeed', 'linkedin', 'jobmaster', 'alljobs'
+    'drushim', 'indeed', 'linkedin', 'jobmaster', 'alljobs', 'משרת שטח'
   ];
   
   const text = `${subject} ${body} ${from}`.toLowerCase();
