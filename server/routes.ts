@@ -280,10 +280,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route for generating preview images from Word documents
   app.get('/uploads/:filename/preview', async (req, res) => {
     const filePath = path.join('uploads', req.params.filename);
+    const previewDir = path.join('uploads', 'previews');
+    const previewPath = path.join(previewDir, `${req.params.filename}.png`);
     
     try {
       if (!fs.existsSync(filePath)) {
         return res.status(404).send('File not found');
+      }
+      
+      // Create previews directory if it doesn't exist
+      if (!fs.existsSync(previewDir)) {
+        fs.mkdirSync(previewDir, { recursive: true });
+      }
+      
+      // Check if preview image already exists
+      if (fs.existsSync(previewPath)) {
+        const imageBuffer = fs.readFileSync(previewPath);
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        return res.send(imageBuffer);
       }
       
       const buffer = fs.readFileSync(filePath);
@@ -291,48 +306,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if it's a Word document
       if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
         try {
-          // Extract text from DOCX for display
-          const result = await mammoth.extractRawText({ buffer });
-          const text = result.value;
+          // Convert Word document to PDF first, then to PNG
+          const { exec } = require('child_process');
+          const tempPdfPath = path.join(previewDir, `${req.params.filename}.pdf`);
           
-          // Generate HTML preview
-          const htmlPreview = `
-            <!DOCTYPE html>
-            <html dir="rtl" lang="he">
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>CV Preview</title>
-              <style>
-                body { 
-                  font-family: Arial, sans-serif; 
-                  padding: 20px; 
-                  line-height: 1.6; 
-                  background: white;
-                  direction: rtl;
-                  text-align: right;
+          // Convert DOCX to PDF using LibreOffice
+          await new Promise((resolve, reject) => {
+            exec(`libreoffice --headless --convert-to pdf --outdir "${previewDir}" "${filePath}"`, (error: any, stdout: any, stderr: any) => {
+              if (error) {
+                console.error('LibreOffice conversion error:', error);
+                reject(error);
+              } else {
+                // Rename the generated PDF to match our expected name
+                const generatedPdf = path.join(previewDir, `${req.params.filename}.pdf`);
+                if (fs.existsSync(generatedPdf)) {
+                  resolve(generatedPdf);
+                } else {
+                  reject(new Error('PDF not generated'));
                 }
-                .cv-content { 
-                  white-space: pre-wrap; 
-                  word-wrap: break-word;
-                  font-size: 14px;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="cv-content">${text.replace(/\n/g, '<br>')}</div>
-            </body>
-            </html>
-          `;
+              }
+            });
+          });
           
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.send(htmlPreview);
+          // Convert PDF to PNG using ImageMagick
+          await new Promise((resolve, reject) => {
+            exec(`convert "${tempPdfPath}[0]" -density 150 -quality 90 "${previewPath}"`, (error: any, stdout: any, stderr: any) => {
+              if (error) {
+                console.error('ImageMagick conversion error:', error);
+                reject(error);
+              } else {
+                resolve(previewPath);
+              }
+            });
+          });
+          
+          // Clean up temporary PDF
+          if (fs.existsSync(tempPdfPath)) {
+            fs.unlinkSync(tempPdfPath);
+          }
+          
+          // Send the generated PNG
+          if (fs.existsSync(previewPath)) {
+            const imageBuffer = fs.readFileSync(previewPath);
+            res.setHeader('Content-Type', 'image/png');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.send(imageBuffer);
+          } else {
+            throw new Error('Failed to generate preview image');
+          }
+          
         } catch (error) {
-          console.error('Error extracting text from Word document:', error);
-          res.status(500).send('Error processing document');
+          console.error('Error converting Word document:', error);
+          
+          // Fallback to text extraction if image conversion fails
+          try {
+            const result = await mammoth.extractRawText({ buffer });
+            const text = result.value;
+            
+            const htmlPreview = `
+              <!DOCTYPE html>
+              <html dir="rtl" lang="he">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>CV Preview</title>
+                <style>
+                  body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 20px; 
+                    line-height: 1.6; 
+                    background: white;
+                    direction: rtl;
+                    text-align: right;
+                  }
+                  .cv-content { 
+                    white-space: pre-wrap; 
+                    word-wrap: break-word;
+                    font-size: 14px;
+                  }
+                  .error-notice {
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    color: #856404;
+                    padding: 10px;
+                    border-radius: 4px;
+                    margin-bottom: 20px;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="error-notice">
+                  לא ניתן היה להמיר את הקובץ לתמונה. מוצג התוכן בפורמט טקסט בלבד.
+                </div>
+                <div class="cv-content">${text.replace(/\n/g, '<br>')}</div>
+              </body>
+              </html>
+            `;
+            
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.send(htmlPreview);
+          } catch (textError) {
+            res.status(500).send('Error processing document');
+          }
+        }
+      } else if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
+        // If it's already a PDF, convert directly to PNG
+        try {
+          const { exec } = require('child_process');
+          
+          await new Promise((resolve, reject) => {
+            exec(`convert "${filePath}[0]" -density 150 -quality 90 "${previewPath}"`, (error: any, stdout: any, stderr: any) => {
+              if (error) {
+                console.error('PDF to PNG conversion error:', error);
+                reject(error);
+              } else {
+                resolve(previewPath);
+              }
+            });
+          });
+          
+          if (fs.existsSync(previewPath)) {
+            const imageBuffer = fs.readFileSync(previewPath);
+            res.setHeader('Content-Type', 'image/png');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.send(imageBuffer);
+          } else {
+            // Fallback: serve original PDF
+            res.redirect(`/uploads/${req.params.filename}`);
+          }
+        } catch (error) {
+          console.error('Error converting PDF:', error);
+          res.redirect(`/uploads/${req.params.filename}`);
         }
       } else {
-        // For non-Word documents, redirect to original file
+        // For other file types, redirect to original file
         res.redirect(`/uploads/${req.params.filename}`);
       }
       
