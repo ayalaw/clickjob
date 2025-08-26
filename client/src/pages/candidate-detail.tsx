@@ -1,40 +1,63 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import CandidateForm from "@/components/forms/candidate-form";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Edit, 
   Mail, 
   Phone, 
   MapPin, 
-  Briefcase, 
-  Calendar, 
+  User, 
   FileText, 
+  Eye, 
   ArrowRight,
-  User,
-  Download,
-  Eye
+  Calendar,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Car,
+  Baby,
+  Download
 } from "lucide-react";
-import type { Candidate } from "@shared/schema";
+import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
+import { queryClient } from "@/lib/queryClient";
+import { CandidateForm } from "@/components/forms/candidate-form";
+
+interface Candidate {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  mobile?: string;
+  phone?: string;
+  phone2?: string;
+  nationalId?: string;
+  city?: string;
+  street?: string;
+  houseNumber?: string;
+  zipCode?: string;
+  gender?: string;
+  maritalStatus?: string;
+  drivingLicense?: string;
+  profession?: string;
+  experience?: number;
+  achievements?: string;
+  status: string;
+  createdAt: string;
+  cvPath?: string;
+}
 
 export default function CandidateDetail() {
-  const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [cvContent, setCvContent] = useState<string>("");
-  const [loadingContent, setLoadingContent] = useState(false);
-  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -50,51 +73,11 @@ export default function CandidateDetail() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
+  const id = window.location.pathname.split('/').pop();
   const { data: candidate, isLoading: candidateLoading } = useQuery<Candidate>({
     queryKey: [`/api/candidates/${id}`],
     enabled: isAuthenticated && !!id,
   });
-
-  // Function to load CV content
-  const loadCvContent = async () => {
-    if (!candidate?.cvPath) return;
-    
-    setLoadingContent(true);
-    try {
-      const response = await fetch(`/uploads/${candidate.cvPath}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const formData = new FormData();
-        
-        // Determine file extension from the CV path
-        let fileName = 'cv.pdf';
-        if (candidate.cvPath.toLowerCase().includes('.doc')) {
-          fileName = 'cv.docx';
-        } else if (candidate.cvPath.toLowerCase().includes('.pdf')) {
-          fileName = 'cv.pdf';
-        }
-        
-        formData.append('cv', blob, fileName);
-        
-        const extractResponse = await fetch('/api/extract-cv-data', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (extractResponse.ok) {
-          const data = await extractResponse.json();
-          if (data.fileContent) {
-            setCvContent(data.fileContent);
-            setShowContent(true);
-          }
-        }
-      }
-    } catch (error) {
-      console.log("Could not extract CV content:", error);
-    } finally {
-      setLoadingContent(false);
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -191,17 +174,17 @@ export default function CandidateDetail() {
             <Button 
               variant="outline" 
               onClick={() => navigate("/candidates")}
-              className="flex items-center gap-2 mb-4"
+              className="flex items-center gap-2"
             >
               <ArrowRight className="w-4 h-4" />
-              חזור למועמדים
+              חזור לרשימת המועמדים
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Candidate Details - Left Side */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Basic Info Card */}
+          {/* Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Personal Details Card */}
+            <div>
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -209,11 +192,11 @@ export default function CandidateDetail() {
                       <User className="w-5 h-5" />
                       פרטים אישיים
                     </CardTitle>
-                    <Button
-                      size="sm"
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
                       onClick={() => setIsEditMode(true)}
-                      className="flex items-center gap-1"
-                      data-testid="button-edit-candidate"
+                      className="flex items-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
                       ערוך
@@ -221,283 +204,182 @@ export default function CandidateDetail() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-center pb-4 border-b">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <User className="w-8 h-8 text-blue-600" />
+                  {/* Name and Status */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold">{candidate.firstName} {candidate.lastName}</h2>
+                      {candidate.profession && (
+                        <p className="text-gray-600">{candidate.profession}</p>
+                      )}
                     </div>
-                    <h2 className="text-xl font-bold">{candidate.firstName} {candidate.lastName}</h2>
-                    <Badge className={getStatusColor(candidate.status || 'available')}>
-                      {getStatusText(candidate.status || 'available')}
+                    <Badge className={getStatusColor(candidate.status)}>
+                      {getStatusText(candidate.status)}
                     </Badge>
                   </div>
 
+                  <Separator />
+
+                  {/* Contact Information */}
                   <div className="space-y-3">
                     {candidate.email && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Mail className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{candidate.email}</span>
+                        <span>{candidate.email}</span>
                       </div>
                     )}
-
+                    
                     {candidate.mobile && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Phone className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{candidate.mobile}</span>
+                        <span>{candidate.mobile}</span>
+                      </div>
+                    )}
+                    
+                    {candidate.phone && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span>{candidate.phone}</span>
                       </div>
                     )}
 
-                    {candidate.phone && candidate.phone !== candidate.mobile && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{candidate.phone}</span>
-                      </div>
-                    )}
-
-                    {candidate.city && (
-                      <div className="flex items-center gap-2">
+                    {(candidate.city || candidate.street || candidate.houseNumber) && (
+                      <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{candidate.city}</span>
-                      </div>
-                    )}
-
-                    {candidate.profession && (
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{candidate.profession}</span>
-                      </div>
-                    )}
-
-                    {candidate.experience && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm">{candidate.experience} שנות ניסיון</span>
+                        <span>
+                          {[candidate.street, candidate.houseNumber, candidate.city].filter(Boolean).join(', ')}
+                          {candidate.zipCode && ` (${candidate.zipCode})`}
+                        </span>
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* Additional Info */}
-              {candidate.achievements && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>הישגים</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-700">{candidate.achievements}</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                  <Separator />
 
-            {/* CV Display - Right Side */}
-            <div className="lg:col-span-2">
-              <Card className="h-fit">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      קורות חיים
-                    </div>
-                    {candidate.cvPath && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = `/uploads/${candidate.cvPath}`;
-                            link.target = '_blank';
-                            link.rel = 'noopener noreferrer';
-                            link.click();
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <Eye className="w-4 h-4" />
-                          פתח
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = `/uploads/${candidate.cvPath}`;
-                            link.download = `${candidate.firstName}_${candidate.lastName}_CV.pdf`;
-                            link.click();
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <Download className="w-4 h-4" />
-                          הורד
-                        </Button>
+                  {/* Additional Information */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {candidate.nationalId && (
+                      <div>
+                        <span className="text-gray-500">תעודת זהות:</span>
+                        <p className="font-medium">{candidate.nationalId}</p>
                       </div>
                     )}
+                    
+                    {candidate.gender && (
+                      <div>
+                        <span className="text-gray-500">מין:</span>
+                        <p className="font-medium">{candidate.gender}</p>
+                      </div>
+                    )}
+                    
+                    {candidate.maritalStatus && (
+                      <div>
+                        <span className="text-gray-500">מצב משפחתי:</span>
+                        <p className="font-medium">{candidate.maritalStatus}</p>
+                      </div>
+                    )}
+                    
+                    {candidate.drivingLicense && (
+                      <div>
+                        <span className="text-gray-500">רישיון נהיגה:</span>
+                        <p className="font-medium">{candidate.drivingLicense}</p>
+                      </div>
+                    )}
+                    
+                    {candidate.experience !== null && candidate.experience !== undefined && (
+                      <div>
+                        <span className="text-gray-500">ניסיון (שנים):</span>
+                        <p className="font-medium">{candidate.experience}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {candidate.achievements && (
+                    <>
+                      <Separator />
+                      <div>
+                        <span className="text-gray-500">הישגים:</span>
+                        <p className="mt-1 text-sm">{candidate.achievements}</p>
+                      </div>
+                    </>
+                  )}
+
+                  <Separator />
+                  
+                  <div className="text-xs text-gray-500">
+                    נוצר: {new Date(candidate.createdAt).toLocaleDateString('he-IL')}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* CV Display Card */}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    קורות חיים
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {candidate.cvPath ? (
-                    <div className="border rounded-lg overflow-hidden">
-                      <div className="bg-red-50 p-4 border-b">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-6 h-6 text-red-600" />
-                          <div>
-                            <h3 className="font-medium text-red-800">קורות חיים</h3>
-                            <p className="text-sm text-red-600">
-                              {candidate.cvPath.toLowerCase().includes('.pdf') ? 'קובץ PDF' : 
-                               candidate.cvPath.toLowerCase().includes('.doc') ? 'מסמך Word' : 
-                               'קובץ'}
-                            </p>
-                          </div>
-                        </div>
+                    <div className="space-y-4">
+                      {/* Control buttons */}
+                      <div className="flex gap-3 justify-center p-4 bg-gray-50 rounded">
+                        <Button
+                          onClick={() => window.open(`/uploads/${candidate.cvPath}`, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          פתח קובץ בחלון חדש
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `/uploads/${candidate.cvPath}`;
+                            link.download = `${candidate.firstName}_${candidate.lastName}_CV`;
+                            link.click();
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          הורד קובץ
+                        </Button>
                       </div>
-                      <div className="bg-white max-h-[600px] overflow-y-auto">
-                        {/* File Display */}
-                        <div className="space-y-4">
-                          {/* Control buttons */}
-                          <div className="flex gap-3 justify-center p-4 bg-gray-50 rounded">
-                            <Button
-                              onClick={() => window.open(`/uploads/${candidate.cvPath}`, '_blank')}
-                              className="flex items-center gap-2"
-                            >
-                              <Eye className="w-4 h-4" />
-                              פתח קובץ בחלון חדש
-                            </Button>
-                            <Button
-                              onClick={loadCvContent}
-                              disabled={loadingContent}
-                              variant="outline"
-                              className="flex items-center gap-2"
-                            >
-                              {loadingContent ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                              ) : (
-                                <FileText className="w-4 h-4" />
-                              )}
-                              {loadingContent ? 'מחלץ תוכן...' : 'הצג תוכן הקובץ'}
-                            </Button>
-                          </div>
-                          
-                          {/* PDF iframe display */}
-                          {candidate.cvPath.toLowerCase().includes('.pdf') && (
-                            <div className="w-full h-[400px] bg-gray-50 rounded border">
-                              <iframe
-                                src={`/uploads/${candidate.cvPath}#toolbar=0&navpanes=0&scrollbar=1`}
-                                width="100%"
-                                height="100%"
-                                style={{ border: 'none', borderRadius: '4px' }}
-                                title="PDF Viewer"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Text content display */}
-                          {showContent && cvContent && (
-                            <div className="border border-red-200 rounded">
-                              <div className="bg-red-50 p-3 border-b border-red-200">
-                                <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
-                                <button 
-                                  onClick={() => setShowContent(false)}
-                                  className="text-red-600 text-xs hover:text-red-800 float-left"
-                                >
-                                  ✕ סגור
-                                </button>
-                              </div>
-                              <div className="p-4 max-h-[500px] overflow-y-auto bg-white">
-                                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                                  {cvContent}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
+                      
+                      {/* File Display */}
+                      {candidate.cvPath.toLowerCase().includes('.pdf') ? (
+                        <div className="w-full h-[500px] bg-gray-50 rounded border">
+                          <iframe
+                            src={`/uploads/${candidate.cvPath}`}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 'none', borderRadius: '4px' }}
+                            title="PDF Viewer"
+                          />
                         </div>
-                        ) : (
-                          /* Default display for other file types */
-                          <div className="space-y-4">
-                            {/* Control buttons */}
-                            <div className="flex gap-3 justify-center p-4 bg-gray-50 rounded">
-                              <Button
-                                onClick={() => window.open(`/uploads/${candidate.cvPath}`, '_blank')}
-                                className="flex items-center gap-2"
-                              >
-                                <Eye className="w-4 h-4" />
-                                פתח קובץ בחלון חדש
-                              </Button>
-                              <Button
-                                onClick={loadCvContent}
-                                disabled={loadingContent}
-                                variant="outline"
-                                className="flex items-center gap-2"
-                              >
-                                {loadingContent ? (
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                ) : (
-                                  <FileText className="w-4 h-4" />
-                                )}
-                                {loadingContent ? 'מחלץ תוכן...' : 'הצג תוכן הקובץ'}
-                              </Button>
-                            </div>
-                            
-                            {/* Text content display */}
-                            {showContent && cvContent && (
-                              <div className="border border-red-200 rounded">
-                                <div className="bg-red-50 p-3 border-b border-red-200">
-                                  <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
-                                  <button 
-                                    onClick={() => setShowContent(false)}
-                                    className="text-red-600 text-xs hover:text-red-800 float-left"
-                                  >
-                                    ✕ סגור
-                                  </button>
-                                </div>
-                                <div className="p-4 max-h-[500px] overflow-y-auto bg-white">
-                                  <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                                    {cvContent}
-                                  </pre>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                          /* Image Display */
-                          <div className="p-4">
-                            <img
-                              src={`/uploads/${candidate.cvPath}`}
-                              alt="קורות חיים"
-                              className="max-w-full max-h-[500px] object-contain mx-auto"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const errorDiv = document.createElement('div');
-                                errorDiv.innerHTML = `
-                                  <div class="text-center p-8">
-                                    <p class="text-gray-500">לא ניתן להציג תמונה</p>
-                                  </div>
-                                `;
-                                target.parentNode?.insertBefore(errorDiv, target);
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          /* Generic File */
-                          <div className="p-8 text-center">
-                            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-500 mb-4">לא ניתן להציג קובץ זה ישירות</p>
-                            <Button
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = `/uploads/${candidate.cvPath}`;
-                                link.target = '_blank';
-                                link.rel = 'noopener noreferrer';
-                                link.click();
-                              }}
-                              className="flex items-center gap-2"
-                            >
-                              <Eye className="w-4 h-4" />
-                              פתח קובץ
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                      ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                        <div className="p-4">
+                          <img
+                            src={`/uploads/${candidate.cvPath}`}
+                            alt="קורות חיים"
+                            className="max-w-full max-h-[500px] object-contain mx-auto rounded border"
+                          />
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center bg-blue-50 rounded border">
+                          <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-blue-800 mb-2">
+                            {candidate.cvPath.toLowerCase().includes('.doc') ? 'מסמך Word' : 'קובץ'}
+                          </h3>
+                          <p className="text-gray-600 mb-6">
+                            {candidate.cvPath.toLowerCase().includes('.doc') 
+                              ? 'לא ניתן להציג מסמכי Word ישירות בדפדפן' 
+                              : 'לא ניתן להציג קובץ זה ישירות בדפדפן'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-12">
