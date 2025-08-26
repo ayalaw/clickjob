@@ -13,6 +13,7 @@ import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates } from './emailService';
 import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService';
+import nodemailer from 'nodemailer';
 
 // Configure multer for file uploads
 const upload = multer({
