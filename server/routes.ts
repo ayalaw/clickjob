@@ -1435,11 +1435,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start automatic email monitoring (disabled temporarily)
-  // if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-  //   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-  //   startEmailMonitoring();
-  // }
+  // Start automatic email monitoring 
+  if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
+    console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
+    startEmailMonitoring();
+  }
 
   const httpServer = createServer(app);
   return httpServer;
