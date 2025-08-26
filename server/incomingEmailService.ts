@@ -1,5 +1,7 @@
 import { gmail } from './emailService';
 import { storage } from './storage';
+import * as Imap from 'imap';
+import { simpleParser } from 'mailparser';
 
 // דפוסי זיהוי מידע במיילים נכנסים
 const EMAIL_PATTERNS = {
@@ -26,10 +28,126 @@ interface ParsedCandidate {
   originalBody?: string;
 }
 
+// בדיקת מיילים נכנסים - תמיכה בגם Gmail וגם IMAP
 export async function checkIncomingEmails(): Promise<void> {
   try {
     console.log('🔍 בודק מיילים נכנסים...');
     
+    // אם יש הגדרות cPanel IMAP - השתמש בהן
+    if (process.env.CPANEL_IMAP_HOST && process.env.CPANEL_IMAP_USER) {
+      await checkCpanelEmails();
+    } 
+    // אחרת השתמש ב-Gmail אם זמין
+    else if (process.env.GMAIL_USER) {
+      await checkGmailEmails();
+    }
+    else {
+      console.log('⚠️ לא נמצאו הגדרות מייל נכנס');
+    }
+  } catch (error) {
+    console.error('❌ שגיאה בבדיקת מיילים נכנסים:', error);
+  }
+}
+
+// בדיקת מיילים דרך cPanel IMAP
+async function checkCpanelEmails(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const imap = new Imap({
+      user: process.env.CPANEL_IMAP_USER!,
+      password: process.env.CPANEL_IMAP_PASS!,
+      host: process.env.CPANEL_IMAP_HOST!,
+      port: parseInt(process.env.CPANEL_IMAP_PORT || '993'),
+      tls: process.env.CPANEL_IMAP_SECURE === 'true',
+      tlsOptions: { rejectUnauthorized: false }
+    });
+
+    imap.once('ready', () => {
+      console.log('✅ מחובר לשרת IMAP');
+      
+      imap.openBox('INBOX', false, (err, box) => {
+        if (err) {
+          console.error('❌ שגיאה בפתיחת תיבת דואר:', err.message);
+          reject(err);
+          return;
+        }
+
+        console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
+        
+        // חיפוש מיילים שלא נקראו מהיום האחרון
+        imap.search(['UNSEEN', ['SINCE', new Date(Date.now() - 24*60*60*1000)]], (err, results) => {
+          if (err) {
+            console.error('❌ שגיאה בחיפוש מיילים:', err.message);
+            reject(err);
+            return;
+          }
+
+          console.log(`🔍 נמצאו ${results.length} מיילים חדשים שלא נקראו`);
+          
+          if (results.length === 0) {
+            imap.end();
+            resolve();
+            return;
+          }
+
+          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
+          
+          fetch.on('message', (msg, seqno) => {
+            console.log(`📩 עוסק במייל מספר ${seqno}`);
+            
+            msg.on('body', (stream, info) => {
+              let buffer = '';
+              
+              stream.on('data', (chunk) => {
+                buffer += chunk.toString('utf8');
+              });
+              
+              stream.once('end', async () => {
+                try {
+                  const parsed = await simpleParser(buffer);
+                  console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
+                  
+                  // בדיקה אם זה מייל מועמדות לעבודה
+                  if (isJobApplicationEmail(parsed.subject || '', parsed.text || '', parsed.from?.text || '')) {
+                    const candidate = parseCandidate(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
+                    
+                    if (candidate.email && (candidate.firstName || candidate.jobCode)) {
+                      await createCandidateFromEmail(candidate);
+                      console.log(`✅ נוצר מועמד חדש: ${candidate.firstName} ${candidate.lastName || ''}`);
+                    }
+                  }
+                } catch (parseError) {
+                  console.error('❌ שגיאה בעיבוד מייל:', parseError);
+                }
+              });
+            });
+          });
+
+          fetch.once('error', (err) => {
+            console.error('❌ שגיאה בקריאת מיילים:', err.message);
+            reject(err);
+          });
+
+          fetch.once('end', () => {
+            console.log('✅ סיימתי לעבד מיילים נכנסים');
+            imap.end();
+            resolve();
+          });
+        });
+      });
+    });
+
+    imap.once('error', (err) => {
+      console.error('❌ שגיאת חיבור IMAP:', err.message);
+      reject(err);
+    });
+
+    imap.connect();
+  });
+}
+
+// בדיקת מיילים דרך Gmail (קיים)
+async function checkGmailEmails(): Promise<void> {
+  try {
     // קריאת מיילים שלא נקראו מהשעה האחרונה
     const response = await gmail.users.messages.list({
       userId: 'me',
@@ -38,17 +156,18 @@ export async function checkIncomingEmails(): Promise<void> {
     });
 
     const messages = response.data.messages || [];
-    console.log(`📧 נמצאו ${messages.length} מיילים חדשים`);
+    console.log(`📧 נמצאו ${messages.length} מיילים חדשים ב-Gmail`);
 
     for (const message of messages) {
-      await processIncomingEmail(message.id!);
+      await processGmailMessage(message.id!);
     }
   } catch (error) {
-    console.error('❌ שגיאה בבדיקת מיילים נכנסים:', error);
+    console.error('❌ שגיאה בבדיקת Gmail:', error);
   }
 }
 
-async function processIncomingEmail(messageId: string): Promise<void> {
+// פונקציה לעיבוד מייל Gmail (שם הפונקציה השתנה)
+async function processGmailMessage(messageId: string): Promise<void> {
   try {
     const message = await gmail.users.messages.get({
       userId: 'me',
