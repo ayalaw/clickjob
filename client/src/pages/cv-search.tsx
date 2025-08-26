@@ -23,7 +23,7 @@ export default function CVSearchPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showCVModal, setShowCVModal] = useState(false);
-  const pageSize = 20;
+  const pageSize = 100;
 
   // Debounced search to avoid too many API calls
   const debouncedSearch = useCallback(
