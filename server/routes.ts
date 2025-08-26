@@ -17,8 +17,20 @@ import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailServic
 const upload = multer({
   dest: 'uploads/',
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-    if (allowedTypes.includes(file.mimetype)) {
+    const allowedTypes = [
+      'application/pdf', 
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+      'text/plain',
+      'application/octet-stream' // Allow octet-stream for files without proper mime type
+    ];
+    
+    // Also check file extension if mime type is not recognized
+    const fileExt = file.originalname.toLowerCase();
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt'];
+    const hasAllowedExtension = allowedExtensions.some(ext => fileExt.endsWith(ext));
+    
+    if (allowedTypes.includes(file.mimetype) || hasAllowedExtension) {
       cb(null, true);
     } else {
       cb(new Error('Only PDF, DOC, and text files are allowed'));

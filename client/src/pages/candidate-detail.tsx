@@ -66,7 +66,16 @@ export default function CandidateDetail() {
           if (response.ok) {
             const blob = await response.blob();
             const formData = new FormData();
-            formData.append('cv', blob, 'cv.pdf');
+            
+            // Determine file extension from the CV path
+            let fileName = 'cv.pdf';
+            if (candidate.cvPath.toLowerCase().includes('.doc')) {
+              fileName = 'cv.docx';
+            } else if (candidate.cvPath.toLowerCase().includes('.pdf')) {
+              fileName = 'cv.pdf';
+            }
+            
+            formData.append('cv', blob, fileName);
             
             const extractResponse = await fetch('/api/extract-cv-data', {
               method: 'POST',
@@ -394,38 +403,55 @@ export default function CandidateDetail() {
                           </div>
                         ) : candidate.cvPath.toLowerCase().includes('.doc') ? (
                           /* Word Document Display */
-                          <div className="p-8 text-center">
-                            <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-blue-800 mb-2">מסמך Word</h3>
-                            <p className="text-gray-600 mb-6">לא ניתן להציג מסמכי Word ישירות בדפדפן</p>
-                            <div className="flex gap-3 justify-center">
-                              <Button
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = `/uploads/${candidate.cvPath}`;
-                                  link.target = '_blank';
-                                  link.rel = 'noopener noreferrer';
-                                  link.click();
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Eye className="w-4 h-4" />
-                                פתח במערכת
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = `/uploads/${candidate.cvPath}`;
-                                  link.download = `${candidate.firstName}_${candidate.lastName}_CV.docx`;
-                                  link.click();
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Download className="w-4 h-4" />
-                                הורד קובץ
-                              </Button>
+                          <div className="space-y-4">
+                            <div className="p-8 text-center bg-blue-50 rounded border">
+                              <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                              <h3 className="text-lg font-medium text-blue-800 mb-2">מסמך Word</h3>
+                              <p className="text-gray-600 mb-6">לא ניתן להציג מסמכי Word ישירות בדפדפן</p>
+                              <div className="flex gap-3 justify-center">
+                                <Button
+                                  onClick={() => {
+                                    window.open(`/uploads/${candidate.cvPath}`, '_blank');
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  פתח במערכת
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = `/uploads/${candidate.cvPath}`;
+                                    link.download = `${candidate.firstName}_${candidate.lastName}_CV.docx`;
+                                    link.click();
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  הורד קובץ
+                                </Button>
+                              </div>
                             </div>
+                            
+                            {/* Text content display for Word docs */}
+                            {loadingContent ? (
+                              <div className="p-4 text-center border-t">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                <p className="text-sm text-gray-500">מחלץ תוכן הקובץ...</p>
+                              </div>
+                            ) : cvContent ? (
+                              <div className="border border-gray-200 rounded">
+                                <div className="bg-red-50 p-3 border-b">
+                                  <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
+                                </div>
+                                <div className="p-4 max-h-[400px] overflow-y-auto">
+                                  <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
+                                    {cvContent}
+                                  </pre>
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
                           /* Image Display */
