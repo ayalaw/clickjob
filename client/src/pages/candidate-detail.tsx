@@ -304,7 +304,7 @@ export default function CandidateDetail() {
                       {/* Control buttons */}
                       <div className="flex gap-3 justify-center p-4 bg-gray-50 rounded">
                         <Button
-                          onClick={() => window.open(`/uploads/${candidate.cvPath}`, '_blank')}
+                          onClick={() => window.open(`/${candidate.cvPath}`, '_blank')}
                           className="flex items-center gap-2"
                         >
                           <Eye className="w-4 h-4" />
@@ -314,7 +314,7 @@ export default function CandidateDetail() {
                           variant="outline"
                           onClick={() => {
                             const link = document.createElement('a');
-                            link.href = `/uploads/${candidate.cvPath}`;
+                            link.href = `/${candidate.cvPath}`;
                             link.download = `${candidate.firstName}_${candidate.lastName}_CV`;
                             link.click();
                           }}
@@ -329,7 +329,7 @@ export default function CandidateDetail() {
                       {candidate.cvPath.toLowerCase().includes('.pdf') ? (
                         <div className="w-full h-[500px] bg-gray-50 rounded border">
                           <iframe
-                            src={`/uploads/${candidate.cvPath}`}
+                            src={`/${candidate.cvPath}`}
                             width="100%"
                             height="100%"
                             style={{ border: 'none', borderRadius: '4px' }}
@@ -339,7 +339,7 @@ export default function CandidateDetail() {
                       ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
                         <div className="p-4">
                           <img
-                            src={`/uploads/${candidate.cvPath}`}
+                            src={`/${candidate.cvPath}`}
                             alt="קורות חיים"
                             className="max-w-full max-h-[500px] object-contain mx-auto rounded border"
                           />
