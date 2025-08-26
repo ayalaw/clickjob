@@ -112,13 +112,21 @@ async function checkCpanelEmails(): Promise<void> {
                   console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
                   
                   // בדיקה אם זה מייל מועמדות לעבודה
-                  if (isJobApplicationEmail(parsed.subject || '', parsed.text || '', parsed.from?.text || '')) {
+                  const isJobApp = isJobApplicationEmail(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
+                  console.log(`🔍 האם זה מייל מועמדות? ${isJobApp ? 'כן' : 'לא'}`);
+                  
+                  if (isJobApp) {
                     const candidate = parseCandidate(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
+                    console.log(`📋 פרטי מועמד נמצאו:`, candidate);
                     
                     if (candidate.email && (candidate.firstName || candidate.jobCode)) {
                       await createCandidateFromEmail(candidate);
                       console.log(`✅ נוצר מועמד חדש: ${candidate.firstName} ${candidate.lastName || ''}`);
+                    } else {
+                      console.log(`⚠️ חסרים פרטים למועמד - אימייל: ${candidate.email}, שם: ${candidate.firstName}`);
                     }
+                  } else {
+                    console.log(`📧 מייל לא זוהה כמועמדות - נושא: "${parsed.subject}"`);
                   }
                 } catch (parseError) {
                   console.error('❌ שגיאה בעיבוד מייל:', parseError);
