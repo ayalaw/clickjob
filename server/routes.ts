@@ -242,7 +242,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.use('/uploads', express.static('uploads', {
     setHeaders: (res, filePath) => {
-      const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+      // For files without extension, try to detect content type by reading file header
+      let mimeType = mime.lookup(filePath);
+      
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        try {
+          const buffer = fs.readFileSync(filePath);
+          
+          // Check for PDF signature
+          if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
+            mimeType = 'application/pdf';
+          }
+          // Check for ZIP/Office document signatures
+          else if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
+            // Could be ZIP, DOCX, etc.
+            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          }
+          // Check for DOC signature
+          else if (buffer.length >= 8 && buffer.readUInt32LE(0) === 0xE011CFD0) {
+            mimeType = 'application/msword';
+          }
+          // Default to PDF for unknown files to enable iframe viewing
+          else {
+            mimeType = 'application/pdf';
+          }
+        } catch (error) {
+          mimeType = 'application/pdf';
+        }
+      }
+      
       res.setHeader('Content-Type', mimeType);
     }
   }));

@@ -325,39 +325,19 @@ export default function CandidateDetail() {
                         </Button>
                       </div>
                       
-                      {/* File Display */}
-                      {candidate.cvPath.toLowerCase().includes('.pdf') ? (
-                        <div className="w-full h-[500px] bg-gray-50 rounded border">
-                          <iframe
-                            src={`/${candidate.cvPath}`}
-                            width="100%"
-                            height="100%"
-                            style={{ border: 'none', borderRadius: '4px' }}
-                            title="PDF Viewer"
-                          />
-                        </div>
-                      ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                        <div className="p-4">
-                          <img
-                            src={`/${candidate.cvPath}`}
-                            alt="קורות חיים"
-                            className="max-w-full max-h-[500px] object-contain mx-auto rounded border"
-                          />
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center bg-blue-50 rounded border">
-                          <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-blue-800 mb-2">
-                            קובץ קורות חיים
-                          </h3>
-                          <p className="text-gray-600 mb-6">
-                            הקובץ זמין להורדה וצפייה. לחץ על הכפתורים למעלה לפתיחה או הורדה.
-                          </p>
-                          <div className="bg-gray-100 p-3 rounded text-sm text-gray-700">
-                            נתיב קובץ: {candidate.cvPath}
-                          </div>
-                        </div>
-                      )}
+                      {/* File Display - Always try to display as iframe first */}
+                      <div className="w-full h-[500px] bg-gray-50 rounded border">
+                        <iframe
+                          src={`/${candidate.cvPath}`}
+                          width="100%"
+                          height="100%"
+                          style={{ border: 'none', borderRadius: '4px' }}
+                          title="CV Viewer"
+                          onError={(e) => {
+                            console.log('Failed to load CV in iframe');
+                          }}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-12">
