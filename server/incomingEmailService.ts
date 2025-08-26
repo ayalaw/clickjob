@@ -330,10 +330,10 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
 export function startEmailMonitoring(): void {
   console.log('🚀 הפעלת מעקב מיילים נכנסים...');
   
-  // בדיקה כל 5 דקות
+  // בדיקה כל 20 שניות
   setInterval(async () => {
     await checkIncomingEmails();
-  }, 5 * 60 * 1000);
+  }, 20 * 1000);
   
   // בדיקה ראשונית
   checkIncomingEmails();
