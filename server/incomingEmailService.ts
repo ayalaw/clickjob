@@ -119,11 +119,11 @@ async function checkCpanelEmails(): Promise<void> {
                     const candidate = parseCandidate(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
                     console.log(`📋 פרטי מועמד נמצאו:`, candidate);
                     
-                    if (candidate.email && (candidate.firstName || candidate.jobCode)) {
+                    if (candidate.email) {
                       await createCandidateFromEmail(candidate);
-                      console.log(`✅ נוצר מועמד חדש: ${candidate.firstName} ${candidate.lastName || ''}`);
+                      console.log(`✅ נוצר מועמד חדש: ${candidate.firstName || 'מועמד'} ${candidate.lastName || 'חדש'}`);
                     } else {
-                      console.log(`⚠️ חסרים פרטים למועמד - אימייל: ${candidate.email}, שם: ${candidate.firstName}`);
+                      console.log(`⚠️ חסר אימייל למועמד`);
                     }
                   } else {
                     console.log(`📧 מייל לא זוהה כמועמדות - נושא: "${parsed.subject}"`);
