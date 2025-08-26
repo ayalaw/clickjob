@@ -355,13 +355,16 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
 }
 
 // פונקציה להפעלה תקופתית
+// מערך לשמירת מזהי מיילים שכבר עובדו
+const processedEmails = new Set<string>();
+
 export function startEmailMonitoring(): void {
   console.log('🚀 הפעלת מעקב מיילים נכנסים...');
   
-  // בדיקה כל 20 שניות
+  // בדיקה כל דקה (במקום כל 20 שניות)
   setInterval(async () => {
     await checkIncomingEmails();
-  }, 20 * 1000);
+  }, 60 * 1000);
   
   // בדיקה ראשונית
   checkIncomingEmails();
