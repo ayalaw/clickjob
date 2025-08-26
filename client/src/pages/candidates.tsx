@@ -216,7 +216,12 @@ export default function Candidates() {
                     </TableHeader>
                     <TableBody>
                       {candidatesData.candidates.map((candidate: Candidate) => (
-                        <TableRow key={candidate.id} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`row-candidate-${candidate.id}`}>
+                        <TableRow 
+                          key={candidate.id} 
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" 
+                          data-testid={`row-candidate-${candidate.id}`}
+                          onClick={() => window.location.href = `/candidates/${candidate.id}`}
+                        >
                           <TableCell className="font-medium">
                             <div>
                               <p className="text-secondary dark:text-white" data-testid={`text-candidate-name-${candidate.id}`}>
@@ -266,11 +271,12 @@ export default function Candidates() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-1 space-x-reverse">
+                            <div className="flex space-x-1 space-x-reverse" onClick={(e) => e.stopPropagation()}>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setEmailDialog({
                                     isOpen: true,
                                     type: "candidate",
@@ -287,7 +293,8 @@ export default function Candidates() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setEmailDialog({
                                     isOpen: true,
                                     type: "interview",
@@ -304,7 +311,10 @@ export default function Candidates() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleEditCandidate(candidate)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditCandidate(candidate);
+                                }}
                                 className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                                 data-testid={`button-edit-candidate-${candidate.id}`}
                               >
@@ -313,7 +323,10 @@ export default function Candidates() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteCandidate(candidate.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCandidate(candidate.id);
+                                }}
                                 className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                                 data-testid={`button-delete-candidate-${candidate.id}`}
                               >
