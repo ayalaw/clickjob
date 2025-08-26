@@ -318,32 +318,30 @@ export default function CandidateDetail() {
                       <div className="bg-white max-h-[600px] overflow-y-auto">
                         {/* PDF File Display */}
                         {candidate.cvPath.toLowerCase().includes('.pdf') ? (
-                          <div className="w-full h-[500px]">
-                            <object
-                              data={`/uploads/${candidate.cvPath}`}
-                              type="application/pdf"
-                              width="100%"
-                              height="100%"
-                              className="border-0"
-                            >
-                              <div className="p-8 text-center">
-                                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-500 mb-4">לא ניתן להציג PDF במקום</p>
-                                <Button
-                                  onClick={() => {
-                                    const link = document.createElement('a');
-                                    link.href = `/uploads/${candidate.cvPath}`;
-                                    link.target = '_blank';
-                                    link.rel = 'noopener noreferrer';
-                                    link.click();
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  פתח PDF בחלון חדש
-                                </Button>
-                              </div>
-                            </object>
+                          <div className="space-y-4">
+                            {/* PDF Embedded Viewer */}
+                            <div className="w-full h-[400px] bg-gray-50 rounded border">
+                              <iframe
+                                src={`/uploads/${candidate.cvPath}#toolbar=0&navpanes=0&scrollbar=1`}
+                                width="100%"
+                                height="100%"
+                                style={{ border: 'none', borderRadius: '4px' }}
+                                title="PDF Viewer"
+                              />
+                            </div>
+                            
+                            {/* Fallback: Always show "Open in new tab" button */}
+                            <div className="text-center py-4 border-t">
+                              <Button
+                                onClick={() => {
+                                  window.open(`/uploads/${candidate.cvPath}`, '_blank');
+                                }}
+                                className="flex items-center gap-2 mx-auto"
+                              >
+                                <Eye className="w-4 h-4" />
+                                פתח PDF בחלון חדש (תצוגה מלאה)
+                              </Button>
+                            </div>
                           </div>
                         ) : candidate.cvPath.toLowerCase().includes('.doc') ? (
                           /* Word Document Display */
