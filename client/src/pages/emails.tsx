@@ -37,9 +37,7 @@ export default function Emails() {
 
   const checkIncomingEmailsMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest(`/api/emails/check-incoming`, {
-        method: "POST",
-      });
+      await apiRequest('POST', '/api/emails/check-incoming');
     },
     onSuccess: () => {
       toast({
