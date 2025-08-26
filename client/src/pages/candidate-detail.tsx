@@ -198,28 +198,14 @@ export default function CandidateDetail() {
                         </Button>
                       </div>
                       
-                      {/* CV Display */}
-                      <div className="flex-1 bg-gray-50 rounded border overflow-auto">
-                        <img
-                          src={`/${candidate.cvPath}/preview`}
-                          alt="קורות חיים"
-                          className="w-full h-auto object-contain"
-                          onError={(e) => {
-                            // If image fails to load, try iframe fallback
-                            const img = e.target as HTMLImageElement;
-                            img.style.display = 'none';
-                            
-                            const fallbackIframe = document.createElement('iframe');
-                            fallbackIframe.src = `/${candidate.cvPath}`;
-                            fallbackIframe.style.width = '100%';
-                            fallbackIframe.style.height = '100%';
-                            fallbackIframe.style.border = 'none';
-                            fallbackIframe.title = 'CV Viewer';
-                            
-                            const parent = img.parentElement;
-                            if (parent) {
-                              parent.appendChild(fallbackIframe);
-                            }
+                      {/* CV Display - Direct iframe */}
+                      <div className="flex-1 bg-white rounded border overflow-hidden">
+                        <iframe
+                          src={`/${candidate.cvPath}`}
+                          className="w-full h-full border-0"
+                          title="קורות חיים"
+                          onError={() => {
+                            console.log('Error loading CV file');
                           }}
                         />
                       </div>
