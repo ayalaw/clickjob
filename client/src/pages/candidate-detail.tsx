@@ -252,8 +252,8 @@ export default function CandidateDetail() {
                           <p className="text-gray-600 text-sm">{candidate.profession}</p>
                         )}
                       </div>
-                      <Badge className={getStatusColor(candidate.status)}>
-                        {getStatusText(candidate.status)}
+                      <Badge className={getStatusColor(candidate.status || '')}>
+                        {getStatusText(candidate.status || '')}
                       </Badge>
                     </div>
 
@@ -346,7 +346,7 @@ export default function CandidateDetail() {
                     <Separator />
                     
                     <div className="text-xs text-gray-500">
-                      נוצר: {new Date(candidate.createdAt).toLocaleDateString('he-IL')}
+                      נוצר: {new Date(candidate.createdAt || new Date()).toLocaleDateString('he-IL')}
                     </div>
                   </div>
                 </CardContent>
