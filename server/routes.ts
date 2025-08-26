@@ -307,38 +307,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
         try {
           // Convert Word document to PDF first, then to PNG
-          const { exec } = require('child_process');
+          // Use the already imported execSync
           const tempPdfPath = path.join(previewDir, `${req.params.filename}.pdf`);
           
           // Convert DOCX to PDF using LibreOffice
-          await new Promise((resolve, reject) => {
-            exec(`libreoffice --headless --convert-to pdf --outdir "${previewDir}" "${filePath}"`, (error: any, stdout: any, stderr: any) => {
-              if (error) {
-                console.error('LibreOffice conversion error:', error);
-                reject(error);
-              } else {
-                // Rename the generated PDF to match our expected name
-                const generatedPdf = path.join(previewDir, `${req.params.filename}.pdf`);
-                if (fs.existsSync(generatedPdf)) {
-                  resolve(generatedPdf);
-                } else {
-                  reject(new Error('PDF not generated'));
-                }
-              }
-            });
-          });
+          try {
+            execSync(`libreoffice --headless --convert-to pdf --outdir "${previewDir}" "${filePath}"`);
+            const generatedPdf = path.join(previewDir, `${req.params.filename}.pdf`);
+            if (!fs.existsSync(generatedPdf)) {
+              throw new Error('PDF not generated');
+            }
+          } catch (error) {
+            console.error('LibreOffice conversion error:', error);
+            throw error;
+          }
           
           // Convert PDF to PNG using ImageMagick
-          await new Promise((resolve, reject) => {
-            exec(`convert "${tempPdfPath}[0]" -density 150 -quality 90 "${previewPath}"`, (error: any, stdout: any, stderr: any) => {
-              if (error) {
-                console.error('ImageMagick conversion error:', error);
-                reject(error);
-              } else {
-                resolve(previewPath);
-              }
-            });
-          });
+          try {
+            execSync(`convert "${tempPdfPath}[0]" -density 150 -quality 90 "${previewPath}"`);
+          } catch (error) {
+            console.error('ImageMagick conversion error:', error);
+            throw error;
+          }
           
           // Clean up temporary PDF
           if (fs.existsSync(tempPdfPath)) {
@@ -412,18 +402,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
         // If it's already a PDF, convert directly to PNG
         try {
-          const { exec } = require('child_process');
+          // Use the already imported execSync
           
-          await new Promise((resolve, reject) => {
-            exec(`convert "${filePath}[0]" -density 150 -quality 90 "${previewPath}"`, (error: any, stdout: any, stderr: any) => {
-              if (error) {
-                console.error('PDF to PNG conversion error:', error);
-                reject(error);
-              } else {
-                resolve(previewPath);
-              }
-            });
-          });
+          try {
+            execSync(`convert "${filePath}[0]" -density 150 -quality 90 "${previewPath}"`);
+          } catch (error) {
+            console.error('PDF to PNG conversion error:', error);
+            throw error;
+          }
           
           if (fs.existsSync(previewPath)) {
             const imageBuffer = fs.readFileSync(previewPath);
