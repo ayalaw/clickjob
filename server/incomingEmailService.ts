@@ -238,9 +238,9 @@ function extractEmailBody(payload: any): string {
 
 function isJobApplicationEmail(subject: string, body: string, from: string): boolean {
   const applicationKeywords = [
-    'קורות חיים', 'קןרות חיים', 'cv', 'resume', 'מועמדות', 'השתלמתי', 'התמחות',
+    'קורות חיים', 'קןרות חיים', 'קוח', 'cv', 'resume', 'מועמדות', 'השתלמתי', 'התמחות',
     'משרה', 'job', 'application', 'apply', 'candidate', 'נשלח מאתר',
-    'drushim', 'indeed', 'linkedin', 'jobmaster', 'alljobs', 'משרת שטח'
+    'drushim', 'indeed', 'linkedin', 'jobmaster', 'alljobs', 'משרת שטח', 'משרת חשמל'
   ];
   
   const text = `${subject} ${body} ${from}`.toLowerCase();
@@ -273,12 +273,20 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
     firstName = nameParts[0] || '';
     lastName = nameParts.slice(1).join(' ') || '';
   } else {
-    // ניסיון 2: חילוץ מכתובת המייל
-    const emailName = candidateEmail.split('@')[0].replace(/[._]/g, ' ');
-    const emailParts = emailName.split(' ').filter(part => part.length > 1);
-    if (emailParts.length >= 2) {
-      firstName = emailParts[0];
-      lastName = emailParts.slice(1).join(' ');
+    // ניסיון 2: חילוץ מכתובת המייל או שם השולח
+    const senderName = from.match(/"([^"]+)"/) ? from.match(/"([^"]+)"/)![1] : '';
+    
+    if (senderName && senderName !== candidateEmail) {
+      const nameParts = senderName.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    } else {
+      const emailName = candidateEmail.split('@')[0].replace(/[._]/g, ' ');
+      const emailParts = emailName.split(' ').filter(part => part.length > 1);
+      if (emailParts.length >= 2) {
+        firstName = emailParts[0];
+        lastName = emailParts.slice(1).join(' ');
+      }
     }
   }
   
