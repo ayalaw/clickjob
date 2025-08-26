@@ -33,6 +33,7 @@ export default function CandidateDetail() {
   const { isAuthenticated, isLoading } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
   const [cvContent, setCvContent] = useState<string>("");
+  const [loadingContent, setLoadingContent] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -56,8 +57,37 @@ export default function CandidateDetail() {
   // Load CV content if candidate has a CV
   useEffect(() => {
     if (candidate?.cvPath && candidate.cvPath.trim()) {
-      // For direct file access, we'll use the file path
-      setCvContent(""); // Reset content while loading
+      setLoadingContent(true);
+      // Try to extract text content using the CV extraction API
+      const extractContent = async () => {
+        try {
+          // Create a FormData with the file
+          const response = await fetch(`/uploads/${candidate.cvPath}`);
+          if (response.ok) {
+            const blob = await response.blob();
+            const formData = new FormData();
+            formData.append('cv', blob, 'cv.pdf');
+            
+            const extractResponse = await fetch('/api/extract-cv-data', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (extractResponse.ok) {
+              const data = await extractResponse.json();
+              if (data.fileContent) {
+                setCvContent(data.fileContent);
+              }
+            }
+          }
+        } catch (error) {
+          console.log("Could not extract CV content:", error);
+        } finally {
+          setLoadingContent(false);
+        }
+      };
+      
+      extractContent();
     }
   }, [candidate?.cvPath]);
 
@@ -329,6 +359,25 @@ export default function CandidateDetail() {
                                 title="PDF Viewer"
                               />
                             </div>
+                            
+                            {/* Text content display */}
+                            {loadingContent ? (
+                              <div className="p-4 text-center border-t">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                <p className="text-sm text-gray-500">מחלץ תוכן הקובץ...</p>
+                              </div>
+                            ) : cvContent ? (
+                              <div className="border-t">
+                                <div className="bg-red-50 p-3 border-b">
+                                  <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
+                                </div>
+                                <div className="p-4 max-h-[300px] overflow-y-auto">
+                                  <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
+                                    {cvContent}
+                                  </pre>
+                                </div>
+                              </div>
+                            ) : null}
                             
                             {/* Fallback: Always show "Open in new tab" button */}
                             <div className="text-center py-4 border-t">
