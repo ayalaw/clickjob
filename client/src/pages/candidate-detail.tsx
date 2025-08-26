@@ -56,19 +56,8 @@ export default function CandidateDetail() {
   // Load CV content if candidate has a CV
   useEffect(() => {
     if (candidate?.cvPath && candidate.cvPath.trim()) {
-      // Extract CV content from the uploaded file
-      const loadCvContent = async () => {
-        try {
-          const response = await fetch(`/uploads/${candidate.cvPath}`);
-          if (response.ok) {
-            const text = await response.text();
-            setCvContent(text);
-          }
-        } catch (error) {
-          console.log("Could not load CV content:", error);
-        }
-      };
-      loadCvContent();
+      // For direct file access, we'll use the file path
+      setCvContent(""); // Reset content while loading
     }
   }, [candidate?.cvPath]);
 
@@ -318,21 +307,104 @@ export default function CandidateDetail() {
                           <FileText className="w-6 h-6 text-red-600" />
                           <div>
                             <h3 className="font-medium text-red-800">קורות חיים</h3>
-                            <p className="text-sm text-red-600">קובץ PDF</p>
+                            <p className="text-sm text-red-600">
+                              {candidate.cvPath.toLowerCase().includes('.pdf') ? 'קובץ PDF' : 
+                               candidate.cvPath.toLowerCase().includes('.doc') ? 'מסמך Word' : 
+                               'קובץ'}
+                            </p>
                           </div>
                         </div>
                       </div>
                       <div className="bg-white max-h-[600px] overflow-y-auto">
-                        {cvContent ? (
-                          <div className="p-6">
-                            <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                              {cvContent}
-                            </pre>
+                        {/* PDF File Display */}
+                        {candidate.cvPath.toLowerCase().includes('.pdf') ? (
+                          <div className="w-full h-[500px]">
+                            <object
+                              data={`/uploads/${candidate.cvPath}`}
+                              type="application/pdf"
+                              width="100%"
+                              height="100%"
+                              className="border-0"
+                            >
+                              <div className="p-8 text-center">
+                                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                <p className="text-gray-500 mb-4">לא ניתן להציג PDF במקום</p>
+                                <Button
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = `/uploads/${candidate.cvPath}`;
+                                    link.target = '_blank';
+                                    link.rel = 'noopener noreferrer';
+                                    link.click();
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  פתח PDF בחלון חדש
+                                </Button>
+                              </div>
+                            </object>
+                          </div>
+                        ) : candidate.cvPath.toLowerCase().includes('.doc') ? (
+                          /* Word Document Display */
+                          <div className="p-8 text-center">
+                            <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-blue-800 mb-2">מסמך Word</h3>
+                            <p className="text-gray-600 mb-6">לא ניתן להציג מסמכי Word ישירות בדפדפן</p>
+                            <div className="flex gap-3 justify-center">
+                              <Button
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/uploads/${candidate.cvPath}`;
+                                  link.target = '_blank';
+                                  link.rel = 'noopener noreferrer';
+                                  link.click();
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Eye className="w-4 h-4" />
+                                פתח במערכת
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/uploads/${candidate.cvPath}`;
+                                  link.download = `${candidate.firstName}_${candidate.lastName}_CV.docx`;
+                                  link.click();
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Download className="w-4 h-4" />
+                                הורד קובץ
+                              </Button>
+                            </div>
+                          </div>
+                        ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                          /* Image Display */
+                          <div className="p-4">
+                            <img
+                              src={`/uploads/${candidate.cvPath}`}
+                              alt="קורות חיים"
+                              className="max-w-full max-h-[500px] object-contain mx-auto"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const errorDiv = document.createElement('div');
+                                errorDiv.innerHTML = `
+                                  <div class="text-center p-8">
+                                    <p class="text-gray-500">לא ניתן להציג תמונה</p>
+                                  </div>
+                                `;
+                                target.parentNode?.insertBefore(errorDiv, target);
+                              }}
+                            />
                           </div>
                         ) : (
+                          /* Generic File */
                           <div className="p-8 text-center">
                             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-500 mb-4">לא ניתן להציג תוכן הקובץ</p>
+                            <p className="text-gray-500 mb-4">לא ניתן להציג קובץ זה ישירות</p>
                             <Button
                               onClick={() => {
                                 const link = document.createElement('a');
@@ -344,7 +416,7 @@ export default function CandidateDetail() {
                               className="flex items-center gap-2"
                             >
                               <Eye className="w-4 h-4" />
-                              פתח קובץ בחלון חדש
+                              פתח קובץ
                             </Button>
                           </div>
                         )}

@@ -1,4 +1,5 @@
 import type { Express, Request } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
@@ -209,6 +210,16 @@ function extractDataFromText(text: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Static files serving for uploads
+  app.use('/uploads', (req, res, next) => {
+    // Add CORS headers for file access
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+  });
+  app.use('/uploads', express.static('uploads'));
+
   // Auth middleware
   await setupAuth(app);
 
