@@ -297,41 +297,67 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
   try {
     // בדיקה אם המועמד כבר קיים
     const existingCandidates = await storage.getCandidates(100, 0, candidateData.email);
+    let candidateId: string;
+    
     if (existingCandidates.candidates.some(c => c.email === candidateData.email)) {
-      console.log(`⚠️ מועמד עם אימייל ${candidateData.email} כבר קיים`);
-      return;
+      console.log(`⚠️ מועמד עם אימייל ${candidateData.email} כבר קיים - מעדכן פרטים`);
+      const existingCandidate = existingCandidates.candidates.find(c => c.email === candidateData.email)!;
+      candidateId = existingCandidate.id;
+      
+      // עדכון פרטי המועמד הקיים
+      await storage.updateCandidate(candidateId, {
+        firstName: candidateData.firstName || existingCandidate.firstName,
+        lastName: candidateData.lastName || existingCandidate.lastName,
+        mobile: candidateData.phone || existingCandidate.mobile,
+        // הוספת תוכן המייל לפרטי המועמד
+        notes: `${existingCandidate.notes || ''}\n\n--- מייל חדש ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`.trim()
+      });
+    } else {
+      // יצירת מועמד חדש
+      const newCandidate = await storage.createCandidate({
+        firstName: candidateData.firstName || 'מועמד',
+        lastName: candidateData.lastName || 'חדש',
+        email: candidateData.email!,
+        mobile: candidateData.phone,
+        city: 'לא צוין', // שדה חובה
+        profession: candidateData.jobCode ? 'מועמדות ממייל' : undefined,
+        // הוספת תוכן המייל לפרטי המועמד
+        notes: `--- מייל מקורי ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`,
+        recruitmentSource: 'מייל נכנס',
+      });
+      candidateId = newCandidate.id;
+      console.log(`✅ נוצר מועמד חדש: ${candidateData.firstName || 'מועמד'} ${candidateData.lastName || 'חדש'}`);
     }
     
-    // יצירת מועמד חדש
-    const newCandidate = await storage.createCandidate({
-      firstName: candidateData.firstName || 'לא צוין',
-      lastName: candidateData.lastName || '',
-      email: candidateData.email!,
-      mobile: candidateData.phone,
-      city: 'לא צוין', // שדה חובה
-      notes: `נוצר אוטומטית ממייל נכנס\nנושא: ${candidateData.originalSubject}\nתוכן: ${candidateData.originalBody}`,
-      recruitmentSource: 'מייל נכנס',
-    });
-    
-    // אם יש קוד משרה - חיפוש המשרה ויצירת מועמדות
+    // אם יש קוד משרה - חיפוש המשרה ויצירת מועמדות למשרה
     if (candidateData.jobCode) {
-      const jobs = await storage.getJobs(100, 0, candidateData.jobCode);
-      const matchingJob = jobs.jobs.find(job => 
-        job.id.includes(candidateData.jobCode!) || 
-        job.title.includes(candidateData.jobCode!) ||
-        job.description?.includes(candidateData.jobCode!)
-      );
+      console.log(`🎯 נמצא קוד משרה: ${candidateData.jobCode} - מחפש משרה מתאימה`);
       
-      if (matchingJob) {
-        await storage.createJobApplication({
-          candidateId: newCandidate.id,
-          jobId: matchingJob.id,
-          status: 'submitted',
-          notes: `מועמדות אוטומטית ממייל נכנס עם קוד משרה: ${candidateData.jobCode}`,
-        });
+      try {
+        const jobs = await storage.getJobs(100, 0);
+        const matchingJob = jobs.jobs.find(job => 
+          job.id === candidateData.jobCode ||
+          job.title.includes(candidateData.jobCode!) ||
+          job.description?.includes(candidateData.jobCode!)
+        );
         
-        console.log(`🎯 נוצרה מועמדות למשרה: ${matchingJob.title}`);
+        if (matchingJob) {
+          await storage.createJobApplication({
+            candidateId: candidateId,
+            jobId: matchingJob.id,
+            status: 'submitted',
+            notes: `מועמדות אוטומטית ממייל נכנס\nקוד משרה: ${candidateData.jobCode}\nנושא המייל: ${candidateData.originalSubject}`,
+          });
+          
+          console.log(`✅ נוצרה מועמדות למשרה: ${matchingJob.title}`);
+        } else {
+          console.log(`⚠️ לא נמצאה משרה מתאימה לקוד: ${candidateData.jobCode}`);
+        }
+      } catch (error) {
+        console.error(`❌ שגיאה ביצירת מועמדות למשרה:`, error);
       }
+    } else {
+      console.log(`📋 לא נמצא קוד משרה - מועמד נוצר במאגר בלבד`);
     }
     
   } catch (error) {
