@@ -232,14 +232,14 @@ function extractDataFromText(text: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Static files serving for uploads
+  // Static files serving for uploads - Add CORS middleware
   app.use('/uploads', (req, res, next) => {
     // Add CORS headers for file access
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
-  });
+  }, express.static('uploads'));
   // Route for serving CV files with preview generation
   app.get('/uploads/:filename', async (req, res) => {
     const filePath = path.join('uploads', req.params.filename);
