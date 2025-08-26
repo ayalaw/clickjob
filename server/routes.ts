@@ -240,40 +240,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
   });
-  app.use('/uploads', express.static('uploads', {
-    setHeaders: (res, filePath) => {
-      // For files without extension, try to detect content type by reading file header
-      let mimeType = mime.lookup(filePath);
+  // Route for serving CV files with preview generation
+  app.get('/uploads/:filename', async (req, res) => {
+    const filePath = path.join('uploads', req.params.filename);
+    
+    try {
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).send('File not found');
+      }
       
-      if (!mimeType || mimeType === 'application/octet-stream') {
-        try {
-          const buffer = fs.readFileSync(filePath);
-          
-          // Check for PDF signature
-          if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
-            mimeType = 'application/pdf';
-          }
-          // Check for ZIP/Office document signatures
-          else if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
-            // Could be ZIP, DOCX, etc.
-            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-          }
-          // Check for DOC signature
-          else if (buffer.length >= 8 && buffer.readUInt32LE(0) === 0xE011CFD0) {
-            mimeType = 'application/msword';
-          }
-          // Default to PDF for unknown files to enable iframe viewing
-          else {
-            mimeType = 'application/pdf';
-          }
-        } catch (error) {
-          mimeType = 'application/pdf';
-        }
+      const buffer = fs.readFileSync(filePath);
+      let mimeType = 'application/octet-stream';
+      
+      // Check for PDF signature
+      if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
+        mimeType = 'application/pdf';
+      }
+      // Check for ZIP/Office document signatures (DOCX, etc.)
+      else if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
+      // Check for old DOC signature
+      else if (buffer.length >= 8 && buffer.readUInt32LE(0) === 0xE011CFD0) {
+        mimeType = 'application/msword';
       }
       
       res.setHeader('Content-Type', mimeType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      res.send(buffer);
+      
+    } catch (error) {
+      console.error('Error serving file:', error);
+      res.status(500).send('Error reading file');
     }
-  }));
+  });
+
+  // Route for generating preview images from Word documents
+  app.get('/uploads/:filename/preview', async (req, res) => {
+    const filePath = path.join('uploads', req.params.filename);
+    
+    try {
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).send('File not found');
+      }
+      
+      const buffer = fs.readFileSync(filePath);
+      
+      // Check if it's a Word document
+      if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
+        try {
+          // Extract text from DOCX for display
+          const result = await mammoth.extractRawText({ buffer });
+          const text = result.value;
+          
+          // Generate HTML preview
+          const htmlPreview = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="he">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>CV Preview</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  padding: 20px; 
+                  line-height: 1.6; 
+                  background: white;
+                  direction: rtl;
+                  text-align: right;
+                }
+                .cv-content { 
+                  white-space: pre-wrap; 
+                  word-wrap: break-word;
+                  font-size: 14px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="cv-content">${text.replace(/\n/g, '<br>')}</div>
+            </body>
+            </html>
+          `;
+          
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.send(htmlPreview);
+        } catch (error) {
+          console.error('Error extracting text from Word document:', error);
+          res.status(500).send('Error processing document');
+        }
+      } else {
+        // For non-Word documents, redirect to original file
+        res.redirect(`/uploads/${req.params.filename}`);
+      }
+      
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      res.status(500).send('Error generating preview');
+    }
+  });
 
   // Auth middleware
   await setupAuth(app);

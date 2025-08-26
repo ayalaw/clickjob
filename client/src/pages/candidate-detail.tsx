@@ -325,18 +325,70 @@ export default function CandidateDetail() {
                         </Button>
                       </div>
                       
-                      {/* File Display - Always try to display as iframe first */}
-                      <div className="w-full h-[500px] bg-gray-50 rounded border">
+                      {/* File Display */}
+                      <div className="w-full min-h-[500px] bg-gray-50 rounded border p-4">
+                        {/* Try iframe first, fallback to preview image */}
                         <iframe
-                          src={`/${candidate.cvPath}`}
+                          src={`/${candidate.cvPath}/preview`}
                           width="100%"
-                          height="100%"
+                          height="500px"
                           style={{ border: 'none', borderRadius: '4px' }}
                           title="CV Viewer"
-                          onError={(e) => {
-                            console.log('Failed to load CV in iframe');
+                          onLoad={(e) => {
+                            const iframe = e.target as HTMLIFrameElement;
+                            try {
+                              // Check if iframe loaded successfully
+                              const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                              if (!doc || doc.body?.innerHTML.trim() === '') {
+                                iframe.style.display = 'none';
+                                const fallback = iframe.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'block';
+                              }
+                            } catch (err) {
+                              // Cross-origin or other error, show fallback
+                              iframe.style.display = 'none';
+                              const fallback = iframe.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'block';
+                            }
+                          }}
+                          onError={() => {
+                            const iframe = document.querySelector('iframe[title="CV Viewer"]') as HTMLIFrameElement;
+                            if (iframe) {
+                              iframe.style.display = 'none';
+                              const fallback = iframe.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'block';
+                            }
                           }}
                         />
+                        
+                        {/* Fallback preview for non-PDF files */}
+                        <div 
+                          className="text-center p-8"
+                          style={{ display: 'none' }}
+                        >
+                          <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-blue-800 mb-2">
+                            קובץ קורות חיים
+                          </h3>
+                          <p className="text-gray-600 mb-6">
+                            קובץ זה זמין להורדה. לחץ על הכפתור למעלה כדי להוריד ולפתוח בתוכנה המתאימה.
+                          </p>
+                          <div className="bg-gray-100 p-3 rounded text-sm text-gray-700 mb-4">
+                            נתיב קובץ: {candidate.cvPath}
+                          </div>
+                          <Button
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `/${candidate.cvPath}`;
+                              link.download = `${candidate.firstName}_${candidate.lastName}_CV`;
+                              link.click();
+                            }}
+                            className="flex items-center gap-2 mx-auto"
+                          >
+                            <Download className="w-4 h-4" />
+                            הורד קובץ
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
