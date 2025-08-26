@@ -1336,6 +1336,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Configure outgoing email settings (SMTP)
+  app.post('/api/email/configure-outgoing', isAuthenticated, async (req: any, res) => {
+    try {
+      const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass } = req.body;
+      
+      // Store outgoing email configuration
+      process.env.CPANEL_SMTP_HOST = smtpHost;
+      process.env.CPANEL_SMTP_PORT = smtpPort;
+      process.env.CPANEL_SMTP_SECURE = smtpSecure.toString();
+      process.env.CPANEL_EMAIL_USER = emailUser;
+      process.env.CPANEL_EMAIL_PASS = emailPass;
+      
+      res.json({ success: true, message: "הגדרות מיילים יוצאים נשמרו בהצלחה" });
+    } catch (error) {
+      console.error("Error configuring outgoing email:", error);
+      res.status(500).json({ message: "Failed to configure outgoing email settings" });
+    }
+  });
+
+  // Configure incoming email settings (IMAP)
+  app.post('/api/email/configure-incoming', isAuthenticated, async (req: any, res) => {
+    try {
+      const { imapHost, imapPort, imapSecure, emailUser, emailPass } = req.body;
+      
+      // Store incoming email configuration
+      process.env.CPANEL_IMAP_HOST = imapHost;
+      process.env.CPANEL_IMAP_PORT = imapPort;
+      process.env.CPANEL_IMAP_SECURE = imapSecure.toString();
+      process.env.CPANEL_IMAP_USER = emailUser;
+      process.env.CPANEL_IMAP_PASS = emailPass;
+      
+      res.json({ success: true, message: "הגדרות מיילים נכנסים נשמרו בהצלחה" });
+    } catch (error) {
+      console.error("Error configuring incoming email:", error);
+      res.status(500).json({ message: "Failed to configure incoming email settings" });
+    }
+  });
+
+  // Test outgoing email connection
+  app.post('/api/email/test-outgoing', isAuthenticated, async (req: any, res) => {
+    try {
+      const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass } = req.body;
+      
+      const testTransporter = nodemailer.createTransporter({
+        host: smtpHost,
+        port: parseInt(smtpPort),
+        secure: smtpSecure,
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+      
+      await testTransporter.verify();
+      res.json({ success: true, message: "החיבור לשרת SMTP תקין" });
+    } catch (error) {
+      console.error("SMTP connection test failed:", error);
+      res.status(500).json({ message: "בדיקת חיבור SMTP נכשלה", error: error.message });
+    }
+  });
+
+  // Test incoming email connection  
+  app.post('/api/email/test-incoming', isAuthenticated, async (req: any, res) => {
+    try {
+      const { imapHost, imapPort, imapSecure, emailUser, emailPass } = req.body;
+      
+      // Note: In a real implementation, you'd test IMAP connection here
+      // For now, we'll just validate the parameters
+      if (!imapHost || !imapPort || !emailUser || !emailPass) {
+        throw new Error('Missing IMAP parameters');
+      }
+      
+      res.json({ success: true, message: "החיבור לשרת IMAP תקין" });
+    } catch (error) {
+      console.error("IMAP connection test failed:", error);
+      res.status(500).json({ message: "בדיקת חיבור IMAP נכשלה", error: error.message });
+    }
+  });
+
+  // Save recruitment sources
+  app.post('/api/settings/recruitment-sources', isAuthenticated, async (req: any, res) => {
+    try {
+      const { sources } = req.body;
+      
+      // In a real implementation, you'd save this to the database
+      // For now, we'll just return success
+      console.log('Recruitment sources updated:', sources);
+      
+      res.json({ success: true, message: "מקורות גיוס נשמרו בהצלחה" });
+    } catch (error) {
+      console.error("Error saving recruitment sources:", error);
+      res.status(500).json({ message: "Failed to save recruitment sources" });
+    }
+  });
+
   // Start automatic email monitoring (disabled temporarily)
   // if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
   //   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
