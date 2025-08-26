@@ -94,7 +94,7 @@ async function checkCpanelEmails(): Promise<void> {
             return;
           }
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
+          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
           
           fetch.on('message', (msg, seqno) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
@@ -257,20 +257,10 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
   // חילוץ אימייל משולח
   const candidateEmail = from.match(/<(.+)>/) ? from.match(/<(.+)>/)![1] : from.split('<')[0].trim();
   
-  // חילוץ שם רק משם השולח (לא מתוכן המייל)
-  let firstName = '', lastName = '';
-  
-  const senderName = from.match(/"([^"]+)"/) ? from.match(/"([^"]+)"/)![1] : '';
-  
-  if (senderName && senderName !== candidateEmail) {
-    const nameParts = senderName.trim().split(/\s+/);
-    firstName = nameParts[0] || '';
-    lastName = nameParts.slice(1).join(' ') || '';
-  } else {
-    // אם אין שם מפורש, נשאיר ריק - נחכה לעיבוד קורות חיים
-    firstName = '';
-    lastName = '';
-  }
+  // לא נחלץ שם מהשולח - רק מקורות החיים
+  // השם ייחלץ מהקובץ המצורף בלבד
+  const firstName = '';
+  const lastName = '';
   
   return {
     firstName: firstName || undefined,
@@ -305,13 +295,13 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
     } else {
       // יצירת מועמד חדש
       const newCandidate = await storage.createCandidate({
-        firstName: candidateData.firstName || 'מועמד',
-        lastName: candidateData.lastName || 'ממייל',
+        firstName: 'מועמד',
+        lastName: 'חדש',
         email: candidateData.email!,
         city: 'לא צוין', // שדה חובה
         profession: 'ממתין לעיבוד קורות חיים',
         // הוספת תוכן המייל לפרטי המועמד
-        notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** הערה: יש לחלץ פרטים מקורות החיים המצורפים **`,
+        notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** הערה: יש לעדכן פרטים מקורות החיים המצורפים **`,
         recruitmentSource: 'מייל נכנס - קורות חיים',
       });
       candidateId = newCandidate.id;
