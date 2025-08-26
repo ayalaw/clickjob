@@ -1,6 +1,6 @@
 import { gmail } from './emailService';
 import { storage } from './storage';
-import * as Imap from 'imap';
+import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 
 // דפוסי זיהוי מידע במיילים נכנסים
@@ -33,14 +33,19 @@ export async function checkIncomingEmails(): Promise<void> {
   try {
     console.log('🔍 בודק מיילים נכנסים...');
     
-    // אם יש הגדרות cPanel IMAP - השתמש בהן
+    // הגדר משתני סביבה של cPanel אם הם לא קיימים
+    if (!process.env.CPANEL_IMAP_HOST) {
+      process.env.CPANEL_IMAP_HOST = 'mail.h-group.org.il';
+      process.env.CPANEL_IMAP_PORT = '993';
+      process.env.CPANEL_IMAP_SECURE = 'true';
+      process.env.CPANEL_IMAP_USER = 'dolev@h-group.org.il';
+      process.env.CPANEL_IMAP_PASS = 'hpm_7HqToCSs[H7,';
+    }
+    
+    // השתמש בהגדרות cPanel IMAP
     if (process.env.CPANEL_IMAP_HOST && process.env.CPANEL_IMAP_USER) {
       await checkCpanelEmails();
     } 
-    // אחרת השתמש ב-Gmail אם זמין
-    else if (process.env.GMAIL_USER) {
-      await checkGmailEmails();
-    }
     else {
       console.log('⚠️ לא נמצאו הגדרות מייל נכנס');
     }
@@ -52,7 +57,7 @@ export async function checkIncomingEmails(): Promise<void> {
 // בדיקת מיילים דרך cPanel IMAP
 async function checkCpanelEmails(): Promise<void> {
   return new Promise((resolve, reject) => {
-    const imap = new Imap({
+    const imap = new (Imap as any)({
       user: process.env.CPANEL_IMAP_USER!,
       password: process.env.CPANEL_IMAP_PASS!,
       host: process.env.CPANEL_IMAP_HOST!,
