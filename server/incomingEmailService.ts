@@ -254,47 +254,29 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
   const jobCodeMatch = fullText.match(EMAIL_PATTERNS.jobCode);
   const jobCode = jobCodeMatch ? jobCodeMatch[1] : undefined;
   
-  // חילוץ אימייל
-  const emailMatches = fullText.match(EMAIL_PATTERNS.email);
-  const candidateEmail = emailMatches ? emailMatches[0] : 
-    from.match(/<(.+)>/) ? from.match(/<(.+)>/)![1] : from;
+  // חילוץ אימייל משולח
+  const candidateEmail = from.match(/<(.+)>/) ? from.match(/<(.+)>/)![1] : from.split('<')[0].trim();
   
-  // חילוץ טלפון
-  const phoneMatches = fullText.match(EMAIL_PATTERNS.phone);
-  const phone = phoneMatches ? phoneMatches[0].replace(/[-\s]/g, '') : undefined;
-  
-  // חילוץ שם - ניסיון לזהות מהשורה הראשונה או מהנושא
+  // חילוץ שם רק משם השולח (לא מתוכן המייל)
   let firstName = '', lastName = '';
   
-  // ניסיון 1: חיפוש דפוס "שם: משה כהן"
-  const nameMatch = fullText.match(EMAIL_PATTERNS.name);
-  if (nameMatch) {
-    const nameParts = nameMatch[1].trim().split(/\s+/);
+  const senderName = from.match(/"([^"]+)"/) ? from.match(/"([^"]+)"/)![1] : '';
+  
+  if (senderName && senderName !== candidateEmail) {
+    const nameParts = senderName.trim().split(/\s+/);
     firstName = nameParts[0] || '';
     lastName = nameParts.slice(1).join(' ') || '';
   } else {
-    // ניסיון 2: חילוץ מכתובת המייל או שם השולח
-    const senderName = from.match(/"([^"]+)"/) ? from.match(/"([^"]+)"/)![1] : '';
-    
-    if (senderName && senderName !== candidateEmail) {
-      const nameParts = senderName.trim().split(/\s+/);
-      firstName = nameParts[0] || '';
-      lastName = nameParts.slice(1).join(' ') || '';
-    } else {
-      const emailName = candidateEmail.split('@')[0].replace(/[._]/g, ' ');
-      const emailParts = emailName.split(' ').filter(part => part.length > 1);
-      if (emailParts.length >= 2) {
-        firstName = emailParts[0];
-        lastName = emailParts.slice(1).join(' ');
-      }
-    }
+    // אם אין שם מפורש, נשאיר ריק - נחכה לעיבוד קורות חיים
+    firstName = '';
+    lastName = '';
   }
   
   return {
     firstName: firstName || undefined,
     lastName: lastName || undefined,
     email: candidateEmail,
-    phone,
+    phone: undefined, // לא נחלץ טלפון מתוכן המייל
     jobCode,
     originalSubject: subject,
     originalBody: body.substring(0, 500), // שמירת חלק מהתוכן המקורי
@@ -324,14 +306,13 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
       // יצירת מועמד חדש
       const newCandidate = await storage.createCandidate({
         firstName: candidateData.firstName || 'מועמד',
-        lastName: candidateData.lastName || 'חדש',
+        lastName: candidateData.lastName || 'ממייל',
         email: candidateData.email!,
-        mobile: candidateData.phone,
         city: 'לא צוין', // שדה חובה
-        profession: candidateData.jobCode ? 'מועמדות ממייל' : undefined,
+        profession: 'ממתין לעיבוד קורות חיים',
         // הוספת תוכן המייל לפרטי המועמד
-        notes: `--- מייל מקורי ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`,
-        recruitmentSource: 'מייל נכנס',
+        notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** הערה: יש לחלץ פרטים מקורות החיים המצורפים **`,
+        recruitmentSource: 'מייל נכנס - קורות חיים',
       });
       candidateId = newCandidate.id;
       console.log(`✅ נוצר מועמד חדש: ${candidateData.firstName || 'מועמד'} ${candidateData.lastName || 'חדש'}`);
