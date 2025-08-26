@@ -78,15 +78,17 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש מיילים שלא נקראו מהיום האחרון
-        imap.search(['UNSEEN', ['SINCE', new Date(Date.now() - 24*60*60*1000)]], (err, results) => {
+        // חיפוש כל המיילים מהיום האחרון (לא רק UNSEEN)
+        const yesterday = new Date(Date.now() - 24*60*60*1000);
+        const dateStr = yesterday.toISOString().split('T')[0].replace(/-/g, '-');
+        imap.search(['SINCE', dateStr], (err, results) => {
           if (err) {
             console.error('❌ שגיאה בחיפוש מיילים:', err.message);
             reject(err);
             return;
           }
 
-          console.log(`🔍 נמצאו ${results.length} מיילים חדשים שלא נקראו`);
+          console.log(`🔍 נמצאו ${results.length} מיילים מהיום האחרון`);
           
           if (results.length === 0) {
             imap.end();
