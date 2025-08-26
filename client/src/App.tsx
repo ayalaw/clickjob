@@ -17,6 +17,7 @@ import JobInterviews from "@/pages/job-interviews";
 import Emails from "@/pages/emails";
 import EmailSettings from "@/pages/email-settings";
 import SystemSettings from "@/pages/system-settings";
+import CVSearch from "@/pages/cv-search";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/candidates/new" component={AddCandidate} />
           <Route path="/candidates/add" component={AddCandidate} />
           <Route path="/candidates/:id" component={CandidateDetail} />
+          <Route path="/cv-search" component={CVSearch} />
           <Route path="/clients" component={Clients} />
           <Route path="/jobs" component={Jobs} />
           <Route path="/interviews" component={Interviews} />

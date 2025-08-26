@@ -1435,6 +1435,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CV Search routes
+  app.get('/api/candidates/search', isAuthenticated, async (req, res) => {
+    try {
+      const { keywords } = req.query;
+      
+      if (!keywords || typeof keywords !== 'string') {
+        return res.status(400).json({ error: 'מילות מפתח נדרשות' });
+      }
+      
+      const searchResults = await storage.searchCandidatesByKeywords(keywords.trim());
+      res.json({ results: searchResults });
+    } catch (error) {
+      console.error('שגיאה בחיפוש מועמדים:', error);
+      res.status(500).json({ error: 'שגיאה בחיפוש מועמדים' });
+    }
+  });
+
   // Start automatic email monitoring 
   if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
     console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');

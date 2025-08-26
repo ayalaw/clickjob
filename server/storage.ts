@@ -83,6 +83,9 @@ export interface IStorage {
   getEmails(): Promise<Email[]>;
   createEmail(email: InsertEmail): Promise<Email>;
   updateEmail(id: string, email: Partial<InsertEmail>): Promise<Email>;
+
+  // CV Search operations
+  searchCandidatesByKeywords(keywords: string): Promise<Candidate[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -769,6 +772,36 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emails.id, id))
       .returning();
     return updatedEmail;
+  }
+
+  // CV Search operations
+  async searchCandidatesByKeywords(keywords: string): Promise<Candidate[]> {
+    // Split keywords and search for exact matches in CV content
+    const keywordList = keywords.split(' ').filter(k => k.trim().length > 0);
+    
+    if (keywordList.length === 0) {
+      return [];
+    }
+
+    // Create SQL condition that checks if CV content contains ALL keywords
+    const keywordConditions = keywordList.map(keyword => 
+      sql`${candidates.cvContent} ILIKE ${`%${keyword.trim()}%`}`
+    );
+    
+    const searchCondition = keywordConditions.reduce((acc, condition) => 
+      acc ? sql`${acc} AND ${condition}` : condition
+    );
+
+    const results = await db
+      .select()
+      .from(candidates)
+      .where(and(
+        sql`${candidates.cvContent} IS NOT NULL`,
+        searchCondition
+      ))
+      .orderBy(asc(candidates.firstName), asc(candidates.lastName));
+
+    return results;
   }
 }
 

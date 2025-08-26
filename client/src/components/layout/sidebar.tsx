@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, Building2, Briefcase, Mail, BarChart3, Settings, UserCheck } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Briefcase, Mail, BarChart3, Settings, UserCheck, Search } from "lucide-react";
 
 const navigation = [
   { name: "לוח בקרה", href: "/", icon: LayoutDashboard },
   { name: "מאגר מועמדים", href: "/candidates", icon: Users },
+  { name: "חיפוש בקורות חיים", href: "/cv-search", icon: Search },
   { name: "מאגר לקוחות", href: "/clients", icon: Building2 },
   { name: "מאגר משרות", href: "/jobs", icon: Briefcase },
   { name: "סינון ראיונות", href: "/interviews", icon: UserCheck },

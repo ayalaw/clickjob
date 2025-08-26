@@ -68,6 +68,7 @@ export const candidates = pgTable("candidates", {
   recruitmentSource: varchar("recruitment_source"), // מקור גיוס
   expectedSalary: integer("expected_salary"),
   cvPath: varchar("cv_path"), // file path for uploaded CV
+  cvContent: text("cv_content"), // extracted text content from CV for searching
   status: candidateStatusEnum("status").default('available'),
   rating: integer("rating"), // 1-5 rating
   notes: text("notes"),
