@@ -17,12 +17,15 @@ import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailServic
 // Configure multer for file uploads
 const upload = multer({
   dest: 'uploads/',
-  filename: (req, file, cb) => {
-    // Keep original extension for proper MIME type detection
-    const ext = path.extname(file.originalname);
-    const name = file.originalname.split('.')[0];
-    cb(null, `${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`);
-  },
+  storage: multer.diskStorage({
+    destination: 'uploads/',
+    filename: (req: any, file: any, cb: any) => {
+      // Keep original extension for proper MIME type detection
+      const ext = path.extname(file.originalname);
+      const name = file.originalname.split('.')[0];
+      cb(null, `${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`);
+    }
+  }),
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf', 
