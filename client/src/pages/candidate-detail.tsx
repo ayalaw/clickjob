@@ -34,6 +34,7 @@ export default function CandidateDetail() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [cvContent, setCvContent] = useState<string>("");
   const [loadingContent, setLoadingContent] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -54,51 +55,46 @@ export default function CandidateDetail() {
     enabled: isAuthenticated && !!id,
   });
 
-  // Load CV content if candidate has a CV
-  useEffect(() => {
-    if (candidate?.cvPath && candidate.cvPath.trim()) {
-      setLoadingContent(true);
-      // Try to extract text content using the CV extraction API
-      const extractContent = async () => {
-        try {
-          // Create a FormData with the file
-          const response = await fetch(`/uploads/${candidate.cvPath}`);
-          if (response.ok) {
-            const blob = await response.blob();
-            const formData = new FormData();
-            
-            // Determine file extension from the CV path
-            let fileName = 'cv.pdf';
-            if (candidate.cvPath.toLowerCase().includes('.doc')) {
-              fileName = 'cv.docx';
-            } else if (candidate.cvPath.toLowerCase().includes('.pdf')) {
-              fileName = 'cv.pdf';
-            }
-            
-            formData.append('cv', blob, fileName);
-            
-            const extractResponse = await fetch('/api/extract-cv-data', {
-              method: 'POST',
-              body: formData,
-            });
-            
-            if (extractResponse.ok) {
-              const data = await extractResponse.json();
-              if (data.fileContent) {
-                setCvContent(data.fileContent);
-              }
-            }
-          }
-        } catch (error) {
-          console.log("Could not extract CV content:", error);
-        } finally {
-          setLoadingContent(false);
+  // Function to load CV content
+  const loadCvContent = async () => {
+    if (!candidate?.cvPath) return;
+    
+    setLoadingContent(true);
+    try {
+      const response = await fetch(`/uploads/${candidate.cvPath}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const formData = new FormData();
+        
+        // Determine file extension from the CV path
+        let fileName = 'cv.pdf';
+        if (candidate.cvPath.toLowerCase().includes('.doc')) {
+          fileName = 'cv.docx';
+        } else if (candidate.cvPath.toLowerCase().includes('.pdf')) {
+          fileName = 'cv.pdf';
         }
-      };
-      
-      extractContent();
+        
+        formData.append('cv', blob, fileName);
+        
+        const extractResponse = await fetch('/api/extract-cv-data', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (extractResponse.ok) {
+          const data = await extractResponse.json();
+          if (data.fileContent) {
+            setCvContent(data.fileContent);
+            setShowContent(true);
+          }
+        }
+      }
+    } catch (error) {
+      console.log("Could not extract CV content:", error);
+    } finally {
+      setLoadingContent(false);
     }
-  }, [candidate?.cvPath]);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -355,10 +351,34 @@ export default function CandidateDetail() {
                         </div>
                       </div>
                       <div className="bg-white max-h-[600px] overflow-y-auto">
-                        {/* PDF File Display */}
-                        {candidate.cvPath.toLowerCase().includes('.pdf') ? (
-                          <div className="space-y-4">
-                            {/* PDF Embedded Viewer */}
+                        {/* File Display */}
+                        <div className="space-y-4">
+                          {/* Control buttons */}
+                          <div className="flex gap-3 justify-center p-4 bg-gray-50 rounded">
+                            <Button
+                              onClick={() => window.open(`/uploads/${candidate.cvPath}`, '_blank')}
+                              className="flex items-center gap-2"
+                            >
+                              <Eye className="w-4 h-4" />
+                              פתח קובץ בחלון חדש
+                            </Button>
+                            <Button
+                              onClick={loadCvContent}
+                              disabled={loadingContent}
+                              variant="outline"
+                              className="flex items-center gap-2"
+                            >
+                              {loadingContent ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              ) : (
+                                <FileText className="w-4 h-4" />
+                              )}
+                              {loadingContent ? 'מחלץ תוכן...' : 'הצג תוכן הקובץ'}
+                            </Button>
+                          </div>
+                          
+                          {/* PDF iframe display */}
+                          {candidate.cvPath.toLowerCase().includes('.pdf') && (
                             <div className="w-full h-[400px] bg-gray-50 rounded border">
                               <iframe
                                 src={`/uploads/${candidate.cvPath}#toolbar=0&navpanes=0&scrollbar=1`}
@@ -368,90 +388,74 @@ export default function CandidateDetail() {
                                 title="PDF Viewer"
                               />
                             </div>
-                            
-                            {/* Text content display */}
-                            {loadingContent ? (
-                              <div className="p-4 text-center border-t">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                <p className="text-sm text-gray-500">מחלץ תוכן הקובץ...</p>
+                          )}
+                          
+                          {/* Text content display */}
+                          {showContent && cvContent && (
+                            <div className="border border-red-200 rounded">
+                              <div className="bg-red-50 p-3 border-b border-red-200">
+                                <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
+                                <button 
+                                  onClick={() => setShowContent(false)}
+                                  className="text-red-600 text-xs hover:text-red-800 float-left"
+                                >
+                                  ✕ סגור
+                                </button>
                               </div>
-                            ) : cvContent ? (
-                              <div className="border-t">
-                                <div className="bg-red-50 p-3 border-b">
-                                  <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
-                                </div>
-                                <div className="p-4 max-h-[300px] overflow-y-auto">
-                                  <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                                    {cvContent}
-                                  </pre>
-                                </div>
+                              <div className="p-4 max-h-[500px] overflow-y-auto bg-white">
+                                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
+                                  {cvContent}
+                                </pre>
                               </div>
-                            ) : null}
-                            
-                            {/* Fallback: Always show "Open in new tab" button */}
-                            <div className="text-center py-4 border-t">
+                            </div>
+                          )}
+                        </div>
+                        ) : (
+                          /* Default display for other file types */
+                          <div className="space-y-4">
+                            {/* Control buttons */}
+                            <div className="flex gap-3 justify-center p-4 bg-gray-50 rounded">
                               <Button
-                                onClick={() => {
-                                  window.open(`/uploads/${candidate.cvPath}`, '_blank');
-                                }}
-                                className="flex items-center gap-2 mx-auto"
+                                onClick={() => window.open(`/uploads/${candidate.cvPath}`, '_blank')}
+                                className="flex items-center gap-2"
                               >
                                 <Eye className="w-4 h-4" />
-                                פתח PDF בחלון חדש (תצוגה מלאה)
+                                פתח קובץ בחלון חדש
+                              </Button>
+                              <Button
+                                onClick={loadCvContent}
+                                disabled={loadingContent}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                              >
+                                {loadingContent ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                ) : (
+                                  <FileText className="w-4 h-4" />
+                                )}
+                                {loadingContent ? 'מחלץ תוכן...' : 'הצג תוכן הקובץ'}
                               </Button>
                             </div>
-                          </div>
-                        ) : candidate.cvPath.toLowerCase().includes('.doc') ? (
-                          /* Word Document Display */
-                          <div className="space-y-4">
-                            <div className="p-8 text-center bg-blue-50 rounded border">
-                              <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                              <h3 className="text-lg font-medium text-blue-800 mb-2">מסמך Word</h3>
-                              <p className="text-gray-600 mb-6">לא ניתן להציג מסמכי Word ישירות בדפדפן</p>
-                              <div className="flex gap-3 justify-center">
-                                <Button
-                                  onClick={() => {
-                                    window.open(`/uploads/${candidate.cvPath}`, '_blank');
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  פתח במערכת
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    const link = document.createElement('a');
-                                    link.href = `/uploads/${candidate.cvPath}`;
-                                    link.download = `${candidate.firstName}_${candidate.lastName}_CV.docx`;
-                                    link.click();
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Download className="w-4 h-4" />
-                                  הורד קובץ
-                                </Button>
-                              </div>
-                            </div>
                             
-                            {/* Text content display for Word docs */}
-                            {loadingContent ? (
-                              <div className="p-4 text-center border-t">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                <p className="text-sm text-gray-500">מחלץ תוכן הקובץ...</p>
-                              </div>
-                            ) : cvContent ? (
-                              <div className="border border-gray-200 rounded">
-                                <div className="bg-red-50 p-3 border-b">
+                            {/* Text content display */}
+                            {showContent && cvContent && (
+                              <div className="border border-red-200 rounded">
+                                <div className="bg-red-50 p-3 border-b border-red-200">
                                   <h4 className="text-sm font-medium text-red-800">תוכן הקובץ (טקסט מחולץ)</h4>
+                                  <button 
+                                    onClick={() => setShowContent(false)}
+                                    className="text-red-600 text-xs hover:text-red-800 float-left"
+                                  >
+                                    ✕ סגור
+                                  </button>
                                 </div>
-                                <div className="p-4 max-h-[400px] overflow-y-auto">
+                                <div className="p-4 max-h-[500px] overflow-y-auto bg-white">
                                   <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
                                     {cvContent}
                                   </pre>
                                 </div>
                               </div>
-                            ) : null}
+                            )}
                           </div>
                         ) : candidate.cvPath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
                           /* Image Display */
