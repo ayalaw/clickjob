@@ -348,13 +348,14 @@ export default function CandidateDetail() {
                         <div className="p-8 text-center bg-blue-50 rounded border">
                           <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-blue-800 mb-2">
-                            {candidate.cvPath.toLowerCase().includes('.doc') ? 'מסמך Word' : 'קובץ'}
+                            קובץ קורות חיים
                           </h3>
                           <p className="text-gray-600 mb-6">
-                            {candidate.cvPath.toLowerCase().includes('.doc') 
-                              ? 'לא ניתן להציג מסמכי Word ישירות בדפדפן' 
-                              : 'לא ניתן להציג קובץ זה ישירות בדפדפן'}
+                            הקובץ זמין להורדה וצפייה. לחץ על הכפתורים למעלה לפתיחה או הורדה.
                           </p>
+                          <div className="bg-gray-100 p-3 rounded text-sm text-gray-700">
+                            נתיב קובץ: {candidate.cvPath}
+                          </div>
                         </div>
                       )}
                     </div>

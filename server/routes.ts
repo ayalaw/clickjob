@@ -10,12 +10,19 @@ import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobAp
 import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
+import mime from 'mime-types';
 import { sendEmail, emailTemplates } from './emailService';
 import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService';
 
 // Configure multer for file uploads
 const upload = multer({
   dest: 'uploads/',
+  filename: (req, file, cb) => {
+    // Keep original extension for proper MIME type detection
+    const ext = path.extname(file.originalname);
+    const name = file.originalname.split('.')[0];
+    cb(null, `${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`);
+  },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf', 
@@ -230,7 +237,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
   });
-  app.use('/uploads', express.static('uploads'));
+  app.use('/uploads', express.static('uploads', {
+    setHeaders: (res, filePath) => {
+      const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+      res.setHeader('Content-Type', mimeType);
+    }
+  }));
 
   // Auth middleware
   await setupAuth(app);
