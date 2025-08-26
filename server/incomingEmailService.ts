@@ -78,8 +78,8 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש כל המיילים מהשבוע האחרון 
-        imap.search(['ALL'], (err, results) => {
+        // חיפוש רק מיילים לא נקראו (UNSEEN)
+        imap.search(['UNSEEN'], (err, results) => {
           if (err) {
             console.error('❌ שגיאה בחיפוש מיילים:', err.message);
             reject(err);
@@ -94,7 +94,7 @@ async function checkCpanelEmails(): Promise<void> {
             return;
           }
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
+          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
           
           fetch.on('message', (msg, seqno) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
