@@ -1314,7 +1314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass } = req.body;
       
       // Create test transporter
-      const testTransporter = nodemailer.createTransporter({
+      const testTransporter = nodemailer.createTransport({
         host: smtpHost,
         port: parseInt(smtpPort),
         secure: smtpSecure,
@@ -1380,7 +1380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass } = req.body;
       
-      const testTransporter = nodemailer.createTransporter({
+      const testTransporter = nodemailer.createTransport({
         host: smtpHost,
         port: parseInt(smtpPort),
         secure: smtpSecure,
