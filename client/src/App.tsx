@@ -43,6 +43,7 @@ function Router() {
           <Route path="/candidates/new" component={AddCandidate} />
           <Route path="/candidates/add" component={AddCandidate} />
           <Route path="/candidates/advanced" component={AdvancedCandidate} />
+          <Route path="/candidates/:id/advanced" component={AdvancedCandidate} />
           <Route path="/candidates/:id" component={CandidateDetail} />
           <Route path="/cv-search" component={CVSearch} />
           <Route path="/clients" component={Clients} />

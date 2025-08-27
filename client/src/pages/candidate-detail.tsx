@@ -217,15 +217,26 @@ export default function CandidateDetail() {
                       <User className="w-5 h-5" />
                       פרטים אישיים
                     </CardTitle>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setIsEditMode(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit className="w-4 h-4" />
-                      ערוך
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setIsEditMode(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        ערוך
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => navigate(`/candidates/${id}/advanced`)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        עריכה מתקדמת
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="h-[calc(100%-4rem)] overflow-auto">

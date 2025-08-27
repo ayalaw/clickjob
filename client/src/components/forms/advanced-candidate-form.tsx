@@ -109,6 +109,27 @@ export default function AdvancedCandidateForm({
 }: AdvancedCandidateFormProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
+
+  // Load existing CV file if editing candidate
+  useEffect(() => {
+    if (candidate?.cvPath && candidate.cvPath.trim()) {
+      const cvPath = candidate.cvPath.replace('uploads/', '');
+      const existingCvFile: UploadedFile = {
+        id: 'existing-cv',
+        name: cvPath.split('/').pop() || 'קורות חיים קיימים',
+        size: 0, // We don't know the size
+        type: cvPath.includes('.pdf') ? 'application/pdf' : 
+               cvPath.includes('.doc') ? 'application/msword' : 'application/octet-stream',
+        url: `/uploads/${cvPath}`,
+      };
+      setUploadedFiles([existingCvFile]);
+      setSelectedFile(existingCvFile);
+    } else {
+      // Reset files if no CV path
+      setUploadedFiles([]);
+      setSelectedFile(null);
+    }
+  }, [candidate]);
   const [expandedSections, setExpandedSections] = useState({
     personal: true,
     contact: false,
@@ -358,7 +379,7 @@ export default function AdvancedCandidateForm({
                     </Button>
                   </label>
                   <p className="text-xs text-gray-500 mt-2">
-                    PDF, DOC, DOCX, JPG, PNG, GIF (עד 10MB)
+                    PDF, DOC, DOCX, JPG, PNG (עד 10MB)
                   </p>
                 </div>
               </CardContent>
@@ -443,18 +464,45 @@ export default function AdvancedCandidateForm({
                         alt={selectedFile.name}
                         className="w-full h-full object-contain"
                       />
-                    ) : selectedFile.type.includes('pdf') ? (
+                    ) : selectedFile.type.includes('pdf') || selectedFile.name.includes('.pdf') ? (
                       <iframe
                         src={selectedFile.url}
                         className="w-full h-full border-0"
                         title={selectedFile.name}
+                        onError={(e) => {
+                          console.log('PDF loading error:', e);
+                        }}
                       />
+                    ) : selectedFile.type.includes('word') || selectedFile.name.includes('.doc') ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                        <div className="text-center">
+                          <FileText className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                          <p className="text-sm font-medium text-gray-700 mb-2">{selectedFile.name}</p>
+                          <p className="text-xs text-gray-500 mb-4">לצפייה בקובץ Word</p>
+                          <Button
+                            size="sm"
+                            onClick={() => window.open(selectedFile.url, '_blank')}
+                            className="flex items-center gap-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            פתח קובץ
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
                           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-600">{selectedFile.name}</p>
-                          <p className="text-xs text-gray-500">לא ניתן להציג תצוגה מקדימה</p>
+                          <p className="text-xs text-gray-500 mb-4">לא ניתן להציג תצוגה מקדימה</p>
+                          <Button
+                            size="sm"
+                            onClick={() => window.open(selectedFile.url, '_blank')}
+                            className="flex items-center gap-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            פתח קובץ
+                          </Button>
                         </div>
                       </div>
                     )}
