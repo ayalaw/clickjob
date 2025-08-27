@@ -112,8 +112,15 @@ export default function CandidateDetail() {
     enabled: isAuthenticated,
   });
 
-  // Handle different possible data structures for jobs - API returns {jobs: [...]}
-  const jobs = Array.isArray((jobsData as any)?.jobs) ? (jobsData as any).jobs : [];
+  // Handle different possible data structures for jobs
+  let jobs: any[] = [];
+  if (jobsData) {
+    if (Array.isArray((jobsData as any)?.jobs)) {
+      jobs = (jobsData as any).jobs;
+    } else if (Array.isArray(jobsData)) {
+      jobs = jobsData;
+    }
+  }
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
