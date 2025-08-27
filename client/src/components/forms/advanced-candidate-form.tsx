@@ -113,17 +113,29 @@ export default function AdvancedCandidateForm({
   // Load existing CV file if editing candidate
   useEffect(() => {
     if (candidate?.cvPath && candidate.cvPath.trim()) {
-      const cvPath = candidate.cvPath.replace('uploads/', '');
+      // Handle both formats: "uploads/file.pdf" and "file.pdf"
+      let cvPath = candidate.cvPath;
+      if (cvPath.startsWith('uploads/')) {
+        cvPath = cvPath.substring(8); // Remove "uploads/" prefix
+      }
+      
       const existingCvFile: UploadedFile = {
         id: 'existing-cv',
         name: cvPath.split('/').pop() || 'קורות חיים קיימים',
         size: 0, // We don't know the size
-        type: cvPath.includes('.pdf') ? 'application/pdf' : 
-               cvPath.includes('.doc') ? 'application/msword' : 'application/octet-stream',
+        type: cvPath.toLowerCase().includes('.pdf') ? 'application/pdf' : 
+               cvPath.toLowerCase().includes('.doc') ? 'application/msword' : 'application/octet-stream',
         url: `/uploads/${cvPath}`,
       };
       setUploadedFiles([existingCvFile]);
       setSelectedFile(existingCvFile);
+      
+      console.log('Loading existing CV:', {
+        originalPath: candidate.cvPath,
+        cleanPath: cvPath,
+        finalUrl: existingCvFile.url,
+        fileType: existingCvFile.type
+      });
     } else {
       // Reset files if no CV path
       setUploadedFiles([]);
