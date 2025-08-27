@@ -161,15 +161,15 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש כל המיילים האחרונים (כולל נקראים)
-        imap.search(['ALL'], (err: any, results: any) => {
+        // חיפוש רק מיילים שלא נקראו
+        imap.search(['UNSEEN'], (err: any, results: any) => {
           if (err) {
             console.error('❌ שגיאה בחיפוש מיילים:', err.message);
             reject(err);
             return;
           }
 
-          console.log(`🔍 נמצאו ${results.length} מיילים חדשים לעיבוד`);
+          console.log(`🔍 נמצאו ${results.length} מיילים לא נקראו לעיבוד`);
           
           if (results.length === 0) {
             imap.end();
@@ -260,6 +260,19 @@ async function checkCpanelEmails(): Promise<void> {
                     if (candidate.email) {
                       await createCandidateFromEmail(candidate);
                       console.log(`✅ נוצר מועמד חדש: ${candidate.firstName || 'מועמד'} ${candidate.lastName || 'חדש'}`);
+                      
+                      // סימון המייל כנקרא אחרי עיבוד מוצלח
+                      try {
+                        imap.addFlags(msg.attrs.uid, ['\\Seen'], (err: any) => {
+                          if (err) {
+                            console.error('❌ שגיאה בסימון מייל כנקרא:', err.message);
+                          } else {
+                            console.log(`📧 מייל סומן כנקרא`);
+                          }
+                        });
+                      } catch (markError) {
+                        console.error('❌ שגיאה בסימון מייל:', markError);
+                      }
                     } else {
                       console.log(`⚠️ חסר אימייל למועמד`);
                     }
