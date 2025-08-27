@@ -710,22 +710,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
                         <h4 className="font-medium text-gray-800">תצוגת קורות החיים</h4>
-                        <div className="flex gap-2">
-                          <a 
-                            href={URL.createObjectURL(uploadedFile)} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                          >
-                            פתח בחלון חדש
-                          </a>
-                          <a 
-                            href={URL.createObjectURL(uploadedFile)} 
-                            download={uploadedFile.name}
-                            className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-                          >
-                            הורד
-                          </a>
+                        <div className="text-xs text-gray-600">
+                          קובץ מועלה ומוכן לשמירה
                         </div>
                       </div>
                       
@@ -743,22 +729,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <a 
-                                  href={URL.createObjectURL(uploadedFile)} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-xs bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 transition-colors"
-                                >
-                                  פתח בחלון חדש
-                                </a>
-                                <a 
-                                  href={URL.createObjectURL(uploadedFile)} 
-                                  download={uploadedFile.name}
-                                  className="text-xs bg-gray-600 text-white py-1 px-3 rounded hover:bg-gray-700 transition-colors"
-                                >
-                                  הורד
-                                </a>
+                              <div className="text-xs text-gray-600">
+                                קובץ PDF מועלה ומוכן
                               </div>
                             </div>
                             
@@ -795,22 +767,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <a 
-                                  href={URL.createObjectURL(uploadedFile)} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-xs bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 transition-colors"
-                                >
-                                  פתח בחלון חדש
-                                </a>
-                                <a 
-                                  href={URL.createObjectURL(uploadedFile)} 
-                                  download={uploadedFile.name}
-                                  className="text-xs bg-gray-600 text-white py-1 px-3 rounded hover:bg-gray-700 transition-colors"
-                                >
-                                  הורד
-                                </a>
+                              <div className="text-xs text-gray-600">
+                                מסמך Word מועלה ומוכן
                               </div>
                             </div>
                             
@@ -851,13 +809,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                               <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                               <p className="text-gray-600 text-lg font-medium mb-2">לא ניתן להציג קובץ זה</p>
                               <p className="text-gray-500 text-sm mb-4">{uploadedFile.name}</p>
-                              <a 
-                                href={URL.createObjectURL(uploadedFile)} 
-                                download={uploadedFile.name}
-                                className="inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-                              >
-                                הורד קובץ
-                              </a>
+                              <p className="text-sm text-gray-600">הקובץ לא נתמך לתצוגה מקדימה</p>
                             </div>
                           </div>
                         )}

@@ -158,42 +158,33 @@ export default function CandidateDetail() {
                 <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
                   {candidate.cvPath ? (
                     <div className="h-full flex flex-col">
-                      {/* Control buttons */}
-                      <div className="flex gap-3 justify-center p-3 bg-gray-50 rounded mb-4">
-                        <Button
-                          size="sm"
-                          onClick={() => window.open(`/${candidate.cvPath?.replace('uploads/', '')}`, '_blank')}
-                          className="flex items-center gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          פתח בחלון חדש
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = `/uploads/${candidate.cvPath?.replace('uploads/', '')}`;
-                            link.download = `${candidate.firstName}_${candidate.lastName}_CV`;
-                            link.click();
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          הורד
-                        </Button>
+                      {/* File info */}
+                      <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FileText className="w-4 h-4" />
+                          קובץ קורות חיים - {candidate.cvPath?.split('/').pop()}
+                        </div>
                       </div>
                       
-                      {/* CV Display - Direct iframe */}
+                      {/* CV Display */}
                       <div className="flex-1 bg-white rounded border overflow-hidden">
-                        <iframe
-                          src={`/uploads/${candidate.cvPath?.replace('uploads/', '')}`}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                          onError={() => {
-                            console.log('Error loading CV file');
-                          }}
-                        />
+                        {candidate.cvPath?.toLowerCase().includes('.pdf') ? (
+                          <iframe
+                            src={`/uploads/${candidate.cvPath?.replace('uploads/', '')}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : candidate.cvPath?.toLowerCase().includes('.doc') ? (
+                          <iframe
+                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + candidate.cvPath?.replace('uploads/', ''))}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (

@@ -466,10 +466,13 @@ export default function JobInterviews() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`/uploads/${application.candidate.cvPath?.replace('uploads/', '')}`, '_blank')}
+                                  onClick={() => {
+                                    // Show CV in modal or navigate to candidate detail
+                                    window.location.href = `/candidates/${application.candidate.id}`;
+                                  }}
                                   data-testid={`button-cv-${application.id}`}
                                 >
-                                  <Download className="h-4 w-4" />
+                                  <FileText className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
