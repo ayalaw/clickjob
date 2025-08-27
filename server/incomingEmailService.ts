@@ -4,9 +4,12 @@ import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 
 // מעקב אחרי מיילים שכבר עובדו (בגלובל)
-// איפוס רשימת מיילים מעובדים כל יום
+// איפוס רשימת מיילים מעובדים כל יום  
 let processedEmails = new Set<string>();
 let lastResetDate = new Date().toDateString();
+
+// איפוס ידני לבדיקה
+processedEmails.clear();
 
 // דפוסי זיהוי מידע במיילים נכנסים
 const EMAIL_PATTERNS = {
@@ -318,13 +321,14 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
         notes: `${existingCandidate.notes || ''}\n\n--- מייל חדש ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`.trim()
       });
     } else {
-      // יצירת מועמד חדש
+      // יצירת מועמד חדש עם שדות חובה
       const newCandidate = await storage.createCandidate({
-        firstName: 'מועמד',
-        lastName: 'חדש',
+        firstName: candidateData.firstName || 'מועמד',
+        lastName: candidateData.lastName || 'ממייל',
         email: candidateData.email!,
         city: 'לא צוין', // שדה חובה
         profession: 'ממתין לעיבוד קורות חיים',
+        mobile: candidateData.phone || undefined,
         // הוספת תוכן המייל לפרטי המועמד
         notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** הערה: יש לעדכן פרטים מקורות החיים המצורפים **`,
         recruitmentSource: 'מייל נכנס - קורות חיים',
