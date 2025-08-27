@@ -112,10 +112,18 @@ export default function CandidateDetail() {
     enabled: isAuthenticated,
   });
 
-  const jobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
+  // Handle different possible data structures for jobs
+  let jobs: any[] = [];
+  if (Array.isArray(jobsData?.jobs)) {
+    jobs = jobsData.jobs;
+  } else if (Array.isArray(jobsData)) {
+    jobs = jobsData;
+  }
+  console.log('Debug jobs data:', { jobsData, jobs, length: jobs.length });
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
+  console.log('Debug notes:', { candidateEvents, noteEvents, length: noteEvents.length });
 
   // Filter jobs based on search term
   const filteredJobs = jobs.filter((job: any) => 
@@ -1054,13 +1062,13 @@ export default function CandidateDetail() {
                     </div>
 
                     {/* Notes Section */}
-                    {noteEvents.length > 0 && (
-                      <div className="border-t pt-4 mt-4">
-                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          📝 הערות על המועמד
-                        </h4>
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="text-base font-medium mb-3 flex items-center gap-2">
+                        📝 הערות על המועמד ({noteEvents.length})
+                      </h4>
+                      {noteEvents.length > 0 ? (
                         <div className="space-y-3 max-h-48 overflow-y-auto">
-                          {noteEvents.map((note) => (
+                          {noteEvents.map((note: any) => (
                             <div key={note.id} className="bg-purple-50 p-3 rounded-lg border-r-4 border-purple-200">
                               <div className="flex justify-between items-start mb-2">
                                 <span className="text-xs text-purple-600 font-medium">
@@ -1082,8 +1090,10 @@ export default function CandidateDetail() {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <p className="text-gray-500 text-sm">אין הערות על המועמד</p>
+                      )}
+                    </div>
 
                   </CardContent>
                 </Card>
