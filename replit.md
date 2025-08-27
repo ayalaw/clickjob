@@ -53,6 +53,8 @@ Preferred communication style: Simple, everyday language.
 - **File validation** with size and type restrictions
 - **Local file storage** with organized directory structure
 - **File metadata** tracking in database
+- **Automatic CV processing** from incoming emails with attachment extraction
+- **Email integration** with cPanel IMAP for automatic candidate creation
 
 # External Dependencies
 

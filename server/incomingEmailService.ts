@@ -2,6 +2,12 @@ import { gmail } from './emailService';
 import { storage } from './storage';
 import Imap from 'imap';
 import { simpleParser } from 'mailparser';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+// ייבוא פונקציות חילוץ נתונים - נוסיף אותן מקומית
+import mammoth from 'mammoth';
+import { execSync } from 'child_process';
 
 // מעקב אחרי מיילים שכבר עובדו (בגלובל)
 // איפוס רשימת מיילים מעובדים כל יום  
@@ -26,6 +32,60 @@ const EMAIL_PATTERNS = {
   name: /(?:שם|שלום|היי)\s*:?\s*([א-ת\s]{2,30})/i,
 };
 
+// פונקציות חילוץ נתונים מקבצי CV עוברו למטה לתוך הפונקציה
+
+function parseCV(text: string): any {
+  const result: any = {};
+  
+  // חילוץ שם מהמקום הראשון בטקסט (לא מהכותרות)
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  
+  for (let i = 0; i < Math.min(lines.length, 3); i++) {
+    const line = lines[i];
+    
+    // דלג על מילים נפוצות בקורות חיים
+    const skipWords = ['קורות', 'חיים', 'cv', 'resume', 'curriculum', 'vitae', 'נתונים', 'אישיים', 'פרטים'];
+    if (skipWords.some(word => line.toLowerCase().includes(word))) {
+      continue;
+    }
+    
+    // בדוק שזו שורה עם שם (רק מילים ובעברית/אנגלית)
+    const nameMatch = line.match(/^([א-ת\s]+|[a-zA-Z\s]+)$/);
+    if (nameMatch && line.split(' ').length >= 2 && line.split(' ').length <= 4) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        result.firstName = parts[0];
+        result.lastName = parts.slice(1).join(' ');
+        break;
+      }
+    }
+  }
+  
+  // חילוץ טלפון
+  const phoneMatch = text.match(/(?:05[0-9]|02|03|04|08|09)[-\s]?[0-9]{3}[-\s]?[0-9]{4}/);
+  if (phoneMatch) {
+    result.phone = phoneMatch[0];
+  }
+  
+  // חילוץ עיר מגורים
+  const cityKeywords = ['עיר', 'מגורים', 'כתובת', 'מקום', 'city', 'address'];
+  const cityPattern = new RegExp(`(?:${cityKeywords.join('|')})\\s*:?\\s*([א-ת\\s]{2,20})`, 'i');
+  const cityMatch = text.match(cityPattern);
+  if (cityMatch) {
+    result.city = cityMatch[1].trim();
+  }
+  
+  // חילוץ מקצוע
+  const professionKeywords = ['מקצוע', 'תפקיד', 'עיסוק', 'profession', 'occupation', 'job', 'position'];
+  const professionPattern = new RegExp(`(?:${professionKeywords.join('|')})\\s*:?\\s*([א-ת\\s]{2,30})`, 'i');
+  const professionMatch = text.match(professionPattern);
+  if (professionMatch) {
+    result.profession = professionMatch[1].trim();
+  }
+  
+  return result;
+}
+
 interface ParsedCandidate {
   firstName?: string;
   lastName?: string;
@@ -34,6 +94,9 @@ interface ParsedCandidate {
   jobCode?: string;
   originalSubject?: string;
   originalBody?: string;
+  cvPath?: string;
+  city?: string;
+  profession?: string;
 }
 
 // בדיקת מיילים נכנסים - תמיכה בגם Gmail וגם IMAP
@@ -146,6 +209,28 @@ async function checkCpanelEmails(): Promise<void> {
                   if (isJobApp) {
                     const candidate = parseCandidate(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
                     console.log(`📋 פרטי מועמד נמצאו:`, candidate);
+                    
+                    // בדיקת קבצים מצורפים
+                    if (parsed.attachments && parsed.attachments.length > 0) {
+                      console.log(`📎 נמצאו ${parsed.attachments.length} קבצים מצורפים`);
+                      
+                      for (const attachment of parsed.attachments) {
+                        if (isCVFile(attachment.filename || '')) {
+                          console.log(`📄 מוריד קובץ קורות חיים: ${attachment.filename}`);
+                          
+                          try {
+                            const cvData = await saveAttachmentAndExtractData(attachment, candidate.email || '');
+                            if (cvData) {
+                              // עדכון פרטי המועמד עם הנתונים מקורות החיים
+                              Object.assign(candidate, cvData);
+                              console.log(`✅ פרטים חולצו מקורות החיים: ${cvData.firstName} ${cvData.lastName}`);
+                            }
+                          } catch (error) {
+                            console.error('❌ שגיאה בעיבוד קובץ מצורף:', error);
+                          }
+                        }
+                      }
+                    }
                     
                     if (candidate.email) {
                       await createCandidateFromEmail(candidate);
@@ -301,6 +386,76 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
   };
 }
 
+
+// בדיקה אם קובץ הוא קובץ קורות חיים
+function isCVFile(filename: string): boolean {
+  const cvExtensions = ['.pdf', '.doc', '.docx'];
+  const extension = path.extname(filename.toLowerCase());
+  return cvExtensions.includes(extension);
+}
+
+// שמירת קובץ מצורף וחילוץ נתונים
+async function saveAttachmentAndExtractData(attachment: any, email: string): Promise<ParsedCandidate | null> {
+  try {
+    // יצירת שם קובץ ייחודי
+    const timestamp = Date.now();
+    const randomString = crypto.randomBytes(5).toString('hex');
+    const originalName = attachment.filename || 'cv';
+    const extension = path.extname(originalName);
+    const filename = `${timestamp}-${randomString}${extension}`;
+    const filePath = path.join('uploads', filename);
+    
+    // וידוא שתיקיית uploads קיימת
+    const uploadsDir = 'uploads';
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    // שמירת הקובץ
+    fs.writeFileSync(filePath, attachment.content);
+    console.log(`💾 קובץ נשמר: ${filePath}`);
+    
+    // חילוץ נתונים מהקובץ
+    let extractedData: any = {};
+    
+    if (extension.toLowerCase() === '.pdf') {
+      try {
+        // השתמש ב-pdftotext לחילוץ טקסט מPDF
+        const text = execSync(`pdftotext "${filePath}" -`, { encoding: 'utf8' });
+        extractedData = parseCV(text);
+      } catch (error) {
+        console.error('Error extracting PDF:', error);
+        extractedData = { firstName: '', lastName: '', phone: '', city: '', profession: '' };
+      }
+    } else if (['.doc', '.docx'].includes(extension.toLowerCase())) {
+      try {
+        const buffer = fs.readFileSync(filePath);
+        const result = await mammoth.extractRawText({ buffer });
+        const text = result.value;
+        extractedData = parseCV(text);
+      } catch (error) {
+        console.error('Error extracting DOC:', error);
+        extractedData = { firstName: '', lastName: '', phone: '', city: '', profession: '' };
+      }
+    }
+    
+    return {
+      firstName: extractedData.firstName,
+      lastName: extractedData.lastName,
+      email: email, // האימייל מהמייל הנכנס
+      phone: extractedData.phone,
+      cvPath: filename, // רק שם הקובץ, לא הנתיב המלא
+      city: extractedData.city || 'לא צוין',
+      profession: extractedData.profession || 'ממתין לעיבוד קורות חיים'
+    };
+    
+  } catch (error) {
+    console.error('❌ שגיאה בשמירת קובץ מצורף:', error);
+    return null;
+  }
+}
+
+// עדכון פונקציית יצירת מועמד לכלול נתוני קורות חיים
 async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise<void> {
   try {
     // בדיקה אם המועמד כבר קיים
@@ -312,13 +467,16 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
       const existingCandidate = existingCandidates.candidates.find(c => c.email === candidateData.email)!;
       candidateId = existingCandidate.id;
       
-      // עדכון פרטי המועמד הקיים
+      // עדכון פרטי המועמד הקיים (כולל קורות חיים חדשים)
       await storage.updateCandidate(candidateId, {
         firstName: candidateData.firstName || existingCandidate.firstName,
         lastName: candidateData.lastName || existingCandidate.lastName,
         mobile: candidateData.phone || existingCandidate.mobile,
+        city: candidateData.city || existingCandidate.city,
+        profession: candidateData.profession || existingCandidate.profession,
+        cvPath: candidateData.cvPath || existingCandidate.cvPath, // עדכון קורות חיים חדשים
         // הוספת תוכן המייל לפרטי המועמד
-        notes: `${existingCandidate.notes || ''}\n\n--- מייל חדש ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`.trim()
+        notes: `${existingCandidate.notes || ''}\n\n--- מייל חדש עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`.trim()
       });
     } else {
       // יצירת מועמד חדש עם שדות חובה
@@ -326,11 +484,12 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
         firstName: candidateData.firstName || 'מועמד',
         lastName: candidateData.lastName || 'ממייל',
         email: candidateData.email!,
-        city: 'לא צוין', // שדה חובה
-        profession: 'ממתין לעיבוד קורות חיים',
+        city: candidateData.city || 'לא צוין',
+        profession: candidateData.profession || 'ממתין לעיבוד קורות חיים',
         mobile: candidateData.phone || undefined,
+        cvPath: candidateData.cvPath, // נתיב קורות החיים
         // הוספת תוכן המייל לפרטי המועמד
-        notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** הערה: יש לעדכן פרטים מקורות החיים המצורפים **`,
+        notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** פרטים חולצו מקורות החיים המצורפים **`,
         recruitmentSource: 'מייל נכנס - קורות חיים',
       });
       candidateId = newCandidate.id;
@@ -354,7 +513,7 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
             candidateId: candidateId,
             jobId: matchingJob.id,
             status: 'submitted',
-            notes: `מועמדות אוטומטית ממייל נכנס\nקוד משרה: ${candidateData.jobCode}\nנושא המייל: ${candidateData.originalSubject}`,
+            notes: `מועמדות אוטומטית ממייל נכנס עם קורות חיים\nקוד משרה: ${candidateData.jobCode}\nנושא המייל: ${candidateData.originalSubject}`,
           });
           
           console.log(`✅ נוצרה מועמדות למשרה: ${matchingJob.title}`);
