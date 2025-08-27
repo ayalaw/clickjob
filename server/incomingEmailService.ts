@@ -67,6 +67,12 @@ function parseCV(text: string): any {
     result.phone = phoneMatch[0];
   }
   
+  // חילוץ אימייל מקורות החיים
+  const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailMatch) {
+    result.email = emailMatch[0];
+  }
+  
   // חילוץ עיר מגורים
   const cityKeywords = ['עיר', 'מגורים', 'כתובת', 'מקום', 'city', 'address'];
   const cityPattern = new RegExp(`(?:${cityKeywords.join('|')})\\s*:?\\s*([א-ת\\s]{2,20})`, 'i');
@@ -140,7 +146,7 @@ async function checkCpanelEmails(): Promise<void> {
     imap.once('ready', () => {
       console.log('✅ מחובר לשרת IMAP');
       
-      imap.openBox('INBOX', false, (err, box) => {
+      imap.openBox('INBOX', false, (err: any, box: any) => {
         if (err) {
           console.error('❌ שגיאה בפתיחת תיבת דואר:', err.message);
           reject(err);
@@ -167,13 +173,13 @@ async function checkCpanelEmails(): Promise<void> {
 
           const fetch = imap.fetch(results, { bodies: '', markSeen: false });
           
-          fetch.on('message', (msg, seqno) => {
+          fetch.on('message', (msg: any, seqno: any) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
             
-            msg.on('body', (stream, info) => {
+            msg.on('body', (stream: any, info: any) => {
               let buffer = '';
               
-              stream.on('data', (chunk) => {
+              stream.on('data', (chunk: any) => {
                 buffer += chunk.toString('utf8');
               });
               
@@ -203,8 +209,9 @@ async function checkCpanelEmails(): Promise<void> {
                   console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
                   
                   // בדיקה אם זה מייל מועמדות לעבודה
-                  const isJobApp = isJobApplicationEmail(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
-                  console.log(`🔍 האם זה מייל מועמדות? ${isJobApp ? 'כן' : 'לא'}`);
+                  const hasAttachments = parsed.attachments && parsed.attachments.length > 0;
+                  const isJobApp = isJobApplicationEmail(parsed.subject || '', parsed.text || '', parsed.from?.text || '', hasAttachments);
+                  console.log(`🔍 האם זה מייל מועמדות? ${isJobApp ? 'כן' : 'לא'} (קבצים מצורפים: ${hasAttachments ? 'כן' : 'לא'})`);
                   
                   if (isJobApp) {
                     const candidate = parseCandidate(parsed.subject || '', parsed.text || '', parsed.from?.text || '');
@@ -216,18 +223,28 @@ async function checkCpanelEmails(): Promise<void> {
                       
                       for (const attachment of parsed.attachments) {
                         if (isCVFile(attachment.filename || '')) {
-                          console.log(`📄 מוריד קובץ קורות חיים: ${attachment.filename}`);
+                          console.log(`📄 מוריד קובץ: ${attachment.filename}`);
                           
                           try {
                             const cvData = await saveAttachmentAndExtractData(attachment, candidate.email || '');
                             if (cvData) {
-                              // עדכון פרטי המועמד עם הנתונים מקורות החיים
-                              Object.assign(candidate, cvData);
-                              console.log(`✅ פרטים חולצו מקורות החיים: ${cvData.firstName} ${cvData.lastName}`);
+                              // עדכון פרטי המועמד עם הנתונים מקורות החיים בלבד
+                              // אימייל המועמד יהיה מקורות החיים, לא כתובת השולח
+                              candidate.firstName = cvData.firstName || candidate.firstName;
+                              candidate.lastName = cvData.lastName || candidate.lastName;
+                              candidate.email = cvData.email || candidate.email; // אימייל מקורות החיים
+                              candidate.phone = cvData.phone || candidate.phone;
+                              candidate.city = cvData.city || candidate.city;
+                              candidate.profession = cvData.profession || candidate.profession;
+                              candidate.cvPath = cvData.cvPath;
+                              
+                              console.log(`✅ פרטים חולצו מקורות החיים: ${cvData.firstName} ${cvData.lastName} (${cvData.email})`);
                             }
                           } catch (error) {
                             console.error('❌ שגיאה בעיבוד קובץ מצורף:', error);
                           }
+                        } else {
+                          console.log(`⚠️ קובץ לא בטוח או לא נתמך: ${attachment.filename}`);
                         }
                       }
                     }
@@ -248,7 +265,7 @@ async function checkCpanelEmails(): Promise<void> {
             });
           });
 
-          fetch.once('error', (err) => {
+          fetch.once('error', (err: any) => {
             console.error('❌ שגיאה בקריאת מיילים:', err.message);
             reject(err);
           });
@@ -262,7 +279,7 @@ async function checkCpanelEmails(): Promise<void> {
       });
     });
 
-    imap.once('error', (err) => {
+    imap.once('error', (err: any) => {
       console.error('❌ שגיאת חיבור IMAP:', err.message);
       reject(err);
     });
@@ -349,7 +366,13 @@ function extractEmailBody(payload: any): string {
   return body;
 }
 
-function isJobApplicationEmail(subject: string, body: string, from: string): boolean {
+function isJobApplicationEmail(subject: string, body: string, from: string, hasAttachments: boolean): boolean {
+  // אם יש קבצים מצורפים - זה תמיד מייל מועמדות
+  if (hasAttachments) {
+    return true;
+  }
+  
+  // גם בלי קבצים מצורפים, בדוק מילות מפתח
   const applicationKeywords = [
     'קורות חיים', 'קןרות חיים', 'קוח', 'cv', 'resume', 'מועמדות', 'השתלמתי', 'התמחות',
     'משרה', 'job', 'application', 'apply', 'candidate', 'נשלח מאתר',
@@ -387,11 +410,66 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
 }
 
 
-// בדיקה אם קובץ הוא קובץ קורות חיים
+// בדיקה אם קובץ הוא קובץ קורות חיים ובטוח
 function isCVFile(filename: string): boolean {
-  const cvExtensions = ['.pdf', '.doc', '.docx'];
+  const allowedExtensions = ['.pdf', '.doc', '.docx'];
   const extension = path.extname(filename.toLowerCase());
-  return cvExtensions.includes(extension);
+  
+  // בדיקת סיומות מותרות
+  if (!allowedExtensions.includes(extension)) {
+    return false;
+  }
+  
+  // בדיקת שמות קבצים זדוניים
+  const maliciousPatterns = [
+    /\.exe$/i, /\.bat$/i, /\.cmd$/i, /\.scr$/i, /\.pif$/i,
+    /\.com$/i, /\.vbs$/i, /\.js$/i, /\.jar$/i, /\.php$/i,
+    /\.html$/i, /\.htm$/i, /\.zip$/i, /\.rar$/i
+  ];
+  
+  if (maliciousPatterns.some(pattern => pattern.test(filename))) {
+    return false;
+  }
+  
+  return true;
+}
+
+// בדיקת אבטחה לקובץ
+function isFileSafe(filePath: string): boolean {
+  try {
+    const stats = fs.statSync(filePath);
+    
+    // בדיקת גודל קובץ - מקסימום 10MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (stats.size > maxSize) {
+      console.log(`⚠️ קובץ גדול מדי: ${stats.size} bytes`);
+      return false;
+    }
+    
+    // בדיקת חתימת הקובץ
+    const buffer = fs.readFileSync(filePath);
+    const slice = buffer.subarray(0, 10);
+    
+    // בדיקת חתימת PDF
+    if (filePath.endsWith('.pdf')) {
+      return slice.toString('ascii', 0, 4) === '%PDF';
+    }
+    
+    // בדיקת חתימת Office documents (DOCX)
+    if (filePath.endsWith('.docx')) {
+      return slice.toString('ascii', 0, 2) === 'PK';
+    }
+    
+    // בדיקת חתימת DOC ישן
+    if (filePath.endsWith('.doc')) {
+      return slice.readUInt32LE(0) === 0xE011CFD0;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('שגיאה בבדיקת אבטחת קובץ:', error);
+    return false;
+  }
 }
 
 // שמירת קובץ מצורף וחילוץ נתונים
@@ -415,14 +493,32 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
     fs.writeFileSync(filePath, attachment.content);
     console.log(`💾 קובץ נשמר: ${filePath}`);
     
+    // בדיקת אבטחה לקובץ
+    if (!isFileSafe(filePath)) {
+      console.log(`🚫 קובץ לא בטוח, נמחק: ${filePath}`);
+      fs.unlinkSync(filePath);
+      return null;
+    }
+    
     // חילוץ נתונים מהקובץ
     let extractedData: any = {};
     
     if (extension.toLowerCase() === '.pdf') {
       try {
-        // השתמש ב-pdftotext לחילוץ טקסט מPDF
-        const text = execSync(`pdftotext "${filePath}" -`, { encoding: 'utf8' });
-        extractedData = parseCV(text);
+        // נסה להשתמש ב-pdftotext אם זמין, אחרת תחזיר נתונים בסיסיים
+        try {
+          const text = execSync(`pdftotext "${filePath}" -`, { encoding: 'utf8' });
+          extractedData = parseCV(text);
+        } catch (pdfError) {
+          console.log('⚠️ pdftotext לא זמין, משתמש בנתונים בסיסיים');
+          extractedData = { 
+            firstName: 'מועמד', 
+            lastName: 'מPDF', 
+            phone: '', 
+            city: 'לא צוין', 
+            profession: 'ממתין לעיבוד קורות חיים'
+          };
+        }
       } catch (error) {
         console.error('Error extracting PDF:', error);
         extractedData = { firstName: '', lastName: '', phone: '', city: '', profession: '' };
@@ -442,7 +538,7 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
     return {
       firstName: extractedData.firstName,
       lastName: extractedData.lastName,
-      email: email, // האימייל מהמייל הנכנס
+      email: extractedData.email || email, // אימייל מקורות החיים קודם, אחר כך מהמייל
       phone: extractedData.phone,
       cvPath: filename, // רק שם הקובץ, לא הנתיב המלא
       city: extractedData.city || 'לא צוין',
