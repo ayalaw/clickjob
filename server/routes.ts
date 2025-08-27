@@ -673,6 +673,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const candidate = await storage.updateCandidate(req.params.id, candidateData);
+      
+      // Add event for candidate profile update
+      await storage.addCandidateEvent({
+        candidateId: req.params.id,
+        eventType: 'profile_updated',
+        description: `פרטי המועמד עודכנו`,
+        metadata: {
+          updatedFields: Object.keys(candidateData),
+          cvUpdated: !!candidateData.cvPath,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       res.json(candidate);
     } catch (error) {
       console.error("Error updating candidate:", error);
@@ -1214,6 +1227,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sentBy: req.user.claims.sub,
         });
         
+        // Add event for sending candidate profile to employer
+        await storage.addCandidateEvent({
+          candidateId,
+          eventType: 'sent_to_employer',
+          description: `פרופיל המועמד נשלח למעסיק`,
+          metadata: {
+            recipient: to,
+            cc: cc,
+            notes: notes,
+            sentBy: req.user.claims.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
         res.json({ success: true });
       } else {
         await storage.createEmail({
@@ -1268,6 +1295,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sentAt: new Date(),
           candidateId,
           sentBy: req.user.claims.sub,
+        });
+        
+        // Add event for interview invitation
+        await storage.addCandidateEvent({
+          candidateId,
+          eventType: 'interview_invited',
+          description: `נשלחה הזמנה לראיון`,
+          metadata: {
+            jobTitle: jobTitle,
+            date: date,
+            time: time,
+            location: location,
+            interviewer: interviewer,
+            notes: notes,
+            timestamp: new Date().toISOString()
+          }
         });
         
         res.json({ success: true });

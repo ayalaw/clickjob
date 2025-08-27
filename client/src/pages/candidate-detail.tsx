@@ -217,18 +217,28 @@ export default function CandidateDetail() {
                               <Clock className="w-4 h-4 text-gray-500" />
                               <span className="text-sm font-medium">
                                 {event.eventType === 'email_received' ? 'התקבל מייל' :
+                                 event.eventType === 'email_reapplication' ? 'פנייה חוזרת דרך מייל' :
+                                 event.eventType === 'email_application' ? 'הגיע דרך מייל' :
                                  event.eventType === 'created' ? 'נוצר במערכת' :
                                  event.eventType === 'cv_uploaded' ? 'הועלה קורות חיים' :
                                  event.eventType === 'job_application' ? 'הפניה למשרה' :
+                                 event.eventType === 'profile_updated' ? 'עדכון פרטים' :
+                                 event.eventType === 'sent_to_employer' ? 'נשלח למעסיק' :
+                                 event.eventType === 'interview_invited' ? 'הזמנה לראיון' :
                                  event.eventType}
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mb-2">{event.description}</p>
                             {event.metadata && (
                               <div className="text-xs text-gray-500">
-                                {event.metadata.source && <span>מקור: {event.metadata.source}</span>}
+                                {event.metadata.source && <span>מקור: {event.metadata.source === 'manual_entry' ? 'הכנסה ידנית' : event.metadata.source}</span>}
+                                {event.metadata.createdBy && <span> | נוצר על ידי: {event.metadata.createdBy}</span>}
                                 {event.metadata.jobCode && <span> | קוד משרה: {event.metadata.jobCode}</span>}
+                                {event.metadata.jobTitle && <span> | משרה: {event.metadata.jobTitle}</span>}
                                 {event.metadata.emailSubject && <span> | נושא: {event.metadata.emailSubject}</span>}
+                                {event.metadata.recipient && <span> | נשלח אל: {event.metadata.recipient}</span>}
+                                {event.metadata.updatedFields && event.metadata.updatedFields.length > 0 && <span> | עודכנו: {event.metadata.updatedFields.join(', ')}</span>}
+                                {event.metadata.cvUploaded && <span> | כולל קורות חיים</span>}
                               </div>
                             )}
                           </div>
