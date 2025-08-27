@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,25 +127,42 @@ export default function CandidateDetail() {
     updateMutation.mutate(editValues);
   };
 
-  const FormField = ({ 
+  const handleFieldChange = useCallback((field: keyof Candidate, value: any) => {
+    setEditValues(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const FormField = memo(({ 
     field, 
     label, 
     type = "text",
-    options = [] 
+    options = [],
+    value,
+    onChange
   }: { 
     field: keyof Candidate;
     label: string;
     type?: "text" | "number" | "select";
     options?: string[];
+    value: any;
+    onChange: (field: keyof Candidate, value: any) => void;
   }) => {
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = type === "number" ? Number(e.target.value) : e.target.value;
+      onChange(field, newValue);
+    }, [field, type, onChange]);
+
+    const handleSelectChange = useCallback((newValue: string) => {
+      onChange(field, newValue);
+    }, [field, onChange]);
+
     return (
       <div className="flex flex-row-reverse justify-between items-center">
         <span className="text-sm font-medium">{label}:</span>
         <div className="flex items-center gap-2">
           {type === "select" ? (
             <Select
-              value={editValues[field] as string || ""}
-              onValueChange={(value) => setEditValues({ ...editValues, [field]: value })}
+              value={value as string || ""}
+              onValueChange={handleSelectChange}
             >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="בחר..." />
@@ -158,13 +175,9 @@ export default function CandidateDetail() {
             </Select>
           ) : (
             <Input
-              key={field}
               type={type}
-              value={editValues[field] as string || ""}
-              onChange={(e) => setEditValues({ 
-                ...editValues, 
-                [field]: type === "number" ? Number(e.target.value) : e.target.value 
-              })}
+              value={value as string || ""}
+              onChange={handleInputChange}
               className="w-32 text-sm"
               placeholder={`הכנס ${label.toLowerCase()}`}
             />
@@ -172,7 +185,7 @@ export default function CandidateDetail() {
         </div>
       </div>
     );
-  };
+  });
 
   if (isLoading || candidateLoading) {
     return (
@@ -304,54 +317,72 @@ export default function CandidateDetail() {
                       <FormField 
                         field="firstName"
                         label="שם פרטי"
+                        value={editValues.firstName}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="lastName">
                       <FormField 
                         field="lastName"
                         label="שם משפחה"
+                        value={editValues.lastName}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="email">
                       <FormField 
                         field="email"
                         label="דוא״ל"
+                        value={editValues.email}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="phone">
                       <FormField 
                         field="phone"
                         label="טלפון 1"
+                        value={editValues.phone}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="phone2">
                       <FormField 
                         field="phone2"
                         label="טלפון 2"
+                        value={editValues.phone2}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="nationalId">
                       <FormField 
                         field="nationalId"
                         label="תעודת זהות"
+                        value={editValues.nationalId}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="city">
                       <FormField 
                         field="city"
                         label="עיר"
+                        value={editValues.city}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="street">
                       <FormField 
                         field="street"
                         label="רחוב"
+                        value={editValues.street}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="houseNumber">
                       <FormField 
                         field="houseNumber"
                         label="מס' בית"
+                        value={editValues.houseNumber}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="gender">
@@ -360,6 +391,8 @@ export default function CandidateDetail() {
                         label="מין"
                         type="select"
                         options={["זכר", "נקבה"]}
+                        value={editValues.gender}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="maritalStatus">
@@ -368,12 +401,16 @@ export default function CandidateDetail() {
                         label="מצב משפחתי"
                         type="select"
                         options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
+                        value={editValues.maritalStatus}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="mobile">
                       <FormField 
                         field="mobile"
                         label="ניידות"
+                        value={editValues.mobile}
+                        onChange={handleFieldChange}
                       />
                     </div>
                     <div key="drivingLicense">
@@ -382,6 +419,8 @@ export default function CandidateDetail() {
                         label="רישיון נהיגה"
                         type="select"
                         options={["אין", "B", "A", "C", "D"]}
+                        value={editValues.drivingLicense}
+                        onChange={handleFieldChange}
                       />
                     </div>
                   </CardContent>
