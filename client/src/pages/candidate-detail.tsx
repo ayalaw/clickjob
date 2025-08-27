@@ -49,8 +49,9 @@ export default function CandidateDetail() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [referToJobDialogOpen, setReferToJobDialogOpen] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState("");
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
   const [recommendation, setRecommendation] = useState("");
+  const [jobSearchTerm, setJobSearchTerm] = useState("");
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -114,6 +115,21 @@ export default function CandidateDetail() {
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter(event => event.eventType === 'note_added') || [];
+
+  // Filter jobs based on search term
+  const filteredJobs = jobs.filter(job => 
+    job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+    (job.client?.name || '').toLowerCase().includes(jobSearchTerm.toLowerCase())
+  );
+
+  // Toggle job selection
+  const toggleJobSelection = (jobId: string) => {
+    setSelectedJobIds(prev => 
+      prev.includes(jobId) 
+        ? prev.filter(id => id !== jobId)
+        : [...prev, jobId]
+    );
+  };
 
   const getWhatsAppTemplate = (messageType: string, candidateName: string) => {
     // Find template from database
@@ -264,57 +280,63 @@ export default function CandidateDetail() {
     });
   };
 
-  const handleJobReferral = () => {
-    if (!selectedJobId || !recommendation.trim()) {
+  const handleJobReferral = async () => {
+    if (selectedJobIds.length === 0 || !recommendation.trim()) {
       toast({
         title: "שגיאה",
-        description: "אנא בחר משרה והכנס חוות דעת",
+        description: "יש לבחור לפחות משרה אחת ולכתוב חוות דעת",
         variant: "destructive",
       });
       return;
     }
 
-    const selectedJob = jobs.find(job => job.id === selectedJobId);
-    if (!selectedJob) return;
+    try {
+      // Process each selected job
+      for (const jobId of selectedJobIds) {
+        const selectedJob = jobs.find(job => job.id === jobId);
+        if (!selectedJob) continue;
 
-    // Create event for the referral
-    apiRequest('POST', `/api/candidates/${id}/events`, {
-      eventType: 'job_referral',
-      description: `הופנה למשרה: ${selectedJob.title} אצל ${selectedJob.client?.name}`,
-      metadata: {
-        jobId: selectedJobId,
-        jobTitle: selectedJob.title,
-        clientName: selectedJob.client?.name,
-        recommendation: recommendation,
-        timestamp: new Date().toISOString()
+        // Create event for the referral
+        await apiRequest('POST', `/api/candidates/${id}/events`, {
+          eventType: 'job_referral',
+          description: `הופנה למשרה: ${selectedJob.title} אצל ${selectedJob.client?.name}`,
+          metadata: {
+            jobId: jobId,
+            jobTitle: selectedJob.title,
+            clientName: selectedJob.client?.name,
+            recommendation: recommendation,
+            timestamp: new Date().toISOString()
+          }
+        });
+
+        // Send email to employer
+        await apiRequest('POST', '/api/job-referrals', {
+          candidateId: id,
+          jobId: jobId,
+          recommendation: recommendation
+        });
       }
-    }).then(() => {
-      // Send email to employer
-      return apiRequest('POST', '/api/job-referrals', {
-        candidateId: id,
-        jobId: selectedJobId,
-        recommendation: recommendation
-      });
-    }).then(() => {
+
       if (showEvents) {
         queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}/events`] });
       }
       
       toast({
-        title: "המועמד הופנה למשרה",
-        description: `חוות הדעת נשלחה למעסיק עבור משרת ${selectedJob.title}`,
+        title: "המועמד הופנה למשרות",
+        description: `חוות הדעת נשלחה למעסיקים עבור ${selectedJobIds.length} משרות`,
       });
       
-      setSelectedJobId("");
+      setSelectedJobIds([]);
       setRecommendation("");
+      setJobSearchTerm("");
       setReferToJobDialogOpen(false);
-    }).catch(() => {
+    } catch (error) {
       toast({
         title: "שגיאה",
         description: "לא ניתן לשלוח את ההפניה למעסיק",
         variant: "destructive",
       });
-    });
+    }
   };
 
   const updateMutation = useMutation({
@@ -624,20 +646,48 @@ export default function CandidateDetail() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">בחר משרה:</label>
-                      <select
-                        value={selectedJobId}
-                        onChange={(e) => setSelectedJobId(e.target.value)}
-                        className="w-full p-2 border rounded-md"
+                      <label className="text-sm font-medium">חיפוש משרות:</label>
+                      <Input
+                        value={jobSearchTerm}
+                        onChange={(e) => setJobSearchTerm(e.target.value)}
+                        className="w-full mt-1"
+                        placeholder="חפש לפי שם משרה או חברה..."
                         dir="rtl"
-                      >
-                        <option value="">-- בחר משרה --</option>
-                        {jobs.map((job) => (
-                          <option key={job.id} value={job.id}>
-                            {job.title} - {job.client?.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">
+                        בחר משרות ({selectedJobIds.length} נבחרו):
+                      </label>
+                      <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-1">
+                        {filteredJobs.length === 0 ? (
+                          <p className="text-gray-500 text-sm text-center py-4">
+                            {jobSearchTerm ? 'לא נמצאו משרות מתאימות' : 'אין משרות זמינות'}
+                          </p>
+                        ) : (
+                          filteredJobs.map((job) => (
+                            <div
+                              key={job.id}
+                              className={`flex items-center space-x-2 space-x-reverse p-2 rounded cursor-pointer hover:bg-gray-50 ${
+                                selectedJobIds.includes(job.id) ? 'bg-blue-50 border border-blue-200' : ''
+                              }`}
+                              onClick={() => toggleJobSelection(job.id)}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedJobIds.includes(job.id)}
+                                onChange={() => toggleJobSelection(job.id)}
+                                className="rounded"
+                              />
+                              <div className="flex-1 text-right">
+                                <div className="font-medium text-sm">{job.title}</div>
+                                <div className="text-xs text-gray-500">{job.client?.name}</div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium">חוות דעת על המועמד:</label>
