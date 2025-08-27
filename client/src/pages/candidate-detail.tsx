@@ -106,16 +106,37 @@ export default function CandidateDetail() {
   const templates = Array.isArray(templatesData) ? templatesData : [];
 
   // Load jobs for referral
-  const { data: jobsData, isLoading: jobsLoading, error: jobsError } = useQuery({
-    queryKey: ['/api/jobs'],
-    queryFn: () => apiRequest('GET', '/api/jobs'),
-    enabled: isAuthenticated,
-  });
+  const [jobsList, setJobsList] = useState<any[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState<any>(null);
 
-  // Extract jobs from response 
-  const jobs = jobsData && typeof jobsData === 'object' && Array.isArray((jobsData as any).jobs) 
-    ? (jobsData as any).jobs 
-    : [];
+  // Fetch jobs when component loads
+  useEffect(() => {
+    if (isAuthenticated) {
+      setJobsLoading(true);
+      apiRequest('GET', '/api/jobs')
+        .then((response: any) => {
+          console.log('Jobs API response:', response);
+          if (response && response.jobs && Array.isArray(response.jobs)) {
+            setJobsList(response.jobs);
+            console.log('Set jobs list:', response.jobs);
+          } else {
+            console.log('No jobs found in response');
+            setJobsList([]);
+          }
+        })
+        .catch((error: any) => {
+          console.error('Error fetching jobs:', error);
+          setJobsError(error);
+          setJobsList([]);
+        })
+        .finally(() => {
+          setJobsLoading(false);
+        });
+    }
+  }, [isAuthenticated]);
+
+  const jobs = jobsList;
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
