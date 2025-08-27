@@ -37,7 +37,6 @@ export default function CandidateDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [editingField, setEditingField] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<Candidate>>({});
 
   useEffect(() => {
@@ -80,6 +79,27 @@ export default function CandidateDetail() {
     }
   };
 
+  // Initialize edit values when candidate loads
+  useEffect(() => {
+    if (candidate) {
+      setEditValues({
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
+        email: candidate.email,
+        phone: candidate.phone,
+        phone2: candidate.phone2,
+        nationalId: candidate.nationalId,
+        city: candidate.city,
+        street: candidate.street,
+        houseNumber: candidate.houseNumber,
+        gender: candidate.gender,
+        maritalStatus: candidate.maritalStatus,
+        mobile: candidate.mobile,
+        drivingLicense: candidate.drivingLicense,
+      });
+    }
+  }, [candidate]);
+
   const updateMutation = useMutation({
     mutationFn: async (updatedData: Partial<Candidate>) => {
       return apiRequest(`/api/candidates/${id}`, {
@@ -93,8 +113,6 @@ export default function CandidateDetail() {
         title: "נשמר בהצלחה",
         description: "פרטי המועמד עודכנו",
       });
-      setEditingField(null);
-      setEditValues({});
     },
     onError: () => {
       toast({
@@ -105,90 +123,51 @@ export default function CandidateDetail() {
     }
   });
 
-  const startEdit = (field: string, currentValue: any) => {
-    setEditingField(field);
-    setEditValues({ [field]: currentValue });
+  const saveAllChanges = () => {
+    updateMutation.mutate(editValues);
   };
 
-  const cancelEdit = () => {
-    setEditingField(null);
-    setEditValues({});
-  };
-
-  const saveEdit = () => {
-    if (editingField && editValues[editingField as keyof Candidate] !== undefined) {
-      updateMutation.mutate(editValues);
-    }
-  };
-
-  const EditableField = ({ 
+  const FormField = ({ 
     field, 
     label, 
-    value, 
     type = "text",
     options = [] 
   }: { 
-    field: string;
+    field: keyof Candidate;
     label: string;
-    value: any;
-    type?: "text" | "number" | "select" | "textarea";
+    type?: "text" | "number" | "select";
     options?: string[];
   }) => {
-    const isEditing = editingField === field;
-    
-    if (isEditing) {
-      return (
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">{label}:</span>
-          <div className="flex items-center gap-2">
-            {type === "select" ? (
-              <Select
-                value={editValues[field as keyof Candidate] as string || ""}
-                onValueChange={(value) => setEditValues({ ...editValues, [field]: value })}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {options.map(option => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : type === "textarea" ? (
-              <Textarea
-                value={editValues[field as keyof Candidate] as string || ""}
-                onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
-                className="min-h-[60px] text-sm"
-              />
-            ) : (
-              <Input
-                type={type}
-                value={editValues[field as keyof Candidate] as string || ""}
-                onChange={(e) => setEditValues({ ...editValues, [field]: type === "number" ? Number(e.target.value) : e.target.value })}
-                className="w-32 text-sm"
-              />
-            )}
-            <Button size="sm" onClick={saveEdit} disabled={updateMutation.isPending}>
-              <Save className="w-3 h-3" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={cancelEdit}>
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <div 
-        className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
-        onClick={() => startEdit(field, value)}
-      >
+      <div className="flex justify-between items-center">
         <span className="text-sm font-medium">{label}:</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm">{value || "לא צוין"}</span>
-          <Edit className="w-3 h-3 text-gray-400" />
+          {type === "select" ? (
+            <Select
+              value={editValues[field] as string || ""}
+              onValueChange={(value) => setEditValues({ ...editValues, [field]: value })}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="בחר..." />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map(option => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              type={type}
+              value={editValues[field] as string || ""}
+              onChange={(e) => setEditValues({ 
+                ...editValues, 
+                [field]: type === "number" ? Number(e.target.value) : e.target.value 
+              })}
+              className="w-32 text-sm"
+              placeholder={`הכנס ${label.toLowerCase()}`}
+            />
+          )}
         </div>
       </div>
     );
@@ -302,82 +281,79 @@ export default function CandidateDetail() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
                         <User className="w-5 h-5" />
-                        פרטי המועמד
+                        עריכת פרטי המועמד
                       </CardTitle>
-                      <Badge className={getStatusColor(candidate.status || 'available')}>
-                        {getStatusText(candidate.status || 'available')}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(candidate.status || 'available')}>
+                          {getStatusText(candidate.status || 'available')}
+                        </Badge>
+                        <Button 
+                          onClick={saveAllChanges} 
+                          disabled={updateMutation.isPending}
+                          className="flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          שמור הכל
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <EditableField 
+                    <FormField 
                       field="firstName"
                       label="שם פרטי"
-                      value={candidate.firstName}
                     />
-                    <EditableField 
+                    <FormField 
                       field="lastName"
                       label="שם משפחה"
-                      value={candidate.lastName}
                     />
-                    <EditableField 
+                    <FormField 
                       field="email"
-                      label="דוא&quot;ל"
-                      value={candidate.email}
+                      label="דוא״ל"
                     />
-                    <EditableField 
+                    <FormField 
                       field="phone"
                       label="טלפון 1"
-                      value={candidate.phone}
                     />
-                    <EditableField 
+                    <FormField 
                       field="phone2"
                       label="טלפון 2"
-                      value={candidate.phone2}
                     />
-                    <EditableField 
+                    <FormField 
                       field="nationalId"
                       label="תעודת זהות"
-                      value={candidate.nationalId}
                     />
-                    <EditableField 
+                    <FormField 
                       field="city"
                       label="עיר"
-                      value={candidate.city}
                     />
-                    <EditableField 
+                    <FormField 
                       field="street"
                       label="רחוב"
-                      value={candidate.street}
                     />
-                    <EditableField 
+                    <FormField 
                       field="houseNumber"
                       label="מס' בית"
-                      value={candidate.houseNumber}
                     />
-                    <EditableField 
+                    <FormField 
                       field="gender"
                       label="מין"
-                      value={candidate.gender}
                       type="select"
                       options={["זכר", "נקבה"]}
                     />
-                    <EditableField 
+                    <FormField 
                       field="maritalStatus"
                       label="מצב משפחתי"
-                      value={candidate.maritalStatus}
                       type="select"
                       options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
                     />
-                    <EditableField 
+                    <FormField 
                       field="mobile"
                       label="ניידות"
-                      value={candidate.mobile}
                     />
-                    <EditableField 
+                    <FormField 
                       field="drivingLicense"
                       label="רישיון נהיגה"
-                      value={candidate.drivingLicense}
                       type="select"
                       options={["אין", "B", "A", "C", "D"]}
                     />
