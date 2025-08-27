@@ -112,13 +112,7 @@ export default function CandidateDetail() {
     enabled: isAuthenticated,
   });
 
-  // Debug: Log the jobs data structure
-  console.log('jobsData:', jobsData);
-  console.log('jobsData?.jobs:', jobsData?.jobs);
-  console.log('Array.isArray(jobsData?.jobs):', Array.isArray(jobsData?.jobs));
-  
   const jobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
-  console.log('jobs array:', jobs);
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
@@ -128,8 +122,6 @@ export default function CandidateDetail() {
     job.title?.toLowerCase()?.includes(jobSearchTerm.toLowerCase()) ||
     (job.client?.name || '').toLowerCase().includes(jobSearchTerm.toLowerCase())
   );
-  
-  console.log('filteredJobs:', filteredJobs);
 
   // Toggle job selection
   const toggleJobSelection = (jobId: string) => {
@@ -757,7 +749,7 @@ export default function CandidateDetail() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <Clock className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm font-medium">
+                              <span className="text-base font-medium">
                                 {event.eventType === 'email_received' ? 'התקבל מייל' :
                                  event.eventType === 'email_reapplication' ? 'פנייה חוזרת דרך מייל' :
                                  event.eventType === 'email_application' ? 'הגיע דרך מייל' :
@@ -908,115 +900,106 @@ export default function CandidateDetail() {
                 {/* Single Card with all candidate details */}
                 <Card className="h-full">
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <User className="w-5 h-5" />
-                        עריכת פרטי המועמד
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStatusColor(candidate.status || 'available')}>
-                          {getStatusText(candidate.status || 'available')}
-                        </Badge>
-                        <Button 
-                          onClick={saveAllChanges} 
-                          disabled={updateMutation.isPending}
-                          className="flex items-center gap-2"
-                        >
-                          <Save className="w-4 h-4" />
-                          שמור הכל
-                        </Button>
-                      </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={saveAllChanges} 
+                        disabled={updateMutation.isPending}
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        שמור הכל
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">שם פרטי:</span>
+                      <span className="text-base font-medium">שם פרטי:</span>
                       <Input
                         value={fieldValues.firstName || ''}
                         onChange={(e) => updateFieldValue('firstName', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס שם פרטי"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">שם משפחה:</span>
+                      <span className="text-base font-medium">שם משפחה:</span>
                       <Input
                         value={fieldValues.lastName || ''}
                         onChange={(e) => updateFieldValue('lastName', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס שם משפחה"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">דוא״ל:</span>
+                      <span className="text-base font-medium">דוא״ל:</span>
                       <Input
                         value={fieldValues.email || ''}
                         onChange={(e) => updateFieldValue('email', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס דוא״ל"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">טלפון 1:</span>
+                      <span className="text-base font-medium">טלפון 1:</span>
                       <Input
                         value={fieldValues.phone || ''}
                         onChange={(e) => updateFieldValue('phone', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס טלפון"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">טלפון 2:</span>
+                      <span className="text-base font-medium">טלפון 2:</span>
                       <Input
                         value={fieldValues.phone2 || ''}
                         onChange={(e) => updateFieldValue('phone2', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס טלפון 2"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">תעודת זהות:</span>
+                      <span className="text-base font-medium">תעודת זהות:</span>
                       <Input
                         value={fieldValues.nationalId || ''}
                         onChange={(e) => updateFieldValue('nationalId', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס ת.ז."
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">עיר:</span>
+                      <span className="text-base font-medium">עיר:</span>
                       <Input
                         value={fieldValues.city || ''}
                         onChange={(e) => updateFieldValue('city', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס עיר"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">רחוב:</span>
+                      <span className="text-base font-medium">רחוב:</span>
                       <Input
                         value={fieldValues.street || ''}
                         onChange={(e) => updateFieldValue('street', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס רחוב"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">מס' בית:</span>
+                      <span className="text-base font-medium">מס' בית:</span>
                       <Input
                         value={fieldValues.houseNumber || ''}
                         onChange={(e) => updateFieldValue('houseNumber', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס מס' בית"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">מין:</span>
+                      <span className="text-base font-medium">מין:</span>
                       <Select
                         value={fieldValues.gender || ''}
                         onValueChange={(value) => updateFieldValue('gender', value)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-48">
                           <SelectValue placeholder="בחר מין" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1026,12 +1009,12 @@ export default function CandidateDetail() {
                       </Select>
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">מצב משפחתי:</span>
+                      <span className="text-base font-medium">מצב משפחתי:</span>
                       <Select
                         value={fieldValues.maritalStatus || ''}
                         onValueChange={(value) => updateFieldValue('maritalStatus', value)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-48">
                           <SelectValue placeholder="בחר מצב" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1043,21 +1026,21 @@ export default function CandidateDetail() {
                       </Select>
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">ניידות:</span>
+                      <span className="text-base font-medium">ניידות:</span>
                       <Input
                         value={fieldValues.mobile || ''}
                         onChange={(e) => updateFieldValue('mobile', e.target.value)}
-                        className="w-32 text-sm"
+                        className="w-48 text-base"
                         placeholder="הכנס ניידות"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-sm font-medium">רישיון נהיגה:</span>
+                      <span className="text-base font-medium">רישיון נהיגה:</span>
                       <Select
                         value={fieldValues.drivingLicense || ''}
                         onValueChange={(value) => updateFieldValue('drivingLicense', value)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-48">
                           <SelectValue placeholder="בחר רישיון" />
                         </SelectTrigger>
                         <SelectContent>
