@@ -4,7 +4,9 @@ import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 
 // מעקב אחרי מיילים שכבר עובדו (בגלובל)
-const processedEmails = new Set<string>();
+// איפוס רשימת מיילים מעובדים כל יום
+let processedEmails = new Set<string>();
+let lastResetDate = new Date().toDateString();
 
 // דפוסי זיהוי מידע במיילים נכנסים
 const EMAIL_PATTERNS = {
@@ -81,8 +83,8 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש רק מיילים לא נקראו
-        imap.search(['UNSEEN'], (err: any, results: any) => {
+        // חיפוש כל המיילים האחרונים (כולל נקראים)
+        imap.search(['ALL'], (err: any, results: any) => {
           if (err) {
             console.error('❌ שגיאה בחיפוש מיילים:', err.message);
             reject(err);
@@ -97,7 +99,7 @@ async function checkCpanelEmails(): Promise<void> {
             return;
           }
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
+          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
           
           fetch.on('message', (msg, seqno) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
@@ -116,6 +118,14 @@ async function checkCpanelEmails(): Promise<void> {
                   // יצירת מזהה ייחודי למייל על סמך תוכן
                   const emailContent = `${parsed.from?.text}-${parsed.subject}-${parsed.text?.substring(0, 100)}`;
                   const emailId = Buffer.from(emailContent).toString('base64');
+                  
+                  // איפוס רשימת מיילים מעובדים אם עבר יום חדש
+                  const currentDate = new Date().toDateString();
+                  if (currentDate !== lastResetDate) {
+                    processedEmails.clear();
+                    lastResetDate = currentDate;
+                    console.log('🔄 איפוס רשימת מיילים מעובדים ליום חדש');
+                  }
                   
                   // בדיקה אם המייל כבר עובד
                   if (processedEmails.has(emailId)) {
