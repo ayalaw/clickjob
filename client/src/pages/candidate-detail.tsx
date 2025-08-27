@@ -116,19 +116,34 @@ export default function CandidateDetail() {
 
   // Handle different possible data structures for jobs
   let jobs: any[] = [];
-  if (jobsData && typeof jobsData === 'object') {
-    if (Array.isArray((jobsData as any)?.jobs)) {
-      jobs = (jobsData as any).jobs;
-    } else if (Array.isArray(jobsData)) {
-      jobs = jobsData;
-    } else {
-      // Maybe it's a direct object with jobs property
-      const jobsProperty = (jobsData as any).jobs;
-      if (Array.isArray(jobsProperty)) {
-        jobs = jobsProperty;
+  
+  // If we have jobsData, extract jobs from it
+  if (jobsData) {
+    // Check if it's an object with a jobs property
+    if (typeof jobsData === 'object' && 'jobs' in jobsData) {
+      const jobsArray = (jobsData as any).jobs;
+      if (Array.isArray(jobsArray)) {
+        jobs = jobsArray;
       }
     }
+    // Check if jobsData itself is an array
+    else if (Array.isArray(jobsData)) {
+      jobs = jobsData;
+    }
   }
+  
+  // Log detailed debugging info
+  console.log('Detailed jobs debug:', {
+    jobsData,
+    jobsDataType: typeof jobsData,
+    hasJobsProperty: jobsData && typeof jobsData === 'object' && 'jobs' in jobsData,
+    jobsProperty: jobsData && typeof jobsData === 'object' ? (jobsData as any).jobs : null,
+    finalJobs: jobs,
+    jobsLength: jobs.length,
+    isAuthenticated,
+    jobsLoading,
+    jobsError
+  });
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
