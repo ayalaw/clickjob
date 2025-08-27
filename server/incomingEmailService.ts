@@ -3,6 +3,9 @@ import { storage } from './storage';
 import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 
+// מעקב אחרי מיילים שכבר עובדו (בגלובל)
+const processedEmails = new Set<string>();
+
 // דפוסי זיהוי מידע במיילים נכנסים
 const EMAIL_PATTERNS = {
   // זיהוי קוד משרה: "קוד משרה: 12345" או "Job ID: 12345" או "#12345"
@@ -78,15 +81,15 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש כל המיילים (בדיקה פשוטה)
-        imap.search(['ALL'], (err: any, results: any) => {
+        // חיפוש רק מיילים לא נקראו
+        imap.search(['UNSEEN'], (err: any, results: any) => {
           if (err) {
             console.error('❌ שגיאה בחיפוש מיילים:', err.message);
             reject(err);
             return;
           }
 
-          console.log(`🔍 נמצאו ${results.length} מיילים לעיבוד`);
+          console.log(`🔍 נמצאו ${results.length} מיילים חדשים לעיבוד`);
           
           if (results.length === 0) {
             imap.end();
@@ -94,7 +97,7 @@ async function checkCpanelEmails(): Promise<void> {
             return;
           }
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
+          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
           
           fetch.on('message', (msg, seqno) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
@@ -109,6 +112,18 @@ async function checkCpanelEmails(): Promise<void> {
               stream.once('end', async () => {
                 try {
                   const parsed = await simpleParser(buffer);
+                  
+                  // יצירת מזהה ייחודי למייל על סמך תוכן
+                  const emailContent = `${parsed.from?.text}-${parsed.subject}-${parsed.text?.substring(0, 100)}`;
+                  const emailId = Buffer.from(emailContent).toString('base64');
+                  
+                  // בדיקה אם המייל כבר עובד
+                  if (processedEmails.has(emailId)) {
+                    console.log(`⏭️ מייל כבר עובד: ${parsed.subject}`);
+                    return;
+                  }
+                  
+                  processedEmails.add(emailId);
                   console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
                   
                   // בדיקה אם זה מייל מועמדות לעבודה
@@ -345,8 +360,6 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
 }
 
 // פונקציה להפעלה תקופתית
-// מערך לשמירת מזהי מיילים שכבר עובדו
-const processedEmails = new Set<string>();
 
 export function startEmailMonitoring(): void {
   console.log('🚀 הפעלת מעקב מיילים נכנסים...');
