@@ -112,6 +112,9 @@ export default function CandidateDetail() {
 
   const jobs = jobsData?.jobs || [];
 
+  // Filter notes from events
+  const noteEvents = candidateEvents?.filter(event => event.eventType === 'note_added') || [];
+
   const getWhatsAppTemplate = (messageType: string, candidateName: string) => {
     // Find template from database
     const template = templates.find(t => t.name === messageType);
@@ -1000,6 +1003,39 @@ export default function CandidateDetail() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Notes Section */}
+                    {noteEvents.length > 0 && (
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          📝 הערות על המועמד
+                        </h4>
+                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                          {noteEvents.map((note) => (
+                            <div key={note.id} className="bg-purple-50 p-3 rounded-lg border-r-4 border-purple-200">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-xs text-purple-600 font-medium">
+                                  {note.userName || 'משתמש לא ידוע'}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(note.createdAt).toLocaleDateString('he-IL', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 leading-relaxed" dir="rtl">
+                                {note.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   </CardContent>
                 </Card>
               </div>
