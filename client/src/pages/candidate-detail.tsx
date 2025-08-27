@@ -295,125 +295,51 @@ export default function CandidateDetail() {
 
             {/* Candidate Details Card - 32% */}
             <div className="flex-1 min-w-0">
-              <div className="h-full overflow-y-auto space-y-4">
-                {/* Header with name */}
-                <Card>
+              <div className="h-full overflow-y-auto">
+                {/* Single Card with all candidate details */}
+                <Card className="h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
                         <User className="w-5 h-5" />
-                        {candidate.firstName} {candidate.lastName}
+                        פרטי המועמד
                       </CardTitle>
                       <Badge className={getStatusColor(candidate.status || 'available')}>
                         {getStatusText(candidate.status || 'available')}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Rating */}
-                    {candidate.rating && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">דירוג:</span>
-                        <div className="flex">
-                          {[1,2,3,4,5].map(i => (
-                            <span key={i} className={`text-lg ${i <= candidate.rating! ? 'text-yellow-400' : 'text-gray-300'}`}>
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Tags */}
-                    {candidate.tags && candidate.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {candidate.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary">{tag}</Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Contact Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Phone className="w-5 h-5" />
-                      פרטי קשר
-                    </CardTitle>
-                  </CardHeader>
                   <CardContent className="space-y-3">
                     <EditableField 
+                      field="firstName"
+                      label="שם פרטי"
+                      value={candidate.firstName}
+                    />
+                    <EditableField 
+                      field="lastName"
+                      label="שם משפחה"
+                      value={candidate.lastName}
+                    />
+                    <EditableField 
                       field="email"
-                      label="מייל"
+                      label="דוא&quot;ל"
                       value={candidate.email}
                     />
                     <EditableField 
-                      field="mobile"
-                      label="נייד"
-                      value={candidate.mobile}
-                    />
-                    <EditableField 
                       field="phone"
-                      label="טלפון בית"
+                      label="טלפון 1"
                       value={candidate.phone}
                     />
                     <EditableField 
                       field="phone2"
-                      label="טלפון נוסף"
+                      label="טלפון 2"
                       value={candidate.phone2}
                     />
-                  </CardContent>
-                </Card>
-
-                {/* Personal Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="w-5 h-5" />
-                      פרטים אישיים
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
                     <EditableField 
                       field="nationalId"
                       label="תעודת זהות"
                       value={candidate.nationalId}
                     />
-                    <EditableField 
-                      field="gender"
-                      label="מין"
-                      value={candidate.gender}
-                      type="select"
-                      options={["זכר", "נקבה"]}
-                    />
-                    <EditableField 
-                      field="maritalStatus"
-                      label="מצב משפחתי"
-                      value={candidate.maritalStatus}
-                      type="select"
-                      options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
-                    />
-                    <EditableField 
-                      field="drivingLicense"
-                      label="רישיון נהיגה"
-                      value={candidate.drivingLicense}
-                      type="select"
-                      options={["אין", "B", "A", "C", "D"]}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Address */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
-                      כתובת
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
                     <EditableField 
                       field="city"
                       label="עיר"
@@ -430,93 +356,31 @@ export default function CandidateDetail() {
                       value={candidate.houseNumber}
                     />
                     <EditableField 
-                      field="zipCode"
-                      label="מיקוד"
-                      value={candidate.zipCode}
+                      field="gender"
+                      label="מין"
+                      value={candidate.gender}
+                      type="select"
+                      options={["זכר", "נקבה"]}
                     />
                     <EditableField 
-                      field="receptionArea"
-                      label="איזור קליטה"
-                      value={candidate.receptionArea}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Professional Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="w-5 h-5" />
-                      מידע מקצועי
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <EditableField 
-                      field="profession"
-                      label="מקצוע"
-                      value={candidate.profession}
+                      field="maritalStatus"
+                      label="מצב משפחתי"
+                      value={candidate.maritalStatus}
+                      type="select"
+                      options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
                     />
                     <EditableField 
-                      field="experience"
-                      label="ניסיון (שנים)"
-                      value={candidate.experience}
-                      type="number"
+                      field="mobile"
+                      label="ניידות"
+                      value={candidate.mobile}
                     />
                     <EditableField 
-                      field="expectedSalary"
-                      label="שכר צפוי"
-                      value={candidate.expectedSalary}
-                      type="number"
+                      field="drivingLicense"
+                      label="רישיון נהיגה"
+                      value={candidate.drivingLicense}
+                      type="select"
+                      options={["אין", "B", "A", "C", "D"]}
                     />
-                    <EditableField 
-                      field="recruitmentSource"
-                      label="מקור גיוס"
-                      value={candidate.recruitmentSource}
-                    />
-                    <EditableField 
-                      field="achievements"
-                      label="הישגים"
-                      value={candidate.achievements}
-                      type="textarea"
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Notes */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      הערות
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <EditableField 
-                      field="notes"
-                      label="הערות"
-                      value={candidate.notes}
-                      type="textarea"
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Timeline */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      מידע נוסף
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">נוצר בתאריך:</span>
-                      <span className="text-sm">{candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString('he-IL') : 'לא זמין'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">עודכן לאחרונה:</span>
-                      <span className="text-sm">{candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString('he-IL') : 'לא זמין'}</span>
-                    </div>
                   </CardContent>
                 </Card>
               </div>
