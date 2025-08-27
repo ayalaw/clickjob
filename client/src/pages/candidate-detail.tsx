@@ -143,10 +143,10 @@ export default function CandidateDetail() {
             </Button>
           </div>
 
-          {/* Layout - 50% CV, 50% Details */}
+          {/* Layout - 68% CV, 32% Details */}
           <div className="flex gap-6 h-[calc(100vh-12rem)]">
-            {/* CV Display Card - 50% */}
-            <div className="flex-1 min-w-0">
+            {/* CV Display Card - 68% */}
+            <div className="flex-[2] min-w-0">
               <Card className="h-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function CandidateDetail() {
               </Card>
             </div>
 
-            {/* Candidate Details Card - 50% */}
+            {/* Candidate Details Card - 32% */}
             <div className="flex-1 min-w-0">
               <div className="h-full overflow-y-auto space-y-4">
                 {/* Header with name and edit button */}
