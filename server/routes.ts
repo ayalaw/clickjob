@@ -1761,6 +1761,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Job Referrals route
+  app.post('/api/job-referrals', isAuthenticated, async (req, res) => {
+    try {
+      const { candidateId, jobId, recommendation } = req.body;
+      
+      if (!candidateId || !jobId || !recommendation) {
+        return res.status(400).json({ error: 'חסרים פרטים נדרשים' });
+      }
+
+      // Get candidate and job details
+      const candidate = await storage.getCandidate(candidateId);
+      const job = await storage.getJob(jobId);
+      
+      if (!candidate || !job) {
+        return res.status(404).json({ error: 'מועמד או משרה לא נמצאו' });
+      }
+
+      // Send email to employer
+      const emailSubject = `המלצה על מועמד: ${candidate.firstName} ${candidate.lastName} - ${job.title}`;
+      const emailBody = `
+<div dir="rtl" style="font-family: Arial, sans-serif;">
+  <h2>המלצה על מועמד למשרה</h2>
+  
+  <h3>פרטי המשרה:</h3>
+  <p><strong>תפקיד:</strong> ${job.title}</p>
+  <p><strong>חברה:</strong> ${job.client?.name}</p>
+  
+  <h3>פרטי המועמד:</h3>
+  <p><strong>שם:</strong> ${candidate.firstName} ${candidate.lastName}</p>
+  <p><strong>אימייל:</strong> ${candidate.email}</p>
+  <p><strong>טלפון:</strong> ${candidate.mobile || candidate.phone || 'לא צוין'}</p>
+  <p><strong>עיר:</strong> ${candidate.city}</p>
+  <p><strong>מקצוע:</strong> ${candidate.profession || 'לא צוין'}</p>
+  
+  <h3>חוות דעת מקצועית:</h3>
+  <div style="background: #f5f5f5; padding: 15px; border-right: 4px solid #007bff; margin: 15px 0;">
+    ${recommendation.replace(/\n/g, '<br>')}
+  </div>
+  
+  <p>בברכה,<br>צוות הגיוס</p>
+</div>
+      `;
+
+      // Create email record
+      const emailData = {
+        from: process.env.SMTP_FROM || 'system@company.com',
+        to: job.client?.email || '',
+        subject: emailSubject,
+        body: emailBody,
+        isHtml: true,
+        candidateId: candidateId,
+        jobId: jobId,
+        clientId: job.clientId,
+        sentBy: (req as AuthenticatedRequest).user?.id
+      };
+
+      if (job.client?.email) {
+        const email = await storage.createEmail(emailData);
+        
+        // Try to send the email
+        try {
+          await sendEmail({
+            to: job.client.email,
+            subject: emailSubject,
+            html: emailBody
+          });
+          
+          // Update email status to sent
+          await storage.updateEmail(email.id, { 
+            status: 'sent',
+            sentAt: new Date()
+          });
+          
+        } catch (emailError) {
+          console.error('Error sending referral email:', emailError);
+          // Update email status to failed
+          await storage.updateEmail(email.id, { 
+            status: 'failed',
+            errorMessage: emailError instanceof Error ? emailError.message : 'Unknown error'
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'המועמד הופנה למעסיק בהצלחה',
+        emailSent: !!job.client?.email
+      });
+      
+    } catch (error) {
+      console.error('Error processing job referral:', error);
+      res.status(500).json({ error: 'שגיאה בשליחת ההפניה למעסיק' });
+    }
+  });
+
   // Start automatic email monitoring 
   if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
     console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');

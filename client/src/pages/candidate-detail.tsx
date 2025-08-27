@@ -46,6 +46,11 @@ export default function CandidateDetail() {
   const [selectedMessageType, setSelectedMessageType] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
   const [editableTemplate, setEditableTemplate] = useState("");
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [referToJobDialogOpen, setReferToJobDialogOpen] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [recommendation, setRecommendation] = useState("");
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -98,6 +103,14 @@ export default function CandidateDetail() {
   });
 
   const templates = Array.isArray(templatesData) ? templatesData : [];
+
+  // Load jobs for referral
+  const { data: jobsData } = useQuery({
+    queryKey: ['/api/jobs'],
+    queryFn: () => apiRequest('GET', '/api/jobs'),
+  });
+
+  const jobs = jobsData?.jobs || [];
 
   const getWhatsAppTemplate = (messageType: string, candidateName: string) => {
     // Find template from database
@@ -208,6 +221,97 @@ export default function CandidateDetail() {
     setEditTemplateDialogOpen(false);
     setEditableTemplate("");
     setSelectedMessageType("");
+  };
+
+  const handleAddNote = () => {
+    if (!newNote.trim()) {
+      toast({
+        title: "שגיאה",
+        description: "אנא הכנס הערה",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    apiRequest('POST', `/api/candidates/${id}/events`, {
+      eventType: 'note_added',
+      description: `הערה נוספה: ${newNote}`,
+      metadata: {
+        note: newNote,
+        timestamp: new Date().toISOString()
+      }
+    }).then(() => {
+      if (showEvents) {
+        queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}/events`] });
+      }
+      
+      toast({
+        title: "הערה נוספה",
+        description: "ההערה נשמרה בהצלחה",
+      });
+      
+      setNewNote("");
+      setNotesDialogOpen(false);
+    }).catch(() => {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לשמור את ההערה",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const handleJobReferral = () => {
+    if (!selectedJobId || !recommendation.trim()) {
+      toast({
+        title: "שגיאה",
+        description: "אנא בחר משרה והכנס חוות דעת",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedJob = jobs.find(job => job.id === selectedJobId);
+    if (!selectedJob) return;
+
+    // Create event for the referral
+    apiRequest('POST', `/api/candidates/${id}/events`, {
+      eventType: 'job_referral',
+      description: `הופנה למשרה: ${selectedJob.title} אצל ${selectedJob.client?.name}`,
+      metadata: {
+        jobId: selectedJobId,
+        jobTitle: selectedJob.title,
+        clientName: selectedJob.client?.name,
+        recommendation: recommendation,
+        timestamp: new Date().toISOString()
+      }
+    }).then(() => {
+      // Send email to employer
+      return apiRequest('POST', '/api/job-referrals', {
+        candidateId: id,
+        jobId: selectedJobId,
+        recommendation: recommendation
+      });
+    }).then(() => {
+      if (showEvents) {
+        queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}/events`] });
+      }
+      
+      toast({
+        title: "המועמד הופנה למשרה",
+        description: `חוות הדעת נשלחה למעסיק עבור משרת ${selectedJob.title}`,
+      });
+      
+      setSelectedJobId("");
+      setRecommendation("");
+      setReferToJobDialogOpen(false);
+    }).catch(() => {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לשלוח את ההפניה למעסיק",
+        variant: "destructive",
+      });
+    });
   };
 
   const updateMutation = useMutation({
@@ -455,15 +559,111 @@ export default function CandidateDetail() {
               חזור לרשימת המועמדים
             </Button>
             
-            <Button 
-              variant="outline" 
-              onClick={() => setShowEvents(!showEvents)}
-              className="flex items-center gap-2"
-              data-testid="button-recent-events"
-            >
-              <History className="w-4 h-4" />
-              אירועים אחרונים
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEvents(!showEvents)}
+                className="flex items-center gap-2"
+                data-testid="button-recent-events"
+              >
+                <History className="w-4 h-4" />
+                אירועים אחרונים
+              </Button>
+              
+              <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 text-purple-600 border-purple-200"
+                  >
+                    📝 הוסף הערה
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle>הוסף הערה למועמד</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      className="w-full h-32 p-3 border rounded-md resize-none"
+                      dir="rtl"
+                      placeholder="כתוב הערה על המועמד..."
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => setNotesDialogOpen(false)}
+                      >
+                        ביטול
+                      </Button>
+                      <Button onClick={handleAddNote}>
+                        💾 שמור הערה
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={referToJobDialogOpen} onOpenChange={setReferToJobDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 text-green-600 border-green-200"
+                  >
+                    📧 הפנה למשרה
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle>הפנה מועמד למשרה</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">בחר משרה:</label>
+                      <select
+                        value={selectedJobId}
+                        onChange={(e) => setSelectedJobId(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                        dir="rtl"
+                      >
+                        <option value="">-- בחר משרה --</option>
+                        {jobs.map((job) => (
+                          <option key={job.id} value={job.id}>
+                            {job.title} - {job.client?.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">חוות דעת על המועמד:</label>
+                      <textarea
+                        value={recommendation}
+                        onChange={(e) => setRecommendation(e.target.value)}
+                        className="w-full h-32 p-3 border rounded-md resize-none"
+                        dir="rtl"
+                        placeholder="כתוב חוות דעת מקצועית על המועמד למעסיק..."
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => setReferToJobDialogOpen(false)}
+                      >
+                        ביטול
+                      </Button>
+                      <Button 
+                        onClick={handleJobReferral}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        📧 שלח למעסיק
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {/* Events Panel */}
@@ -502,6 +702,8 @@ export default function CandidateDetail() {
                                  event.eventType === 'task_created' ? 'נוצרה משימה' :
                                  event.eventType === 'task_completed' ? 'הושלמה משימה' :
                                  event.eventType === 'whatsapp_message' ? 'הודעת וואטסאפ' :
+                                 event.eventType === 'note_added' ? 'הערה נוספה' :
+                                 event.eventType === 'job_referral' ? 'הופנה למשרה' :
                                  event.eventType}
                               </span>
                             </div>
