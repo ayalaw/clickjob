@@ -429,23 +429,10 @@ export default function AdvancedCandidateForm({
                             variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(file.url, '_blank');
+                              setSelectedFile(file);
                             }}
                           >
                             <Eye className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const link = document.createElement('a');
-                              link.href = file.url;
-                              link.download = file.name;
-                              link.click();
-                            }}
-                          >
-                            <Download className="w-3 h-3" />
                           </Button>
                           <Button
                             size="sm"
@@ -497,11 +484,11 @@ export default function AdvancedCandidateForm({
                          selectedFile.name.toLowerCase().includes('.docx') ? (
                       <div className="w-full h-full relative">
                         <iframe
-                          src={`https://docs.google.com/gview?url=${encodeURIComponent(window.location.origin + selectedFile.url)}&embedded=true`}
+                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + selectedFile.url)}`}
                           className="w-full h-full border-0"
                           title={selectedFile.name}
                           onError={(e) => {
-                            console.log('Google Docs viewer error:', e);
+                            console.log('Office viewer error:', e);
                           }}
                         />
                         <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs text-gray-600 shadow-sm">
@@ -513,15 +500,7 @@ export default function AdvancedCandidateForm({
                         <div className="text-center">
                           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-600">{selectedFile.name}</p>
-                          <p className="text-xs text-gray-500 mb-4">לא ניתן להציג תצוגה מקדימה</p>
-                          <Button
-                            size="sm"
-                            onClick={() => window.open(selectedFile.url, '_blank')}
-                            className="flex items-center gap-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                            פתח קובץ
-                          </Button>
+                          <p className="text-xs text-gray-500">הקובץ לא נתמך לתצוגה מקדימה</p>
                         </div>
                       </div>
                     )}
