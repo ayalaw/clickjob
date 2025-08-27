@@ -158,6 +158,7 @@ export default function CandidateDetail() {
             </Select>
           ) : (
             <Input
+              key={field}
               type={type}
               value={editValues[field] as string || ""}
               onChange={(e) => setEditValues({ 
@@ -299,64 +300,90 @@ export default function CandidateDetail() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <FormField 
-                      field="firstName"
-                      label="שם פרטי"
-                    />
-                    <FormField 
-                      field="lastName"
-                      label="שם משפחה"
-                    />
-                    <FormField 
-                      field="email"
-                      label="דוא״ל"
-                    />
-                    <FormField 
-                      field="phone"
-                      label="טלפון 1"
-                    />
-                    <FormField 
-                      field="phone2"
-                      label="טלפון 2"
-                    />
-                    <FormField 
-                      field="nationalId"
-                      label="תעודת זהות"
-                    />
-                    <FormField 
-                      field="city"
-                      label="עיר"
-                    />
-                    <FormField 
-                      field="street"
-                      label="רחוב"
-                    />
-                    <FormField 
-                      field="houseNumber"
-                      label="מס' בית"
-                    />
-                    <FormField 
-                      field="gender"
-                      label="מין"
-                      type="select"
-                      options={["זכר", "נקבה"]}
-                    />
-                    <FormField 
-                      field="maritalStatus"
-                      label="מצב משפחתי"
-                      type="select"
-                      options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
-                    />
-                    <FormField 
-                      field="mobile"
-                      label="ניידות"
-                    />
-                    <FormField 
-                      field="drivingLicense"
-                      label="רישיון נהיגה"
-                      type="select"
-                      options={["אין", "B", "A", "C", "D"]}
-                    />
+                    <div key="firstName">
+                      <FormField 
+                        field="firstName"
+                        label="שם פרטי"
+                      />
+                    </div>
+                    <div key="lastName">
+                      <FormField 
+                        field="lastName"
+                        label="שם משפחה"
+                      />
+                    </div>
+                    <div key="email">
+                      <FormField 
+                        field="email"
+                        label="דוא״ל"
+                      />
+                    </div>
+                    <div key="phone">
+                      <FormField 
+                        field="phone"
+                        label="טלפון 1"
+                      />
+                    </div>
+                    <div key="phone2">
+                      <FormField 
+                        field="phone2"
+                        label="טלפון 2"
+                      />
+                    </div>
+                    <div key="nationalId">
+                      <FormField 
+                        field="nationalId"
+                        label="תעודת זהות"
+                      />
+                    </div>
+                    <div key="city">
+                      <FormField 
+                        field="city"
+                        label="עיר"
+                      />
+                    </div>
+                    <div key="street">
+                      <FormField 
+                        field="street"
+                        label="רחוב"
+                      />
+                    </div>
+                    <div key="houseNumber">
+                      <FormField 
+                        field="houseNumber"
+                        label="מס' בית"
+                      />
+                    </div>
+                    <div key="gender">
+                      <FormField 
+                        field="gender"
+                        label="מין"
+                        type="select"
+                        options={["זכר", "נקבה"]}
+                      />
+                    </div>
+                    <div key="maritalStatus">
+                      <FormField 
+                        field="maritalStatus"
+                        label="מצב משפחתי"
+                        type="select"
+                        options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
+                      />
+                    </div>
+                    <div key="mobile">
+                      <FormField 
+                        field="mobile"
+                        label="ניידות"
+                      />
+                    </div>
+                    <div key="drivingLicense">
+                      <FormField 
+                        field="drivingLicense"
+                        label="רישיון נהיגה"
+                        type="select"
+                        options={["אין", "B", "A", "C", "D"]}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </div>
