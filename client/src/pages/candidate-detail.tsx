@@ -89,8 +89,43 @@ export default function CandidateDetail() {
     }
   };
 
+  const getWhatsAppTemplate = (messageType: string, candidateName: string) => {
+    const templates: Record<string, string> = {
+      "זימון לראיון עבודה": `שלום ${candidateName} 👋
+
+קיבלנו את קורות החיים שלך והתרשמנו!
+
+נשמח לזמן אותך לראיון עבודה:
+📅 תאריך: [להשלים]
+🕐 שעה: [להשלים]
+📍 מיקום: [להשלים]
+
+על מנת לוודא שהמועד מתאים לך, אנא אשר קבלת ההודעה.
+
+בהצלחה!
+צוות הגיוס`,
+      
+      "אין מענה בנייד": `שלום ${candidateName} 👋
+
+ניסינו להגיע אליך טלפונית מספר פעמים ללא הצלחה.
+
+נשמח לתאם איתך שיחה בזמן שנוח לך:
+📞 אנא חזר אלינו בהודעה עם שעות נוחות לפנייה
+📧 או כתוב לנו אימייל
+
+נחכה לתגובתך
+צוות הגיוס`
+    };
+    
+    return templates[messageType] || `שלום ${candidateName}, צוות הגיוס פנה אליך.`;
+  };
+
   const handleWhatsAppMessage = (messageType: string) => {
     if (!candidate?.mobile) return;
+    
+    // Get the template
+    const candidateName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
+    const messageTemplate = getWhatsAppTemplate(messageType, candidateName);
     
     // Record the WhatsApp message event
     apiRequest('POST', `/api/candidates/${id}/events`, {
@@ -99,6 +134,7 @@ export default function CandidateDetail() {
       metadata: {
         messageType,
         mobile: candidate.mobile,
+        template: messageTemplate,
         timestamp: new Date().toISOString()
       }
     }).then(() => {
@@ -119,9 +155,10 @@ export default function CandidateDetail() {
       });
     });
 
-    // Open WhatsApp
+    // Open WhatsApp with the template
     const phoneNumber = candidate.mobile.replace(/^0/, '').replace(/\D/g, '');
-    window.open(`https://wa.me/972${phoneNumber}`, '_blank');
+    const encodedMessage = encodeURIComponent(messageTemplate);
+    window.open(`https://wa.me/972${phoneNumber}?text=${encodedMessage}`, '_blank');
     setWhatsappDialogOpen(false);
   };
 
@@ -401,6 +438,13 @@ export default function CandidateDetail() {
                                 {event.metadata.taskType && <span> | סוג משימה: {event.metadata.taskType}</span>}
                                 {event.metadata.autoMatched && <span> | התאמה אוטומטית</span>}
                                 {event.metadata.shortlistCount && <span> | רשימה קצרה (${event.metadata.shortlistCount} מועמדים)</span>}
+                                {event.metadata.template && (
+                                  <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700 whitespace-pre-line">
+                                    <strong>תבנית ההודעה:</strong>
+                                    <br />
+                                    {event.metadata.template}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
