@@ -848,6 +848,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const candidate = await storage.createCandidate(candidateData);
             console.log('✅ Candidate created successfully:', candidate.id);
             
+            // הוספת אירוע יצירה אוטומטית מקורות חיים
+            await storage.addCandidateEvent({
+              candidateId: candidate.id,
+              eventType: 'cv_uploaded',
+              description: `מועמד נוצר אוטומטית מהעלאת קורות חיים`,
+              metadata: {
+                source: 'cv_upload',
+                createdBy: candidateData.recruitmentSource,
+                cvPath: candidateData.cvPath,
+                autoExtracted: true,
+                timestamp: new Date().toISOString()
+              }
+            });
+            
             // החזרת הנתונים כולל מידע על המועמד החדש
             res.json({
               extractedData: {
@@ -1080,6 +1094,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const applicationData = insertJobApplicationSchema.parse(req.body);
       const application = await storage.createJobApplication(applicationData);
+      
+      // Add event for job application creation
+      if (applicationData.candidateId) {
+        await storage.addCandidateEvent({
+          candidateId: applicationData.candidateId,
+          eventType: 'job_application',
+          description: `הופנה למשרה חדשה`,
+          metadata: {
+            jobId: applicationData.jobId,
+            status: applicationData.status || 'submitted',
+            appliedBy: req.user?.claims?.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
       res.status(201).json(application);
     } catch (error) {
       console.error("Error creating job application:", error);
@@ -1094,6 +1124,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const applicationData = insertJobApplicationSchema.partial().parse(req.body);
       const application = await storage.updateJobApplication(req.params.id, applicationData);
+      
+      // Add event for job application status change
+      if (application.candidateId && applicationData.status) {
+        await storage.addCandidateEvent({
+          candidateId: application.candidateId,
+          eventType: 'status_change',
+          description: `סטטוס מועמדות למשרה השתנה`,
+          metadata: {
+            jobId: application.jobId,
+            newStatus: applicationData.status,
+            notes: applicationData.notes,
+            feedback: applicationData.clientFeedback || applicationData.reviewerFeedback,
+            updatedBy: req.user?.claims?.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
       res.json(application);
     } catch (error) {
       console.error("Error updating job application:", error);
@@ -1109,6 +1157,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updates = req.body;
       const application = await storage.updateJobApplication(req.params.id, updates);
+      
+      // Add event for job application status change
+      if (application.candidateId && updates.status) {
+        await storage.addCandidateEvent({
+          candidateId: application.candidateId,
+          eventType: 'status_change',
+          description: `סטטוס מועמדות למשרה השתנה`,
+          metadata: {
+            jobId: application.jobId,
+            newStatus: updates.status,
+            notes: updates.notes,
+            feedback: updates.clientFeedback || updates.reviewerFeedback,
+            updatedBy: req.user?.claims?.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
       res.json(application);
     } catch (error) {
       console.error("Error updating job application:", error);
@@ -1158,6 +1224,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const taskData = insertTaskSchema.parse(req.body);
       const task = await storage.createTask(taskData);
+      
+      // Add event for task creation if related to candidate
+      if (taskData.candidateId) {
+        await storage.addCandidateEvent({
+          candidateId: taskData.candidateId,
+          eventType: 'task_created',
+          description: `נוצרה משימה חדשה: ${taskData.title}`,
+          metadata: {
+            taskId: task.id,
+            taskTitle: taskData.title,
+            taskType: taskData.type,
+            dueDate: taskData.dueDate?.toISOString(),
+            createdBy: req.user?.claims?.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
       res.status(201).json(task);
     } catch (error) {
       console.error("Error creating task:", error);
@@ -1172,6 +1256,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const taskData = insertTaskSchema.partial().parse(req.body);
       const task = await storage.updateTask(req.params.id, taskData);
+      
+      // Add event for task completion if relevant
+      if (task.candidateId && taskData.completed === true) {
+        await storage.addCandidateEvent({
+          candidateId: task.candidateId,
+          eventType: 'task_completed',
+          description: `הושלמה משימה: ${task.title}`,
+          metadata: {
+            taskId: task.id,
+            taskTitle: task.title,
+            taskType: task.type,
+            completedBy: req.user?.claims?.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
       res.json(task);
     } catch (error) {
       console.error("Error updating task:", error);
@@ -1371,6 +1472,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sentAt: new Date(),
           sentBy: req.user.claims.sub,
         });
+        
+        // Add events for each candidate in the shortlist
+        for (const candidate of validCandidates) {
+          await storage.addCandidateEvent({
+            candidateId: candidate.id,
+            eventType: 'sent_to_employer',
+            description: `נשלח ברשימה קצרה למעסיק`,
+            metadata: {
+              recipient: to,
+              cc: cc,
+              jobTitle: jobTitle,
+              shortlistCount: validCandidates.length,
+              sentBy: req.user.claims.sub,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
         
         res.json({ success: true });
       } else {

@@ -669,6 +669,21 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
             notes: `מועמדות אוטומטית ממייל נכנס עם קורות חיים\nקוד משרה: ${candidateData.jobCode}\nנושא המייל: ${candidateData.originalSubject}`,
           });
           
+          // Add event for automatic job application from email
+          await storage.addCandidateEvent({
+            candidateId: candidateId,
+            eventType: 'job_application',
+            description: `הופנה אוטומטית למשרה דרך קוד משרה במייל`,
+            metadata: {
+              jobId: matchingJob.id,
+              jobTitle: matchingJob.title,
+              jobCode: candidateData.jobCode,
+              emailSubject: candidateData.originalSubject,
+              autoMatched: true,
+              timestamp: new Date().toISOString()
+            }
+          });
+          
           console.log(`✅ נוצרה מועמדות למשרה: ${matchingJob.title}`);
         } else {
           console.log(`⚠️ לא נמצאה משרה מתאימה לקוד: ${candidateData.jobCode}`);

@@ -225,13 +225,16 @@ export default function CandidateDetail() {
                                  event.eventType === 'profile_updated' ? 'עדכון פרטים' :
                                  event.eventType === 'sent_to_employer' ? 'נשלח למעסיק' :
                                  event.eventType === 'interview_invited' ? 'הזמנה לראיון' :
+                                 event.eventType === 'status_change' ? 'שינוי סטטוס' :
+                                 event.eventType === 'task_created' ? 'נוצרה משימה' :
+                                 event.eventType === 'task_completed' ? 'הושלמה משימה' :
                                  event.eventType}
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mb-2">{event.description}</p>
                             {event.metadata && (
                               <div className="text-xs text-gray-500">
-                                {event.metadata.source && <span>מקור: {event.metadata.source === 'manual_entry' ? 'הכנסה ידנית' : event.metadata.source}</span>}
+                                {event.metadata.source && <span>מקור: {event.metadata.source === 'manual_entry' ? 'הכנסה ידנית' : event.metadata.source === 'cv_upload' ? 'העלאת קורות חיים' : event.metadata.source}</span>}
                                 {event.metadata.createdBy && <span> | נוצר על ידי: {event.metadata.createdBy}</span>}
                                 {event.metadata.jobCode && <span> | קוד משרה: {event.metadata.jobCode}</span>}
                                 {event.metadata.jobTitle && <span> | משרה: {event.metadata.jobTitle}</span>}
@@ -239,6 +242,11 @@ export default function CandidateDetail() {
                                 {event.metadata.recipient && <span> | נשלח אל: {event.metadata.recipient}</span>}
                                 {event.metadata.updatedFields && event.metadata.updatedFields.length > 0 && <span> | עודכנו: {event.metadata.updatedFields.join(', ')}</span>}
                                 {event.metadata.cvUploaded && <span> | כולל קורות חיים</span>}
+                                {event.metadata.newStatus && <span> | סטטוס חדש: {event.metadata.newStatus}</span>}
+                                {event.metadata.taskTitle && <span> | כותרת משימה: {event.metadata.taskTitle}</span>}
+                                {event.metadata.taskType && <span> | סוג משימה: {event.metadata.taskType}</span>}
+                                {event.metadata.autoMatched && <span> | התאמה אוטומטית</span>}
+                                {event.metadata.shortlistCount && <span> | רשימה קצרה (${event.metadata.shortlistCount} מועמדים)</span>}
                               </div>
                             )}
                           </div>
