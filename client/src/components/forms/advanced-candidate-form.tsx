@@ -124,7 +124,10 @@ export default function AdvancedCandidateForm({
         name: cvPath.split('/').pop() || 'קורות חיים קיימים',
         size: 0, // We don't know the size
         type: cvPath.toLowerCase().includes('.pdf') ? 'application/pdf' : 
-               cvPath.toLowerCase().includes('.doc') ? 'application/msword' : 'application/octet-stream',
+               cvPath.toLowerCase().includes('.doc') ? 'application/msword' : 
+               cvPath.toLowerCase().includes('.jpg') || cvPath.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
+               cvPath.toLowerCase().includes('.png') ? 'image/png' :
+               cvPath.toLowerCase().includes('.gif') ? 'image/gif' : 'application/octet-stream',
         url: `/uploads/${cvPath}`,
       };
       setUploadedFiles([existingCvFile]);
@@ -470,13 +473,17 @@ export default function AdvancedCandidateForm({
                 </CardHeader>
                 <CardContent className="h-[calc(100%-60px)] p-2">
                   <div className="h-full bg-gray-100 rounded border overflow-hidden">
-                    {selectedFile.type.includes('image') ? (
+                    {selectedFile.type.includes('image') || 
+                     selectedFile.name.toLowerCase().includes('.jpg') ||
+                     selectedFile.name.toLowerCase().includes('.jpeg') ||
+                     selectedFile.name.toLowerCase().includes('.png') ||
+                     selectedFile.name.toLowerCase().includes('.gif') ? (
                       <img
                         src={selectedFile.url}
                         alt={selectedFile.name}
                         className="w-full h-full object-contain"
                       />
-                    ) : selectedFile.type.includes('pdf') || selectedFile.name.includes('.pdf') ? (
+                    ) : selectedFile.type.includes('pdf') || selectedFile.name.toLowerCase().includes('.pdf') ? (
                       <iframe
                         src={selectedFile.url}
                         className="w-full h-full border-0"
@@ -485,20 +492,20 @@ export default function AdvancedCandidateForm({
                           console.log('PDF loading error:', e);
                         }}
                       />
-                    ) : selectedFile.type.includes('word') || selectedFile.name.includes('.doc') ? (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                        <div className="text-center">
-                          <FileText className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                          <p className="text-sm font-medium text-gray-700 mb-2">{selectedFile.name}</p>
-                          <p className="text-xs text-gray-500 mb-4">לצפייה בקובץ Word</p>
-                          <Button
-                            size="sm"
-                            onClick={() => window.open(selectedFile.url, '_blank')}
-                            className="flex items-center gap-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                            פתח קובץ
-                          </Button>
+                    ) : selectedFile.type.includes('word') || 
+                         selectedFile.name.toLowerCase().includes('.doc') ||
+                         selectedFile.name.toLowerCase().includes('.docx') ? (
+                      <div className="w-full h-full relative">
+                        <iframe
+                          src={`https://docs.google.com/gview?url=${encodeURIComponent(window.location.origin + selectedFile.url)}&embedded=true`}
+                          className="w-full h-full border-0"
+                          title={selectedFile.name}
+                          onError={(e) => {
+                            console.log('Google Docs viewer error:', e);
+                          }}
+                        />
+                        <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs text-gray-600 shadow-sm">
+                          📄 {selectedFile.name}
                         </div>
                       </div>
                     ) : (
