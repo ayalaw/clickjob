@@ -30,7 +30,8 @@ import {
   Save,
   X,
   Clock,
-  History
+  History,
+  MessageCircle
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
@@ -171,6 +172,66 @@ export default function CandidateDetail() {
   return (
     <div dir="rtl" className="space-y-6">
         <main className="flex-1 p-6 overflow-y-auto bg-background-light">
+          {/* Header with candidate info */}
+          <Card className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                {/* Avatar */}
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                  {candidate.firstName?.charAt(0) || '?'}{candidate.lastName?.charAt(0) || ''}
+                </div>
+                
+                {/* Candidate Info */}
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                    עריכת פרטי המועמד - {candidate.firstName} {candidate.lastName}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                    {/* Mobile with WhatsApp */}
+                    {candidate.mobile && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        <span>{candidate.mobile}</span>
+                        <a
+                          href={`https://wa.me/972${candidate.mobile.replace(/^0/, '').replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-700 transition-colors"
+                          title="שלח הודעת וואטסאפ"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </a>
+                      </div>
+                    )}
+                    
+                    {/* Email with mailto */}
+                    {candidate.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        <span>{candidate.email}</span>
+                        <a
+                          href={`mailto:${candidate.email}`}
+                          className="text-blue-600 hover:text-blue-700 transition-colors"
+                          title="שלח אימייל"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </a>
+                      </div>
+                    )}
+                    
+                    {/* City */}
+                    {candidate.city && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        <span>{candidate.city}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
           {/* Navigation */}
           <div className="mb-6 flex justify-between items-center">
             <Button 
