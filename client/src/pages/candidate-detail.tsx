@@ -105,14 +105,38 @@ export default function CandidateDetail() {
 
   const templates = Array.isArray(templatesData) ? templatesData : [];
 
-  // Load jobs for referral
-  const { data: jobsData, isLoading: jobsLoading, error: jobsError } = useQuery({
-    queryKey: ['/api/jobs', 'for-referral'],
-    queryFn: () => apiRequest('GET', '/api/jobs'),
-    enabled: isAuthenticated,
-    staleTime: 0, // Force fresh data
-    refetchOnMount: true,
-  });
+  // Load jobs for referral - use a different approach
+  const [jobsList, setJobsList] = useState<any[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+
+  // Fetch jobs when dialog opens
+  useEffect(() => {
+    if (referToJobDialogOpen && isAuthenticated) {
+      setJobsLoading(true);
+      setJobsError(null);
+      
+      apiRequest('GET', '/api/jobs')
+        .then((data: any) => {
+          console.log('Direct fetch result:', data);
+          if (data && typeof data === 'object' && Array.isArray(data.jobs)) {
+            setJobsList(data.jobs);
+          } else if (Array.isArray(data)) {
+            setJobsList(data);
+          } else {
+            setJobsList([]);
+          }
+        })
+        .catch((error: any) => {
+          console.error('Jobs fetch error:', error);
+          setJobsError(error.message || 'שגיאה בטעינת המשרות');
+          setJobsList([]);
+        })
+        .finally(() => {
+          setJobsLoading(false);
+        });
+    }
+  }, [referToJobDialogOpen, isAuthenticated]);
 
   // Handle different possible data structures for jobs
   let jobs: any[] = [];
