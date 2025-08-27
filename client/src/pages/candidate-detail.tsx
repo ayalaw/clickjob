@@ -102,31 +102,6 @@ export default function CandidateDetail() {
     );
   }
 
-  if (isEditMode) {
-    return (
-      <div dir="rtl" className="space-y-6">
-        <main className="flex-1 p-6 overflow-y-auto bg-background-light">
-          <div className="mb-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsEditMode(false)}
-              className="flex items-center gap-2"
-            >
-              <ArrowRight className="w-4 h-4" />
-              חזור לפרטי המועמד
-            </Button>
-          </div>
-          <CandidateForm 
-            candidate={candidate}
-            onSuccess={() => {
-              setIsEditMode(false);
-              queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}`] });
-            }}
-          />
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div dir="rtl" className="space-y-6">
@@ -201,6 +176,39 @@ export default function CandidateDetail() {
             {/* Candidate Details Card - 32% */}
             <div className="flex-1 min-w-0">
               <div className="h-full overflow-y-auto space-y-4">
+                {isEditMode ? (
+                  /* Edit Mode */
+                  <Card className="h-full">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <Edit className="w-5 h-5" />
+                          עריכת פרטי המועמד
+                        </CardTitle>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsEditMode(false)}
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                          ביטול
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="h-[calc(100%-4rem)] overflow-auto">
+                      <CandidateForm 
+                        candidate={candidate}
+                        onSuccess={() => {
+                          setIsEditMode(false);
+                          queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}`] });
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  /* View Mode */
+                  <>
                 {/* Header with name and edit button */}
                 <Card>
                   <CardHeader className="pb-3">
@@ -445,6 +453,8 @@ export default function CandidateDetail() {
                     </div>
                   </CardContent>
                 </Card>
+                </>
+                )}
               </div>
             </div>
           </div>
