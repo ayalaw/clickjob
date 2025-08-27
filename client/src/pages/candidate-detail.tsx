@@ -131,61 +131,34 @@ export default function CandidateDetail() {
     setEditValues(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const FormField = memo(({ 
-    field, 
-    label, 
-    type = "text",
-    options = [],
-    value,
-    onChange
-  }: { 
-    field: keyof Candidate;
-    label: string;
-    type?: "text" | "number" | "select";
-    options?: string[];
-    value: any;
-    onChange: (field: keyof Candidate, value: any) => void;
-  }) => {
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = type === "number" ? Number(e.target.value) : e.target.value;
-      onChange(field, newValue);
-    }, [field, type, onChange]);
+  // Create separate state for each field to avoid re-renders
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
-    const handleSelectChange = useCallback((newValue: string) => {
-      onChange(field, newValue);
-    }, [field, onChange]);
+  // Update field values when candidate data loads
+  useEffect(() => {
+    if (candidate) {
+      setFieldValues({
+        firstName: candidate.firstName || '',
+        lastName: candidate.lastName || '',
+        email: candidate.email || '',
+        phone: candidate.phone || '',
+        phone2: candidate.phone2 || '',
+        nationalId: candidate.nationalId || '',
+        city: candidate.city || '',
+        street: candidate.street || '',
+        houseNumber: candidate.houseNumber || '',
+        gender: candidate.gender || '',
+        maritalStatus: candidate.maritalStatus || '',
+        mobile: candidate.mobile || '',
+        drivingLicense: candidate.drivingLicense || '',
+      });
+    }
+  }, [candidate]);
 
-    return (
-      <div className="flex flex-row-reverse justify-between items-center">
-        <span className="text-sm font-medium">{label}:</span>
-        <div className="flex items-center gap-2">
-          {type === "select" ? (
-            <Select
-              value={value as string || ""}
-              onValueChange={handleSelectChange}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="בחר..." />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map(option => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              type={type}
-              value={value as string || ""}
-              onChange={handleInputChange}
-              className="w-32 text-sm"
-              placeholder={`הכנס ${label.toLowerCase()}`}
-            />
-          )}
-        </div>
-      </div>
-    );
-  });
+  const updateFieldValue = (field: string, value: string) => {
+    setFieldValues(prev => ({ ...prev, [field]: value }));
+    setEditValues(prev => ({ ...prev, [field]: value }));
+  };
 
   if (isLoading || candidateLoading) {
     return (
@@ -313,115 +286,145 @@ export default function CandidateDetail() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div key="firstName">
-                      <FormField 
-                        field="firstName"
-                        label="שם פרטי"
-                        value={editValues.firstName}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">שם פרטי:</span>
+                      <Input
+                        value={fieldValues.firstName || ''}
+                        onChange={(e) => updateFieldValue('firstName', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס שם פרטי"
                       />
                     </div>
-                    <div key="lastName">
-                      <FormField 
-                        field="lastName"
-                        label="שם משפחה"
-                        value={editValues.lastName}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">שם משפחה:</span>
+                      <Input
+                        value={fieldValues.lastName || ''}
+                        onChange={(e) => updateFieldValue('lastName', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס שם משפחה"
                       />
                     </div>
-                    <div key="email">
-                      <FormField 
-                        field="email"
-                        label="דוא״ל"
-                        value={editValues.email}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">דוא״ל:</span>
+                      <Input
+                        value={fieldValues.email || ''}
+                        onChange={(e) => updateFieldValue('email', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס דוא״ל"
                       />
                     </div>
-                    <div key="phone">
-                      <FormField 
-                        field="phone"
-                        label="טלפון 1"
-                        value={editValues.phone}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">טלפון 1:</span>
+                      <Input
+                        value={fieldValues.phone || ''}
+                        onChange={(e) => updateFieldValue('phone', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס טלפון"
                       />
                     </div>
-                    <div key="phone2">
-                      <FormField 
-                        field="phone2"
-                        label="טלפון 2"
-                        value={editValues.phone2}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">טלפון 2:</span>
+                      <Input
+                        value={fieldValues.phone2 || ''}
+                        onChange={(e) => updateFieldValue('phone2', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס טלפון 2"
                       />
                     </div>
-                    <div key="nationalId">
-                      <FormField 
-                        field="nationalId"
-                        label="תעודת זהות"
-                        value={editValues.nationalId}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">תעודת זהות:</span>
+                      <Input
+                        value={fieldValues.nationalId || ''}
+                        onChange={(e) => updateFieldValue('nationalId', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס ת.ז."
                       />
                     </div>
-                    <div key="city">
-                      <FormField 
-                        field="city"
-                        label="עיר"
-                        value={editValues.city}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">עיר:</span>
+                      <Input
+                        value={fieldValues.city || ''}
+                        onChange={(e) => updateFieldValue('city', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס עיר"
                       />
                     </div>
-                    <div key="street">
-                      <FormField 
-                        field="street"
-                        label="רחוב"
-                        value={editValues.street}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">רחוב:</span>
+                      <Input
+                        value={fieldValues.street || ''}
+                        onChange={(e) => updateFieldValue('street', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס רחוב"
                       />
                     </div>
-                    <div key="houseNumber">
-                      <FormField 
-                        field="houseNumber"
-                        label="מס' בית"
-                        value={editValues.houseNumber}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">מס' בית:</span>
+                      <Input
+                        value={fieldValues.houseNumber || ''}
+                        onChange={(e) => updateFieldValue('houseNumber', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס מס' בית"
                       />
                     </div>
-                    <div key="gender">
-                      <FormField 
-                        field="gender"
-                        label="מין"
-                        type="select"
-                        options={["זכר", "נקבה"]}
-                        value={editValues.gender}
-                        onChange={handleFieldChange}
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">מין:</span>
+                      <Select
+                        value={fieldValues.gender || ''}
+                        onValueChange={(value) => updateFieldValue('gender', value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="בחר מין" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="זכר">זכר</SelectItem>
+                          <SelectItem value="נקבה">נקבה</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">מצב משפחתי:</span>
+                      <Select
+                        value={fieldValues.maritalStatus || ''}
+                        onValueChange={(value) => updateFieldValue('maritalStatus', value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="בחר מצב" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="רווק/ה">רווק/ה</SelectItem>
+                          <SelectItem value="נשוי/אה">נשוי/אה</SelectItem>
+                          <SelectItem value="גרוש/ה">גרוש/ה</SelectItem>
+                          <SelectItem value="אלמן/ה">אלמן/ה</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">ניידות:</span>
+                      <Input
+                        value={fieldValues.mobile || ''}
+                        onChange={(e) => updateFieldValue('mobile', e.target.value)}
+                        className="w-32 text-sm"
+                        placeholder="הכנס ניידות"
                       />
                     </div>
-                    <div key="maritalStatus">
-                      <FormField 
-                        field="maritalStatus"
-                        label="מצב משפחתי"
-                        type="select"
-                        options={["רווק/ה", "נשוי/אה", "גרוש/ה", "אלמן/ה"]}
-                        value={editValues.maritalStatus}
-                        onChange={handleFieldChange}
-                      />
-                    </div>
-                    <div key="mobile">
-                      <FormField 
-                        field="mobile"
-                        label="ניידות"
-                        value={editValues.mobile}
-                        onChange={handleFieldChange}
-                      />
-                    </div>
-                    <div key="drivingLicense">
-                      <FormField 
-                        field="drivingLicense"
-                        label="רישיון נהיגה"
-                        type="select"
-                        options={["אין", "B", "A", "C", "D"]}
-                        value={editValues.drivingLicense}
-                        onChange={handleFieldChange}
-                      />
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-sm font-medium">רישיון נהיגה:</span>
+                      <Select
+                        value={fieldValues.drivingLicense || ''}
+                        onValueChange={(value) => updateFieldValue('drivingLicense', value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="בחר רישיון" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="אין">אין</SelectItem>
+                          <SelectItem value="B">B</SelectItem>
+                          <SelectItem value="A">A</SelectItem>
+                          <SelectItem value="C">C</SelectItem>
+                          <SelectItem value="D">D</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </CardContent>
                 </Card>
