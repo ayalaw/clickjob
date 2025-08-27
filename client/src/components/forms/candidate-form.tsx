@@ -120,6 +120,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [isProcessingCV, setIsProcessingCV] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [jobOpinion, setJobOpinion] = useState<string>("");
   const [fileContent, setFileContent] = useState<string>("");
 
   // Fetch active jobs for new candidates
@@ -398,7 +399,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                                 <div className="text-right">
                                   <div className="font-medium">{job.title}</div>
                                   <div className="text-sm text-gray-500">
-                                    {job.client.companyName} - {job.jobCode}
+                                    קוד משרה: {job.jobCode}
                                   </div>
                                 </div>
                               </SelectItem>
@@ -552,6 +553,69 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         </FormItem>
                       )}
                     />
+
+                    {/* Notes */}
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-right">הערות:</FormLabel>
+                          <FormControl>
+                            <textarea 
+                              {...field} 
+                              className="min-h-[100px] w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
+                              placeholder="הערות כלליות על המועמד..."
+                              data-testid="textarea-notes"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Job Assignment with Opinion */}
+                    {candidate && activeJobs.length > 0 && (
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Briefcase className="h-4 w-4 text-green-600" />
+                          <h3 className="font-medium text-green-800">הפנייה למשרה עם חוות דעת</h3>
+                        </div>
+                        <div className="space-y-3">
+                          <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+                            <SelectTrigger className="bg-white" data-testid="select-job-assignment">
+                              <SelectValue placeholder="בחר משרה להפנייה..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeJobs.map((job: Job) => (
+                                <SelectItem key={job.id} value={job.id}>
+                                  <div className="text-right">
+                                    <div className="font-medium">{job.title}</div>
+                                    <div className="text-sm text-gray-500">
+                                      קוד משרה: {job.jobCode}
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {selectedJobId && (
+                            <div>
+                              <label className="block text-sm font-medium text-green-700 mb-1">
+                                חוות דעת והמלצה:
+                              </label>
+                              <textarea 
+                                value={jobOpinion}
+                                onChange={(e) => setJobOpinion(e.target.value)}
+                                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[80px] resize-vertical"
+                                placeholder="כתוב את חוות דעתך על התאמת המועמד למשרה..."
+                                data-testid="textarea-job-opinion"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-4 pt-6">

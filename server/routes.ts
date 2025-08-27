@@ -145,14 +145,23 @@ function extractDataFromText(text: string) {
   }
 
   // חילוץ שם פרטי ושם משפחה (מחפשים מילים בעברית ובאנגלית)
+  // רשימת מילים להתעלמות
+  const ignoredWords = ['קורות', 'חיים', 'קוח', 'קו"ח', 'אינפורמציה', 'פרטית', 'מידע', 'אישי', 'פרטים', 'תקופת', 'המועמד', 'המועמדת'];
+  
   const namePattern = /(?:שם[:\s]*)?([א-ת]{2,})\s+([א-ת]{2,})|([A-Z][a-z]+)\s+([A-Z][a-z]+)/g;
   const nameMatch = upperThird.match(namePattern);
   if (nameMatch) {
     const fullName = nameMatch[0].replace(/שם[:\s]*/, '').trim();
     const nameParts = fullName.split(/\s+/);
     if (nameParts.length >= 2) {
-      result.firstName = nameParts[0];
-      result.lastName = nameParts[1];
+      const firstName = nameParts[0];
+      const lastName = nameParts[1];
+      
+      // בדיקה שהשמות לא במילים הממוקעות להתעלמות
+      if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName)) {
+        result.firstName = firstName;
+        result.lastName = lastName;
+      }
     }
   }
 

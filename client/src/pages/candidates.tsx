@@ -172,8 +172,14 @@ export default function Candidates() {
                   </DialogDescription>
                 </DialogHeader>
                 <CandidateForm 
-                  candidate={selectedCandidate}
-                  onSuccess={() => setIsFormOpen(false)}
+                  candidate={selectedCandidate || undefined}
+                  onSuccess={() => {
+                    // לא סוגר את הטופס - נשאר פתוח לפרטים נוספים
+                    toast({
+                      title: "הצלחה",
+                      description: "המועמד נשמר בהצלחה. תוכל להוסיף פרטים נוספים",
+                    });
+                  }}
                 />
               </DialogContent>
             </Dialog>
@@ -239,7 +245,7 @@ export default function Candidates() {
                             ) : "-"}
                           </TableCell>
                           <TableCell>
-                            {candidate.location || "-"}
+                            {candidate.city || "-"}
                           </TableCell>
                           <TableCell data-testid={`text-candidate-email-${candidate.id}`}>
                             <div className="flex items-center">
