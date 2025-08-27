@@ -139,6 +139,10 @@ export default function Candidates() {
 
   return (
     <div dir="rtl" className="space-y-6">
+      <div className="flex items-center gap-2 mb-6">
+        <Users className="h-6 w-6" />
+        <h1 className="text-2xl font-bold">מועמדים</h1>
+      </div>
           <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative flex-1 max-w-md">
@@ -215,14 +219,18 @@ export default function Candidates() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50 dark:bg-gray-900">
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">תואר</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">ניסיון בתחום</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון נייד</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מקום מגורים</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">אימייל</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סטטוס</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">קורות חיים</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם המועמד</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">עיר</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">עדכון אחרון</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מתעניין במשרה אחרון</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מקור גיוס נוכחי</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סינון ראשוני מועמד</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מס' מועמד</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">דוא״ל</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">אירוע ידני אחרון</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">הפניה אחרונה</TableHead>
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שינוי סטטוס אחרון</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -235,20 +243,24 @@ export default function Candidates() {
                           onClick={() => window.location.href = `/candidates/${candidate.id}`}
                         >
                           <TableCell className="font-medium">
-                            <div>
-                              <p className="text-secondary dark:text-white" data-testid={`text-candidate-name-${candidate.id}`}>
-                                {candidate.firstName} {candidate.lastName}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                ID: {candidate.id.slice(0, 8)}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell data-testid={`text-candidate-profession-${candidate.id}`}>
-                            {candidate.profession || "-"}
+                            <p className="text-secondary dark:text-white" data-testid={`text-candidate-name-${candidate.id}`}>
+                              {candidate.firstName} {candidate.lastName}
+                            </p>
                           </TableCell>
                           <TableCell>
-                            {candidate.experience ? `${candidate.experience} שנים` : "-"}
+                            {candidate.city || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString('he-IL') : "-"}
+                          </TableCell>
+                          <TableCell>
+                            -
+                          </TableCell>
+                          <TableCell>
+                            -
+                          </TableCell>
+                          <TableCell>
+                            -
                           </TableCell>
                           <TableCell data-testid={`text-candidate-phone-${candidate.id}`}>
                             {candidate.phone ? (
@@ -259,7 +271,9 @@ export default function Candidates() {
                             ) : "-"}
                           </TableCell>
                           <TableCell>
-                            {candidate.city || "-"}
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {candidate.id.slice(0, 8)}
+                            </span>
                           </TableCell>
                           <TableCell data-testid={`text-candidate-email-${candidate.id}`}>
                             <div className="flex items-center">
@@ -268,19 +282,15 @@ export default function Candidates() {
                             </div>
                           </TableCell>
                           <TableCell>
+                            -
+                          </TableCell>
+                          <TableCell>
+                            -
+                          </TableCell>
+                          <TableCell>
                             <Badge className={getStatusColor(candidate.status || 'available')}>
                               {getStatusText(candidate.status || 'available')}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {candidate.cvPath ? (
-                              <div className="flex items-center text-blue-600">
-                                <FileText className="h-3 w-3 ml-1" />
-                                <span className="text-xs">הועלה</span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs">לא הועלה</span>
-                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-1 space-x-reverse" onClick={(e) => e.stopPropagation()}>
