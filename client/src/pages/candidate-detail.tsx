@@ -72,9 +72,9 @@ export default function CandidateDetail() {
     enabled: isAuthenticated && !!id,
   });
 
-  const { data: candidateEvents, isLoading: eventsLoading } = useQuery<any[]>({
+  const { data: candidateEvents, isLoading: eventsLoading, refetch: refetchEvents } = useQuery<any[]>({
     queryKey: [`/api/candidates/${id}/events`],
-    enabled: isAuthenticated && !!id && showEvents,
+    enabled: isAuthenticated && !!id,
   });
 
   const getStatusColor = (status: string) => {
@@ -109,15 +109,16 @@ export default function CandidateDetail() {
   const { data: jobsData } = useQuery({
     queryKey: ['/api/jobs'],
     queryFn: () => apiRequest('GET', '/api/jobs'),
+    enabled: isAuthenticated,
   });
 
-  const jobs = jobsData?.jobs || [];
+  const jobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
 
   // Filter notes from events
-  const noteEvents = candidateEvents?.filter(event => event.eventType === 'note_added') || [];
+  const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
 
   // Filter jobs based on search term
-  const filteredJobs = jobs.filter(job => 
+  const filteredJobs = jobs.filter((job: any) => 
     job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
     (job.client?.name || '').toLowerCase().includes(jobSearchTerm.toLowerCase())
   );
@@ -293,7 +294,7 @@ export default function CandidateDetail() {
     try {
       // Process each selected job
       for (const jobId of selectedJobIds) {
-        const selectedJob = jobs.find(job => job.id === jobId);
+        const selectedJob = jobs.find((job: any) => job.id === jobId);
         if (!selectedJob) continue;
 
         // Create event for the referral
@@ -666,7 +667,7 @@ export default function CandidateDetail() {
                             {jobSearchTerm ? 'לא נמצאו משרות מתאימות' : 'אין משרות זמינות'}
                           </p>
                         ) : (
-                          filteredJobs.map((job) => (
+                          filteredJobs.map((job: any) => (
                             <div
                               key={job.id}
                               className={`flex items-center space-x-2 space-x-reverse p-2 rounded cursor-pointer hover:bg-gray-50 ${
