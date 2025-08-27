@@ -264,7 +264,7 @@ export default function JobInterviews() {
               <CardContent className="grid grid-cols-3 gap-4">
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white">{jobData.title}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{jobData.client.companyName}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{jobData.client?.companyName || 'לא צוין'}</p>
                   <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                     <MapPin className="h-3 w-3" />
                     {jobData.location}
@@ -272,10 +272,10 @@ export default function JobInterviews() {
                 </div>
                 <div>
                   <h5 className="font-medium text-sm">איש קשר:</h5>
-                  <p className="text-sm">{jobData.client.contactName}</p>
+                  <p className="text-sm">{jobData.client?.contactName || 'לא צוין'}</p>
                   <div className="flex items-center gap-1 text-sm text-gray-500">
                     <Mail className="h-3 w-3" />
-                    {jobData.client.email}
+                    {jobData.client?.email || 'לא צוין'}
                   </div>
                 </div>
                 <div>
