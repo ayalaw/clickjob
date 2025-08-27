@@ -101,10 +101,7 @@ export function EmailDialog({
   // Mutations
   const sendCandidateProfileMutation = useMutation({
     mutationFn: async (data: { candidateId: string; to: string; cc?: string }) => {
-      await apiRequest(`/api/emails/send-candidate-profile`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/emails/send-candidate-profile", data);
     },
     onSuccess: () => {
       toast({
@@ -125,10 +122,7 @@ export function EmailDialog({
 
   const sendInterviewInvitationMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest(`/api/emails/send-interview-invitation`, {
-        method: "POST",
-        body: JSON.stringify({ candidateId, ...data }),
-      });
+      await apiRequest("POST", "/api/emails/send-interview-invitation", { candidateId, ...data });
     },
     onSuccess: () => {
       toast({
@@ -149,10 +143,7 @@ export function EmailDialog({
 
   const sendShortlistMutation = useMutation({
     mutationFn: async (data: { to: string; cc?: string; jobTitle: string }) => {
-      await apiRequest(`/api/emails/send-candidate-shortlist`, {
-        method: "POST",
-        body: JSON.stringify({ candidateIds, ...data }),
-      });
+      await apiRequest("POST", "/api/emails/send-candidate-shortlist", { candidateIds, ...data });
     },
     onSuccess: () => {
       toast({
