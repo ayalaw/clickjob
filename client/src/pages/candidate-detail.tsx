@@ -78,11 +78,8 @@ export default function CandidateDetail() {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (updatedData: Partial<Candidate>) => {
-      return apiRequest(`/api/candidates/${id}`, {
-        method: 'PUT',
-        body: updatedData,
-      });
+    mutationFn: async (updatedData: Record<string, string>) => {
+      return apiRequest('PUT', `/api/candidates/${id}`, updatedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}`] });
