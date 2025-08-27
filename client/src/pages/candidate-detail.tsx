@@ -131,6 +131,15 @@ export default function CandidateDetail() {
     (job.client?.name || '').toLowerCase().includes(jobSearchTerm.toLowerCase())
   );
 
+  // Debug: Let's see what we have
+  console.log('Jobs debug:', { 
+    jobsData, 
+    jobs, 
+    filteredJobs, 
+    jobsLength: jobs.length,
+    filteredLength: filteredJobs.length
+  });
+
   // Toggle job selection
   const toggleJobSelection = (jobId: string) => {
     setSelectedJobIds(prev => 
