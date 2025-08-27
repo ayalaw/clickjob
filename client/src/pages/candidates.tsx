@@ -224,7 +224,6 @@ export default function Candidates() {
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">עדכון אחרון</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מתעניין במשרה אחרון</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מקור גיוס נוכחי</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">סינון ראשוני מועמד</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מס' מועמד</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">דוא״ל</TableHead>
@@ -252,9 +251,6 @@ export default function Candidates() {
                           </TableCell>
                           <TableCell>
                             {candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString('he-IL') : "-"}
-                          </TableCell>
-                          <TableCell>
-                            -
                           </TableCell>
                           <TableCell>
                             -
