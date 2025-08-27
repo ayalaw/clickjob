@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import Navbar from "@/components/layout/navbar";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
@@ -22,12 +23,20 @@ import CVSearch from "@/pages/cv-search";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  return (
-    <Switch>
-      {isLoading || !isAuthenticated ? (
+  if (isLoading || !isAuthenticated) {
+    return (
+      <Switch>
         <Route path="/" component={Landing} />
-      ) : (
-        <>
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/candidates" component={Candidates} />
           <Route path="/candidates/new" component={AddCandidate} />
@@ -41,10 +50,10 @@ function Router() {
           <Route path="/emails" component={Emails} />
           <Route path="/email-settings" component={EmailSettings} />
           <Route path="/settings" component={SystemSettings} />
-        </>
-      )}
-      <Route component={NotFound} />
-    </Switch>
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
   );
 }
 

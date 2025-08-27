@@ -4,8 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -105,13 +103,7 @@ export default function Clients() {
   }
 
   return (
-    <div className="min-h-screen flex" dir="rtl">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <Header title="מאגר לקוחות" />
-        
-        <main className="flex-1 p-6 overflow-y-auto bg-background-light">
+    <div dir="rtl" className="space-y-6">
           <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative flex-1 max-w-md">
@@ -245,8 +237,6 @@ export default function Clients() {
               )}
             </>
           )}
-        </main>
-      </div>
     </div>
   );
 }
