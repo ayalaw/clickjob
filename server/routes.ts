@@ -520,6 +520,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get candidate events
+  app.get('/api/candidates/:id/events', isAuthenticated, async (req, res) => {
+    try {
+      const events = await storage.getCandidateEvents(req.params.id);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching candidate events:", error);
+      res.status(500).json({ message: "Failed to fetch candidate events" });
+    }
+  });
+
   app.post('/api/candidates', isAuthenticated, upload.single('cv'), async (req, res) => {
     try {
       // Handle tags array conversion if it comes as a string

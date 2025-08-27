@@ -6,6 +6,7 @@ import {
   jobApplications,
   tasks,
   emails,
+  candidateEvents,
   type User,
   type UpsertUser,
   type Candidate,
@@ -23,6 +24,8 @@ import {
   type InsertTask,
   type Email,
   type InsertEmail,
+  type CandidateEvent,
+  type InsertCandidateEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
@@ -38,6 +41,9 @@ export interface IStorage {
   createCandidate(candidate: InsertCandidate): Promise<Candidate>;
   updateCandidate(id: string, candidate: Partial<InsertCandidate>): Promise<Candidate>;
   deleteCandidate(id: string): Promise<void>;
+  findCandidateByMobileOrId(mobile?: string, nationalId?: string): Promise<Candidate | undefined>;
+  addCandidateEvent(event: InsertCandidateEvent): Promise<CandidateEvent>;
+  getCandidateEvents(candidateId: string): Promise<CandidateEvent[]>;
 
   // Client operations
   getClients(limit?: number, offset?: number, search?: string): Promise<{ clients: Client[]; total: number }>;
@@ -143,6 +149,39 @@ export class DatabaseStorage implements IStorage {
   async createCandidate(candidate: InsertCandidate): Promise<Candidate> {
     const [newCandidate] = await db.insert(candidates).values(candidate).returning();
     return newCandidate;
+  }
+
+  async findCandidateByMobileOrId(mobile?: string, nationalId?: string): Promise<Candidate | undefined> {
+    if (!mobile && !nationalId) return undefined;
+    
+    let whereCondition;
+    if (mobile && nationalId) {
+      whereCondition = sql`${eq(candidates.mobile, mobile)} OR ${eq(candidates.nationalId, nationalId)}`;
+    } else if (mobile) {
+      whereCondition = eq(candidates.mobile, mobile);
+    } else if (nationalId) {
+      whereCondition = eq(candidates.nationalId, nationalId);
+    }
+    
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(whereCondition);
+    
+    return candidate;
+  }
+
+  async addCandidateEvent(event: InsertCandidateEvent): Promise<CandidateEvent> {
+    const [newEvent] = await db.insert(candidateEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async getCandidateEvents(candidateId: string): Promise<CandidateEvent[]> {
+    return await db
+      .select()
+      .from(candidateEvents)
+      .where(eq(candidateEvents.candidateId, candidateId))
+      .orderBy(desc(candidateEvents.createdAt));
   }
 
   async updateCandidate(id: string, candidate: Partial<InsertCandidate>): Promise<Candidate> {

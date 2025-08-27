@@ -73,6 +73,12 @@ function parseCV(text: string): any {
     result.email = emailMatch[0];
   }
   
+  // חילוץ ת.ז.
+  const idMatch = text.match(/(?:ת\.ז\.?|זהות|מספר\s*זהות)\s*:?\s*(\d{9})/i);
+  if (idMatch) {
+    result.nationalId = idMatch[1];
+  }
+  
   // חילוץ עיר מגורים
   const cityKeywords = ['עיר', 'מגורים', 'כתובת', 'מקום', 'city', 'address'];
   const cityPattern = new RegExp(`(?:${cityKeywords.join('|')})\\s*:?\\s*([א-ת\\s]{2,20})`, 'i');
@@ -233,7 +239,9 @@ async function checkCpanelEmails(): Promise<void> {
                               candidate.firstName = cvData.firstName || candidate.firstName;
                               candidate.lastName = cvData.lastName || candidate.lastName;
                               candidate.email = cvData.email || candidate.email; // אימייל מקורות החיים
+                              candidate.mobile = cvData.mobile || candidate.mobile; // נייד מקורות החיים
                               candidate.phone = cvData.phone || candidate.phone;
+                              candidate.nationalId = cvData.nationalId || candidate.nationalId; // ת.ז.
                               candidate.city = cvData.city || candidate.city;
                               candidate.profession = cvData.profession || candidate.profession;
                               candidate.cvPath = cvData.cvPath;
@@ -539,7 +547,9 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
       firstName: extractedData.firstName,
       lastName: extractedData.lastName,
       email: extractedData.email || email, // אימייל מקורות החיים קודם, אחר כך מהמייל
+      mobile: extractedData.phone, // הטלפון הנייד מקורות החיים
       phone: extractedData.phone,
+      nationalId: extractedData.nationalId, // ת.ז. מקורות החיים
       cvPath: filename, // רק שם הקובץ, לא הנתיב המלא
       city: extractedData.city || 'לא צוין',
       profession: extractedData.profession || 'ממתין לעיבוד קורות חיים'
@@ -554,41 +564,75 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
 // עדכון פונקציית יצירת מועמד לכלול נתוני קורות חיים
 async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise<void> {
   try {
-    // בדיקה אם המועמד כבר קיים
-    const existingCandidates = await storage.getCandidates(100, 0, candidateData.email);
+    // בדיקה אם המועמד כבר קיים לפי נייד או ת.ז.
+    const existingCandidate = await storage.findCandidateByMobileOrId(
+      candidateData.mobile || candidateData.phone,
+      candidateData.nationalId
+    );
+    
     let candidateId: string;
     
-    if (existingCandidates.candidates.some(c => c.email === candidateData.email)) {
-      console.log(`⚠️ מועמד עם אימייל ${candidateData.email} כבר קיים - מעדכן פרטים`);
-      const existingCandidate = existingCandidates.candidates.find(c => c.email === candidateData.email)!;
+    if (existingCandidate) {
+      console.log(`🔄 מועמד כבר קיים: ${existingCandidate.firstName} ${existingCandidate.lastName}`);
       candidateId = existingCandidate.id;
       
       // עדכון פרטי המועמד הקיים (כולל קורות חיים חדשים)
       await storage.updateCandidate(candidateId, {
         firstName: candidateData.firstName || existingCandidate.firstName,
         lastName: candidateData.lastName || existingCandidate.lastName,
-        mobile: candidateData.phone || existingCandidate.mobile,
+        email: candidateData.email || existingCandidate.email,
+        mobile: candidateData.mobile || candidateData.phone || existingCandidate.mobile,
+        phone: candidateData.phone || existingCandidate.phone,
+        nationalId: candidateData.nationalId || existingCandidate.nationalId,
         city: candidateData.city || existingCandidate.city,
         profession: candidateData.profession || existingCandidate.profession,
-        cvPath: candidateData.cvPath || existingCandidate.cvPath, // עדכון קורות חיים חדשים
-        // הוספת תוכן המייל לפרטי המועמד
-        notes: `${existingCandidate.notes || ''}\n\n--- מייל חדש עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}`.trim()
+        cvPath: candidateData.cvPath || existingCandidate.cvPath,
       });
+      
+      // רישום אירוע של פנייה חוזרת
+      await storage.addCandidateEvent({
+        candidateId: candidateId,
+        eventType: 'email_reapplication',
+        description: `המועמד פנה שוב דרך המייל`,
+        metadata: {
+          emailSubject: candidateData.originalSubject,
+          emailBody: candidateData.originalBody,
+          attachmentPath: candidateData.cvPath,
+          receivedAt: new Date().toISOString()
+        }
+      });
+      
+      console.log(`📝 נרשם אירוע פנייה חוזרת למועמד`);
     } else {
       // יצירת מועמד חדש עם שדות חובה
       const newCandidate = await storage.createCandidate({
         firstName: candidateData.firstName || 'מועמד',
         lastName: candidateData.lastName || 'ממייל',
-        email: candidateData.email!,
+        email: candidateData.email || `candidate-${Date.now()}@temp.local`,
+        mobile: candidateData.mobile || candidateData.phone,
+        phone: candidateData.phone,
+        nationalId: candidateData.nationalId,
         city: candidateData.city || 'לא צוין',
         profession: candidateData.profession || 'ממתין לעיבוד קורות חיים',
-        mobile: candidateData.phone || undefined,
-        cvPath: candidateData.cvPath, // נתיב קורות החיים
-        // הוספת תוכן המייל לפרטי המועמד
-        notes: `--- מייל נכנס עם קורות חיים ---\nנושא: ${candidateData.originalSubject}\nתוכן:\n${candidateData.originalBody}\n\n** פרטים חולצו מקורות החיים המצורפים **`,
+        cvPath: candidateData.cvPath,
+        notes: `מועמד שנוסף אוטומטית מהמייל. נושא המייל: "${candidateData.originalSubject}"`,
         recruitmentSource: 'מייל נכנס - קורות חיים',
       });
       candidateId = newCandidate.id;
+      
+      // רישום אירוע של יצירת מועמד חדש
+      await storage.addCandidateEvent({
+        candidateId: candidateId,
+        eventType: 'email_application',
+        description: `מועמד חדש הגיע דרך המייל`,
+        metadata: {
+          emailSubject: candidateData.originalSubject,
+          emailBody: candidateData.originalBody,
+          attachmentPath: candidateData.cvPath,
+          receivedAt: new Date().toISOString()
+        }
+      });
+      
       console.log(`✅ נוצר מועמד חדש: ${candidateData.firstName || 'מועמד'} ${candidateData.lastName || 'חדש'}`);
     }
     

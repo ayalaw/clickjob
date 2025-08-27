@@ -164,10 +164,21 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Events table for tracking candidate interactions
+export const candidateEvents = pgTable("candidate_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  candidateId: varchar("candidate_id").references(() => candidates.id).notNull(),
+  eventType: varchar("event_type").notNull(), // email_application, phone_call, interview, status_change, etc.
+  description: text("description").notNull(),
+  metadata: jsonb("metadata"), // additional data as JSON
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const candidatesRelations = relations(candidates, ({ many }) => ({
   applications: many(jobApplications),
   tasks: many(tasks),
+  events: many(candidateEvents),
 }));
 
 export const clientsRelations = relations(clients, ({ many }) => ({
@@ -207,6 +218,13 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   client: one(clients, {
     fields: [tasks.clientId],
     references: [clients.id],
+  }),
+}));
+
+export const candidateEventsRelations = relations(candidateEvents, ({ one }) => ({
+  candidate: one(candidates, {
+    fields: [candidateEvents.candidateId],
+    references: [candidates.id],
   }),
 }));
 
@@ -266,8 +284,15 @@ export const emails = pgTable("emails", {
 });
 
 export const insertEmailSchema = createInsertSchema(emails);
+export const insertCandidateEventSchema = createInsertSchema(candidateEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertEmail = z.infer<typeof insertEmailSchema>;
 export type Email = typeof emails.$inferSelect;
+export type InsertCandidateEvent = z.infer<typeof insertCandidateEventSchema>;
+export type CandidateEvent = typeof candidateEvents.$inferSelect;
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
