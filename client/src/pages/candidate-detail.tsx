@@ -28,7 +28,9 @@ import {
   Baby,
   Download,
   Save,
-  X
+  X,
+  Clock,
+  History
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
@@ -37,6 +39,7 @@ export default function CandidateDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const [showEvents, setShowEvents] = useState(false);
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -55,6 +58,11 @@ export default function CandidateDetail() {
   const { data: candidate, isLoading: candidateLoading } = useQuery<Candidate>({
     queryKey: [`/api/candidates/${id}`],
     enabled: isAuthenticated && !!id,
+  });
+
+  const { data: candidateEvents, isLoading: eventsLoading } = useQuery<any[]>({
+    queryKey: [`/api/candidates/${id}/events`],
+    enabled: isAuthenticated && !!id && showEvents,
   });
 
   const getStatusColor = (status: string) => {
@@ -164,7 +172,7 @@ export default function CandidateDetail() {
     <div dir="rtl" className="space-y-6">
         <main className="flex-1 p-6 overflow-y-auto bg-background-light">
           {/* Navigation */}
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between items-center">
             <Button 
               variant="outline" 
               onClick={() => navigate("/candidates")}
@@ -173,7 +181,72 @@ export default function CandidateDetail() {
               <ArrowRight className="w-4 h-4" />
               חזור לרשימת המועמדים
             </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEvents(!showEvents)}
+              className="flex items-center gap-2"
+              data-testid="button-recent-events"
+            >
+              <History className="w-4 h-4" />
+              אירועים אחרונים
+            </Button>
           </div>
+
+          {/* Events Panel */}
+          {showEvents && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  אירועים אחרונים
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {eventsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : candidateEvents && candidateEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {candidateEvents.map((event: any) => (
+                      <div key={event.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm font-medium">
+                                {event.eventType === 'email_received' ? 'התקבל מייל' :
+                                 event.eventType === 'created' ? 'נוצר במערכת' :
+                                 event.eventType === 'cv_uploaded' ? 'הועלה קורות חיים' :
+                                 event.eventType === 'job_application' ? 'הפניה למשרה' :
+                                 event.eventType}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{event.description}</p>
+                            {event.metadata && (
+                              <div className="text-xs text-gray-500">
+                                {event.metadata.source && <span>מקור: {event.metadata.source}</span>}
+                                {event.metadata.jobCode && <span> | קוד משרה: {event.metadata.jobCode}</span>}
+                                {event.metadata.emailSubject && <span> | נושא: {event.metadata.emailSubject}</span>}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(event.createdAt).toLocaleString('he-IL')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    אין אירועים להצגה
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Layout - 68% CV, 32% Details */}
           <div className="flex gap-6 h-[calc(100vh-12rem)]">

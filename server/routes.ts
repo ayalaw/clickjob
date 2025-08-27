@@ -604,6 +604,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const candidate = await storage.createCandidate(candidateData);
       
+      // Create initial event for manual candidate creation
+      await storage.addCandidateEvent({
+        candidateId: candidate.id,
+        eventType: 'created',
+        description: `מועמד נוצר ידנית על ידי ${candidateData.recruitmentSource || 'משתמש'}`,
+        metadata: {
+          source: 'manual_entry',
+          createdBy: candidateData.recruitmentSource,
+          cvUploaded: !!candidateData.cvPath,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       // Create job application automatically if jobId is provided
       if (jobId) {
         try {
@@ -611,6 +624,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             candidateId: candidate.id,
             jobId: jobId,
             status: 'submitted',
+          });
+          
+          // Add event for job application
+          await storage.addCandidateEvent({
+            candidateId: candidate.id,
+            eventType: 'job_application',
+            description: `הופנה למשרה בעת יצירת המועמד`,
+            metadata: {
+              jobId: jobId,
+              source: 'manual_assignment',
+              timestamp: new Date().toISOString()
+            }
           });
         } catch (error) {
           console.error("Error creating job application:", error);
