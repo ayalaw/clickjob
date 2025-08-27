@@ -106,19 +106,27 @@ export default function CandidateDetail() {
   const templates = Array.isArray(templatesData) ? templatesData : [];
 
   // Load jobs for referral
-  const { data: jobsData } = useQuery({
-    queryKey: ['/api/jobs'],
+  const { data: jobsData, isLoading: jobsLoading, error: jobsError } = useQuery({
+    queryKey: ['/api/jobs', 'for-referral'],
     queryFn: () => apiRequest('GET', '/api/jobs'),
     enabled: isAuthenticated,
+    staleTime: 0, // Force fresh data
+    refetchOnMount: true,
   });
 
   // Handle different possible data structures for jobs
   let jobs: any[] = [];
-  if (jobsData) {
+  if (jobsData && typeof jobsData === 'object') {
     if (Array.isArray((jobsData as any)?.jobs)) {
       jobs = (jobsData as any).jobs;
     } else if (Array.isArray(jobsData)) {
       jobs = jobsData;
+    } else {
+      // Maybe it's a direct object with jobs property
+      const jobsProperty = (jobsData as any).jobs;
+      if (Array.isArray(jobsProperty)) {
+        jobs = jobsProperty;
+      }
     }
   }
 
@@ -130,15 +138,6 @@ export default function CandidateDetail() {
     job.title?.toLowerCase()?.includes(jobSearchTerm.toLowerCase()) ||
     (job.client?.name || '').toLowerCase().includes(jobSearchTerm.toLowerCase())
   );
-
-  // Debug: Let's see what we have
-  console.log('Jobs debug:', { 
-    jobsData, 
-    jobs, 
-    filteredJobs, 
-    jobsLength: jobs.length,
-    filteredLength: filteredJobs.length
-  });
 
   // Toggle job selection
   const toggleJobSelection = (jobId: string) => {
@@ -686,9 +685,18 @@ export default function CandidateDetail() {
                         בחר משרות ({selectedJobIds.length} נבחרו):
                       </label>
                       <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-1">
-                        {filteredJobs.length === 0 ? (
+                        {jobsLoading ? (
+                          <div className="text-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                            <p className="text-sm text-gray-500 mt-2">טוען משרות...</p>
+                          </div>
+                        ) : jobsError ? (
+                          <p className="text-red-500 text-sm text-center py-4">
+                            שגיאה בטעינת המשרות: {(jobsError as any)?.message || 'שגיאה לא ידועה'}
+                          </p>
+                        ) : filteredJobs.length === 0 ? (
                           <p className="text-gray-500 text-sm text-center py-4">
-                            {jobSearchTerm ? 'לא נמצאו משרות מתאימות' : 'אין משרות זמינות'}
+                            {jobSearchTerm ? 'לא נמצאו משרות מתאימות' : `אין משרות זמינות (טועדות: ${jobs.length})`}
                           </p>
                         ) : (
                           filteredJobs.map((job: any) => (
