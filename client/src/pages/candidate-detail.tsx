@@ -37,8 +37,6 @@ export default function CandidateDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [editValues, setEditValues] = useState<Partial<Candidate>>({});
-
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -79,27 +77,6 @@ export default function CandidateDetail() {
     }
   };
 
-  // Initialize edit values when candidate loads
-  useEffect(() => {
-    if (candidate) {
-      setEditValues({
-        firstName: candidate.firstName,
-        lastName: candidate.lastName,
-        email: candidate.email,
-        phone: candidate.phone,
-        phone2: candidate.phone2,
-        nationalId: candidate.nationalId,
-        city: candidate.city,
-        street: candidate.street,
-        houseNumber: candidate.houseNumber,
-        gender: candidate.gender,
-        maritalStatus: candidate.maritalStatus,
-        mobile: candidate.mobile,
-        drivingLicense: candidate.drivingLicense,
-      });
-    }
-  }, [candidate]);
-
   const updateMutation = useMutation({
     mutationFn: async (updatedData: Partial<Candidate>) => {
       return apiRequest(`/api/candidates/${id}`, {
@@ -124,12 +101,10 @@ export default function CandidateDetail() {
   });
 
   const saveAllChanges = () => {
-    updateMutation.mutate(editValues);
+    // Use fieldValues instead of editValues
+    updateMutation.mutate(fieldValues);
   };
 
-  const handleFieldChange = useCallback((field: keyof Candidate, value: any) => {
-    setEditValues(prev => ({ ...prev, [field]: value }));
-  }, []);
 
   // Create separate state for each field to avoid re-renders
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -157,7 +132,6 @@ export default function CandidateDetail() {
 
   const updateFieldValue = (field: string, value: string) => {
     setFieldValues(prev => ({ ...prev, [field]: value }));
-    setEditValues(prev => ({ ...prev, [field]: value }));
   };
 
   if (isLoading || candidateLoading) {
