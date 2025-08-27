@@ -112,16 +112,24 @@ export default function CandidateDetail() {
     enabled: isAuthenticated,
   });
 
+  // Debug: Log the jobs data structure
+  console.log('jobsData:', jobsData);
+  console.log('jobsData?.jobs:', jobsData?.jobs);
+  console.log('Array.isArray(jobsData?.jobs):', Array.isArray(jobsData?.jobs));
+  
   const jobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
+  console.log('jobs array:', jobs);
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
 
   // Filter jobs based on search term
   const filteredJobs = jobs.filter((job: any) => 
-    job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+    job.title?.toLowerCase()?.includes(jobSearchTerm.toLowerCase()) ||
     (job.client?.name || '').toLowerCase().includes(jobSearchTerm.toLowerCase())
   );
+  
+  console.log('filteredJobs:', filteredJobs);
 
   // Toggle job selection
   const toggleJobSelection = (jobId: string) => {
@@ -632,7 +640,14 @@ export default function CandidateDetail() {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={referToJobDialogOpen} onOpenChange={setReferToJobDialogOpen}>
+              <Dialog open={referToJobDialogOpen} onOpenChange={(open) => {
+                setReferToJobDialogOpen(open);
+                if (!open) {
+                  setSelectedJobIds([]);
+                  setRecommendation('');
+                  setJobSearchTerm('');
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
