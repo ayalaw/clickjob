@@ -276,6 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', 'inline'); // הצגה בדפדפן במקום הורדה
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET');
       res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
