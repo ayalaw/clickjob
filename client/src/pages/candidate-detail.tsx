@@ -240,7 +240,36 @@ export default function CandidateDetail() {
                                 {event.metadata.jobTitle && <span> | משרה: {event.metadata.jobTitle}</span>}
                                 {event.metadata.emailSubject && <span> | נושא: {event.metadata.emailSubject}</span>}
                                 {event.metadata.recipient && <span> | נשלח אל: {event.metadata.recipient}</span>}
-                                {event.metadata.updatedFields && event.metadata.updatedFields.length > 0 && <span> | עודכנו: {event.metadata.updatedFields.join(', ')}</span>}
+                                {event.metadata.updatedFields && event.metadata.updatedFields.length > 0 && (
+                                  <span> | עודכנו: {event.metadata.updatedFields.map((field: string) => {
+                                    const fieldMap: Record<string, string> = {
+                                      firstName: 'שם פרטי',
+                                      lastName: 'שם משפחה',
+                                      email: 'אימייל',
+                                      mobile: 'טלפון נייד',
+                                      phone: 'טלפון בית',
+                                      phone2: 'טלפון נוסף',
+                                      nationalId: 'תעודת זהות',
+                                      city: 'עיר',
+                                      street: 'רחוב',
+                                      houseNumber: 'מספר בית',
+                                      zipCode: 'מיקוד',
+                                      gender: 'מין',
+                                      maritalStatus: 'מצב משפחתי',
+                                      drivingLicense: 'רישיון נהיגה',
+                                      address: 'כתובת',
+                                      profession: 'מקצוע',
+                                      experience: 'ניסיון',
+                                      expectedSalary: 'שכר צפוי',
+                                      status: 'סטטוס',
+                                      rating: 'דירוג',
+                                      notes: 'הערות',
+                                      tags: 'תגיות',
+                                      recruitmentSource: 'מקור גיוס'
+                                    };
+                                    return fieldMap[field] || field;
+                                  }).join(', ')}</span>
+                                )}
                                 {event.metadata.cvUploaded && <span> | כולל קורות חיים</span>}
                                 {event.metadata.newStatus && <span> | סטטוס חדש: {event.metadata.newStatus}</span>}
                                 {event.metadata.taskTitle && <span> | כותרת משימה: {event.metadata.taskTitle}</span>}
