@@ -139,18 +139,18 @@ export default function CandidateDetail() {
     options?: string[];
   }) => {
     return (
-      <div className="flex justify-between items-center" dir="rtl">
-        <span className="text-sm font-medium text-right">{label}:</span>
+      <div className="flex flex-row-reverse justify-between items-center">
+        <span className="text-sm font-medium">{label}:</span>
         <div className="flex items-center gap-2">
           {type === "select" ? (
             <Select
               value={editValues[field] as string || ""}
               onValueChange={(value) => setEditValues({ ...editValues, [field]: value })}
             >
-              <SelectTrigger className="w-32" dir="rtl">
+              <SelectTrigger className="w-32">
                 <SelectValue placeholder="בחר..." />
               </SelectTrigger>
-              <SelectContent dir="rtl">
+              <SelectContent>
                 {options.map(option => (
                   <SelectItem key={option} value={option}>{option}</SelectItem>
                 ))}
@@ -164,9 +164,8 @@ export default function CandidateDetail() {
                 ...editValues, 
                 [field]: type === "number" ? Number(e.target.value) : e.target.value 
               })}
-              className="w-32 text-sm text-right"
+              className="w-32 text-sm"
               placeholder={`הכנס ${label.toLowerCase()}`}
-              dir="rtl"
             />
           )}
         </div>
