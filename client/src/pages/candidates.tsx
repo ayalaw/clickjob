@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -18,6 +19,8 @@ import type { Candidate } from "@shared/schema";
 export default function Candidates() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  const navigate = (path: string) => setLocation(path);
   const [search, setSearch] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -152,16 +155,27 @@ export default function Candidates() {
             </div>
             
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={handleAddCandidate}
-                  className="btn-primary"
-                  data-testid="button-add-candidate"
+              <div className="flex gap-2">
+                <DialogTrigger asChild>
+                  <Button 
+                    onClick={handleAddCandidate}
+                    className="btn-primary"
+                    data-testid="button-add-candidate"
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    הוסף מועמד
+                  </Button>
+                </DialogTrigger>
+                <Button
+                  onClick={() => navigate("/candidates/advanced")}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  data-testid="button-add-advanced-candidate"
                 >
-                  <Plus className="h-4 w-4 ml-2" />
-                  הוסף מועמד
+                  <Plus className="h-4 w-4" />
+                  מועמד מתקדם
                 </Button>
-              </DialogTrigger>
+              </div>
               <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="sr-only">
                   <DialogTitle>

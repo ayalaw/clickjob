@@ -10,6 +10,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Candidates from "@/pages/candidates";
 import AddCandidate from "@/pages/add-candidate";
+import AdvancedCandidate from "@/pages/advanced-candidate";
 import CandidateDetail from "@/pages/candidate-detail";
 import Clients from "@/pages/clients";
 import Jobs from "@/pages/jobs";
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/candidates" component={Candidates} />
           <Route path="/candidates/new" component={AddCandidate} />
           <Route path="/candidates/add" component={AddCandidate} />
+          <Route path="/candidates/advanced" component={AdvancedCandidate} />
           <Route path="/candidates/:id" component={CandidateDetail} />
           <Route path="/cv-search" component={CVSearch} />
           <Route path="/clients" component={Clients} />
