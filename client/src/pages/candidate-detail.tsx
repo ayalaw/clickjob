@@ -162,7 +162,7 @@ export default function CandidateDetail() {
                       <div className="flex gap-3 justify-center p-3 bg-gray-50 rounded mb-4">
                         <Button
                           size="sm"
-                          onClick={() => window.open(`/${candidate.cvPath}`, '_blank')}
+                          onClick={() => window.open(`/${candidate.cvPath?.replace('uploads/', '')}`, '_blank')}
                           className="flex items-center gap-2"
                         >
                           <Eye className="w-4 h-4" />
@@ -173,7 +173,7 @@ export default function CandidateDetail() {
                           variant="outline"
                           onClick={() => {
                             const link = document.createElement('a');
-                            link.href = `/${candidate.cvPath}`;
+                            link.href = `/uploads/${candidate.cvPath?.replace('uploads/', '')}`;
                             link.download = `${candidate.firstName}_${candidate.lastName}_CV`;
                             link.click();
                           }}
@@ -187,7 +187,7 @@ export default function CandidateDetail() {
                       {/* CV Display - Direct iframe */}
                       <div className="flex-1 bg-white rounded border overflow-hidden">
                         <iframe
-                          src={`/${candidate.cvPath}`}
+                          src={`/uploads/${candidate.cvPath?.replace('uploads/', '')}`}
                           className="w-full h-full border-0"
                           title="קורות חיים"
                           onError={() => {

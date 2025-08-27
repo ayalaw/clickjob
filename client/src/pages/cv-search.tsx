@@ -255,7 +255,7 @@ export default function CVSearchPage() {
             {selectedCandidate?.cvPath ? (
               <iframe
                 data-testid="iframe-cv-viewer"
-                src={`/uploads/${selectedCandidate.cvPath}`}
+                src={`/uploads/${selectedCandidate.cvPath?.replace('uploads/', '')}`}
                 className="w-full h-full border rounded"
                 title="קורות חיים"
               />
