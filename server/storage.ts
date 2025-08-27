@@ -7,6 +7,7 @@ import {
   tasks,
   emails,
   candidateEvents,
+  messageTemplates,
   type User,
   type UpsertUser,
   type Candidate,
@@ -26,6 +27,8 @@ import {
   type InsertEmail,
   type CandidateEvent,
   type InsertCandidateEvent,
+  type MessageTemplate,
+  type InsertMessageTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
@@ -92,6 +95,12 @@ export interface IStorage {
 
   // CV Search operations
   searchCandidatesByKeywords(keywords: string, limit?: number, offset?: number): Promise<{ candidates: Candidate[]; total: number }>;
+
+  // Message Template operations
+  getMessageTemplates(): Promise<MessageTemplate[]>;
+  createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate>;
+  updateMessageTemplate(id: string, template: Partial<InsertMessageTemplate>): Promise<MessageTemplate>;
+  deleteMessageTemplate(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -889,6 +898,29 @@ export class DatabaseStorage implements IStorage {
     const candidatesWithoutRank = results.map(({ rank, ...candidate }) => candidate);
 
     return { candidates: candidatesWithoutRank, total };
+  }
+
+  // Message Template operations
+  async getMessageTemplates(): Promise<MessageTemplate[]> {
+    return await db.select().from(messageTemplates).orderBy(desc(messageTemplates.createdAt));
+  }
+
+  async createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate> {
+    const [newTemplate] = await db.insert(messageTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updateMessageTemplate(id: string, template: Partial<InsertMessageTemplate>): Promise<MessageTemplate> {
+    const [updatedTemplate] = await db
+      .update(messageTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(messageTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+
+  async deleteMessageTemplate(id: string): Promise<void> {
+    await db.delete(messageTemplates).where(eq(messageTemplates.id, id));
   }
 }
 

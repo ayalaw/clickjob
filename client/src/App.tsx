@@ -19,6 +19,7 @@ import JobInterviews from "@/pages/job-interviews";
 import Emails from "@/pages/emails";
 import EmailSettings from "@/pages/email-settings";
 import SystemSettings from "@/pages/system-settings";
+import Settings from "@/pages/settings";
 import CVSearch from "@/pages/cv-search";
 
 function Router() {
@@ -52,7 +53,8 @@ function Router() {
           <Route path="/interviews/:jobId" component={JobInterviews} />
           <Route path="/emails" component={Emails} />
           <Route path="/email-settings" component={EmailSettings} />
-          <Route path="/settings" component={SystemSettings} />
+          <Route path="/system-settings" component={SystemSettings} />
+          <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
       </main>

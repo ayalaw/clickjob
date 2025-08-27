@@ -6,7 +6,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobApplicationSchema, insertTaskSchema, insertEmailSchema } from "@shared/schema";
+import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobApplicationSchema, insertTaskSchema, insertEmailSchema, insertMessageTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
@@ -1707,6 +1707,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('שגיאה בחיפוש מועמדים:', error);
       res.status(500).json({ error: 'שגיאה בחיפוש מועמדים' });
+    }
+  });
+
+  // Message Templates routes
+  app.get('/api/message-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templates = await storage.getMessageTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching message templates:', error);
+      res.status(500).json({ error: 'שגיאה בטעינת תבניות ההודעות' });
+    }
+  });
+
+  app.post('/api/message-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templateData = insertMessageTemplateSchema.parse(req.body);
+      const template = await storage.createMessageTemplate(templateData);
+      res.json(template);
+    } catch (error) {
+      console.error('Error creating message template:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'נתונים לא תקינים', details: error.errors });
+      }
+      res.status(500).json({ error: 'שגיאה ביצירת תבנית ההודעה' });
+    }
+  });
+
+  app.put('/api/message-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const templateData = insertMessageTemplateSchema.parse(req.body);
+      const template = await storage.updateMessageTemplate(id, templateData);
+      res.json(template);
+    } catch (error) {
+      console.error('Error updating message template:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'נתונים לא תקינים', details: error.errors });
+      }
+      res.status(500).json({ error: 'שגיאה בעדכון תבנית ההודעה' });
+    }
+  });
+
+  app.delete('/api/message-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteMessageTemplate(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting message template:', error);
+      res.status(500).json({ error: 'שגיאה במחיקת תבנית ההודעה' });
     }
   });
 

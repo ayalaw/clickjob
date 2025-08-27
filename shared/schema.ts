@@ -43,6 +43,16 @@ export const applicationStatusEnum = pgEnum('application_status', ['submitted', 
 export const rejectionReasonEnum = pgEnum('rejection_reason', ['lack_of_experience', 'geographic_mismatch', 'salary_demands', 'qualifications_mismatch', 'other']);
 export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'failed', 'delivered', 'bounced']);
 
+// Message templates table
+export const messageTemplates = pgTable("message_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  content: text("content").notNull(),
+  icon: varchar("icon").default("💬"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Candidates table
 export const candidates = pgTable("candidates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -288,9 +298,16 @@ export const insertCandidateEventSchema = createInsertSchema(candidateEvents).om
   id: true,
   createdAt: true,
 });
+export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 export type InsertEmail = z.infer<typeof insertEmailSchema>;
 export type Email = typeof emails.$inferSelect;
+export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
+export type MessageTemplate = typeof messageTemplates.$inferSelect;
 export type InsertCandidateEvent = z.infer<typeof insertCandidateEventSchema>;
 export type CandidateEvent = typeof candidateEvents.$inferSelect;
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;

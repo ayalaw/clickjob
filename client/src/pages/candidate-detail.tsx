@@ -44,6 +44,8 @@ export default function CandidateDetail() {
   const [showEvents, setShowEvents] = useState(false);
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
   const [selectedMessageType, setSelectedMessageType] = useState("");
+  const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
+  const [editableTemplate, setEditableTemplate] = useState("");
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -89,8 +91,23 @@ export default function CandidateDetail() {
     }
   };
 
+  // Load templates from database
+  const { data: templatesData } = useQuery({
+    queryKey: ['/api/message-templates'],
+    queryFn: () => apiRequest('GET', '/api/message-templates'),
+  });
+
+  const templates = Array.isArray(templatesData) ? templatesData : [];
+
   const getWhatsAppTemplate = (messageType: string, candidateName: string) => {
-    const templates: Record<string, string> = {
+    // Find template from database
+    const template = templates.find(t => t.name === messageType);
+    if (template) {
+      return template.content.replace(/\{שם המועמד\}/g, candidateName);
+    }
+
+    // Fallback to hardcoded templates
+    const hardcodedTemplates: Record<string, string> = {
       "זימון לראיון עבודה": `שלום ${candidateName} 👋
 
 קיבלנו את קורות החיים שלך והתרשמנו!
@@ -114,27 +131,56 @@ export default function CandidateDetail() {
 📧 או כתוב לנו אימייל
 
 נחכה לתגובתך
+צוות הגיוס`,
+
+      "בקשת עדכון פרטים": `שלום ${candidateName} 👋
+
+נשמח לעדכן את פרטייך במערכת שלנו.
+
+אנא שלח לנו:
+📝 קורות חיים מעודכנות
+📞 מספר טלפון נוסף (אם יש)
+📧 כתובת אימייל נוספת (אם יש)
+
+תודה על שיתוף הפעולה!
+צוות הגיוס`,
+
+      "הודעת תודה": `שלום ${candidateName} 👋
+
+תודה רבה על הזמן שהקדשת לראיון!
+
+התרשמנו מאוד ממך ונחזור אליך בהקדם עם עדכון.
+
+המשך יום נעים!
 צוות הגיוס`
     };
     
-    return templates[messageType] || `שלום ${candidateName}, צוות הגיוס פנה אליך.`;
+    return hardcodedTemplates[messageType] || `שלום ${candidateName}, צוות הגיוס פנה אליך.`;
   };
 
-  const handleWhatsAppMessage = (messageType: string) => {
+  const handleTemplateSelection = (messageType: string) => {
     if (!candidate?.mobile) return;
     
-    // Get the template
     const candidateName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
     const messageTemplate = getWhatsAppTemplate(messageType, candidateName);
+    
+    setSelectedMessageType(messageType);
+    setEditableTemplate(messageTemplate);
+    setWhatsappDialogOpen(false);
+    setEditTemplateDialogOpen(true);
+  };
+
+  const handleSendWhatsAppMessage = () => {
+    if (!candidate?.mobile || !editableTemplate) return;
     
     // Record the WhatsApp message event
     apiRequest('POST', `/api/candidates/${id}/events`, {
       eventType: 'whatsapp_message',
-      description: `נשלחה הודעת וואטסאפ: ${messageType}`,
+      description: `נשלחה הודעת וואטסאפ: ${selectedMessageType}`,
       metadata: {
-        messageType,
+        messageType: selectedMessageType,
         mobile: candidate.mobile,
-        template: messageTemplate,
+        template: editableTemplate,
         timestamp: new Date().toISOString()
       }
     }).then(() => {
@@ -145,7 +191,7 @@ export default function CandidateDetail() {
       
       toast({
         title: "הודעה נרשמה",
-        description: `הודעת וואטסאפ "${messageType}" נרשמה באירועי המועמד`,
+        description: `הודעת וואטסאפ "${selectedMessageType}" נרשמה באירועי המועמד`,
       });
     }).catch(() => {
       toast({
@@ -155,11 +201,13 @@ export default function CandidateDetail() {
       });
     });
 
-    // Open WhatsApp with the template
+    // Open WhatsApp with the edited template
     const phoneNumber = candidate.mobile.replace(/^0/, '').replace(/\D/g, '');
-    const encodedMessage = encodeURIComponent(messageTemplate);
+    const encodedMessage = encodeURIComponent(editableTemplate);
     window.open(`https://wa.me/972${phoneNumber}?text=${encodedMessage}`, '_blank');
-    setWhatsappDialogOpen(false);
+    setEditTemplateDialogOpen(false);
+    setEditableTemplate("");
+    setSelectedMessageType("");
   };
 
   const updateMutation = useMutation({
@@ -284,20 +332,84 @@ export default function CandidateDetail() {
                               <DialogTitle>בחר סוג הודעה לווטסאפ</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-3">
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleWhatsAppMessage("זימון לראיון עבודה")}
-                              >
-                                📅 זימון לראיון עבודה
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleWhatsAppMessage("אין מענה בנייד")}
-                              >
-                                📞 אין מענה בנייד
-                              </Button>
+                              {templates.length > 0 ? (
+                                templates.map((template) => (
+                                  <Button
+                                    key={template.id}
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    onClick={() => handleTemplateSelection(template.name)}
+                                  >
+                                    {template.icon} {template.name}
+                                  </Button>
+                                ))
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    onClick={() => handleTemplateSelection("זימון לראיון עבודה")}
+                                  >
+                                    📅 זימון לראיון עבודה
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    onClick={() => handleTemplateSelection("אין מענה בנייד")}
+                                  >
+                                    📞 אין מענה בנייד
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    onClick={() => handleTemplateSelection("בקשת עדכון פרטים")}
+                                  >
+                                    📝 בקשת עדכון פרטים
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full justify-start"
+                                    onClick={() => handleTemplateSelection("הודעת תודה")}
+                                  >
+                                    🙏 הודעת תודה
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Template Editor Dialog */}
+                        <Dialog open={editTemplateDialogOpen} onOpenChange={setEditTemplateDialogOpen}>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>ערוך הודעה - {selectedMessageType}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">תוכן ההודעה:</label>
+                                <textarea
+                                  value={editableTemplate}
+                                  onChange={(e) => setEditableTemplate(e.target.value)}
+                                  className="w-full h-60 p-3 border rounded-md resize-none text-sm font-mono leading-relaxed"
+                                  dir="rtl"
+                                  placeholder="כתוב את תוכן ההודעה כאן..."
+                                />
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setEditTemplateDialogOpen(false)}
+                                >
+                                  ביטול
+                                </Button>
+                                <Button
+                                  onClick={handleSendWhatsAppMessage}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  📱 שלח בוואטסאפ
+                                </Button>
+                              </div>
                             </div>
                           </DialogContent>
                         </Dialog>
