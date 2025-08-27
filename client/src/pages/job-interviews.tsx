@@ -5,8 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useRoute, Link } from "wouter";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -199,17 +197,14 @@ export default function JobInterviews() {
 
   if (!jobId) {
     return (
-      <div className="flex h-screen bg-background">
-        <Sidebar />
-        <div className="mr-64 flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              משרה לא נמצאה
-            </h2>
-            <Link href="/interviews">
-              <Button>חזור לרשימת משרות</Button>
-            </Link>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            משרה לא נמצאה
+          </h2>
+          <Link href="/interviews">
+            <Button>חזור לרשימת משרות</Button>
+          </Link>
         </div>
       </div>
     );
@@ -217,23 +212,17 @@ export default function JobInterviews() {
 
   if (applicationsLoading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Sidebar />
-        <div className="mr-64 flex-1 flex items-center justify-center">
-          <div className="animate-pulse text-center">
-            <UserCheck className="h-12 w-12 mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600 dark:text-gray-300">טוען מועמדות לסקירה...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-center">
+          <UserCheck className="h-12 w-12 mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600 dark:text-gray-300">טוען מועמדות לסקירה...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar />
-      <div className="mr-64 flex-1 flex flex-col">
-        <Header title={`ראיונות - ${jobData?.title || 'טוען...'}`} />
+    <div dir="rtl" className="space-y-6">
         
         {/* Breadcrumb */}
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-2">
@@ -494,7 +483,6 @@ export default function JobInterviews() {
             </CardContent>
           </Card>
         </main>
-      </div>
     </div>
   );
 }

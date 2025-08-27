@@ -2,8 +2,6 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import CandidateForm from "@/components/forms/candidate-form";
 
 export default function AddCandidate() {
@@ -43,14 +41,8 @@ export default function AddCandidate() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50" dir="rtl">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Header />
-        <main className="flex-1 overflow-auto">
-          <CandidateForm onSuccess={handleSuccess} />
-        </main>
-      </div>
+    <div dir="rtl" className="space-y-6">
+      <CandidateForm onSuccess={handleSuccess} />
     </div>
   );
 }

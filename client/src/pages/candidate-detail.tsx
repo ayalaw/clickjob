@@ -24,8 +24,6 @@ import {
   Baby,
   Download
 } from "lucide-react";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { queryClient } from "@/lib/queryClient";
 import CandidateForm from "@/components/forms/candidate-form";
 import type { Candidate } from "@shared/schema";
@@ -93,57 +91,45 @@ export default function CandidateDetail() {
 
   if (!candidate) {
     return (
-      <div className="min-h-screen flex" dir="rtl">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <Header title="מועמד לא נמצא" />
-          <main className="flex-1 p-6 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-600 mb-4">מועמד לא נמצא</h2>
-              <Button onClick={() => navigate("/candidates")}>חזור למועמדים</Button>
-            </div>
-          </main>
-        </div>
+      <div dir="rtl" className="space-y-6">
+        <main className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-600 mb-4">מועמד לא נמצא</h2>
+            <Button onClick={() => navigate("/candidates")}>חזור למועמדים</Button>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (isEditMode) {
     return (
-      <div className="min-h-screen flex" dir="rtl">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <Header title="עריכת מועמד" />
-          <main className="flex-1 p-6 overflow-y-auto bg-background-light">
-            <div className="mb-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditMode(false)}
-                className="flex items-center gap-2"
-              >
-                <ArrowRight className="w-4 h-4" />
-                חזור לפרטי המועמד
-              </Button>
-            </div>
-            <CandidateForm 
-              candidate={candidate}
-              onSuccess={() => {
-                setIsEditMode(false);
-                queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}`] });
-              }}
-            />
-          </main>
-        </div>
+      <div dir="rtl" className="space-y-6">
+        <main className="flex-1 p-6 overflow-y-auto bg-background-light">
+          <div className="mb-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditMode(false)}
+              className="flex items-center gap-2"
+            >
+              <ArrowRight className="w-4 h-4" />
+              חזור לפרטי המועמד
+            </Button>
+          </div>
+          <CandidateForm 
+            candidate={candidate}
+            onSuccess={() => {
+              setIsEditMode(false);
+              queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}`] });
+            }}
+          />
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex" dir="rtl">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <Header title={`${candidate.firstName} ${candidate.lastName}`} />
+    <div dir="rtl" className="space-y-6">
         
         <main className="flex-1 p-6 overflow-y-auto bg-background-light">
           {/* Navigation */}
@@ -354,7 +340,6 @@ export default function CandidateDetail() {
             </div>
           </div>
         </main>
-      </div>
     </div>
   );
 }

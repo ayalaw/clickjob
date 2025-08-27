@@ -3,8 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -90,23 +88,17 @@ export default function Interviews() {
 
   if (jobsLoading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Sidebar />
-        <div className="mr-64 flex-1 flex items-center justify-center">
-          <div className="animate-pulse text-center">
-            <Briefcase className="h-12 w-12 mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600 dark:text-gray-300">טוען משרות...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-center">
+          <Briefcase className="h-12 w-12 mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600 dark:text-gray-300">טוען משרות...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar />
-      <div className="mr-64 flex-1 flex flex-col">
-        <Header title="סינון ראיונות - רשימת משרות" />
+    <div dir="rtl" className="space-y-6">
         
         <main className="flex-1 p-6 space-y-6">
           {/* Stats Summary */}
@@ -253,7 +245,6 @@ export default function Interviews() {
             </CardContent>
           </Card>
         </main>
-      </div>
     </div>
   );
 }

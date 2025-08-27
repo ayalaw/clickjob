@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { Mail, Settings, CheckCircle, XCircle } from "lucide-react";
 
 export default function EmailSettings() {
@@ -104,11 +102,7 @@ export default function EmailSettings() {
   };
 
   return (
-    <div className="min-h-screen flex" dir="rtl">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <Header title="הגדרות מייל" />
+    <div dir="rtl" className="space-y-6">
         
         <main className="flex-1 p-6 overflow-y-auto bg-background-light">
           <div className="max-w-2xl mx-auto space-y-6">
@@ -253,7 +247,6 @@ export default function EmailSettings() {
             </Card>
           </div>
         </main>
-      </div>
     </div>
   );
 }

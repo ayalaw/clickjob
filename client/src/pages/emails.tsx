@@ -4,8 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -120,10 +118,7 @@ export default function Emails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
-      <Sidebar />
-      <div className="mr-64">
-        <Header />
+    <div dir="rtl" className="space-y-6">
         <main className="p-8">
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
@@ -237,7 +232,6 @@ export default function Emails() {
             </>
           )}
         </main>
-      </div>
     </div>
   );
 }

@@ -6,8 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import { Mail, Send, Inbox, Users, Plus, X, Settings, CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 export default function SystemSettings() {
@@ -225,11 +223,7 @@ export default function SystemSettings() {
   };
 
   return (
-    <div className="min-h-screen flex" dir="rtl">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col">
-        <Header title="הגדרות מערכת" />
+    <div dir="rtl" className="space-y-6">
         
         <main className="flex-1 p-6 overflow-y-auto bg-background-light">
           <div className="max-w-4xl mx-auto">
@@ -479,7 +473,6 @@ export default function SystemSettings() {
             </Tabs>
           </div>
         </main>
-      </div>
     </div>
   );
 }
