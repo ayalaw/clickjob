@@ -113,23 +113,34 @@ export default function AdvancedCandidateForm({
   // Load existing CV file if editing candidate
   useEffect(() => {
     if (candidate?.cvPath && candidate.cvPath.trim()) {
-      // Handle both formats: "uploads/file.pdf" and "file.pdf"
       let cvPath = candidate.cvPath.trim();
       
-      // If path doesn't start with uploads/, add it
-      let finalUrl = cvPath.startsWith('uploads/') ? `/${cvPath}` : `/uploads/${cvPath}`;
+      // Build proper URL - handle both "uploads/file.pdf" and "file.pdf" formats
+      let finalUrl;
+      if (cvPath.startsWith('uploads/')) {
+        finalUrl = `/${cvPath}`;
+      } else if (cvPath.startsWith('/uploads/')) {
+        finalUrl = cvPath;
+      } else {
+        finalUrl = `/uploads/${cvPath}`;
+      }
+      
+      // Extract filename for display
+      const fileName = cvPath.split('/').pop() || 'קורות חיים';
       
       const existingCvFile: UploadedFile = {
         id: 'existing-cv',
-        name: cvPath.split('/').pop() || 'קורות חיים קיימים',
-        size: 0, // We don't know the size
-        type: cvPath.toLowerCase().includes('.pdf') ? 'application/pdf' : 
-               cvPath.toLowerCase().includes('.doc') ? 'application/msword' : 
-               cvPath.toLowerCase().includes('.jpg') || cvPath.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
-               cvPath.toLowerCase().includes('.png') ? 'image/png' :
-               cvPath.toLowerCase().includes('.gif') ? 'image/gif' : 'application/octet-stream',
+        name: fileName,
+        size: 0,
+        type: fileName.toLowerCase().includes('.pdf') ? 'application/pdf' : 
+               fileName.toLowerCase().includes('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+               fileName.toLowerCase().includes('.doc') ? 'application/msword' : 
+               fileName.toLowerCase().includes('.jpg') || fileName.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
+               fileName.toLowerCase().includes('.png') ? 'image/png' :
+               fileName.toLowerCase().includes('.gif') ? 'image/gif' : 'application/octet-stream',
         url: finalUrl,
       };
+      
       setUploadedFiles([existingCvFile]);
       setSelectedFile(existingCvFile);
       
@@ -140,7 +151,6 @@ export default function AdvancedCandidateForm({
         fileName: existingCvFile.name
       });
     } else {
-      // Reset files if no CV path
       setUploadedFiles([]);
       setSelectedFile(null);
     }
