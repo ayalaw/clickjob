@@ -130,7 +130,6 @@ export default function CandidateDetail() {
 
   return (
     <div dir="rtl" className="space-y-6">
-        
         <main className="flex-1 p-6 overflow-y-auto bg-background-light">
           {/* Navigation */}
           <div className="mb-6">
@@ -144,10 +143,10 @@ export default function CandidateDetail() {
             </Button>
           </div>
 
-          {/* Layout - 67% CV, 33% Details */}
+          {/* Layout - 50% CV, 50% Details */}
           <div className="flex gap-6 h-[calc(100vh-12rem)]">
-            {/* CV Display Card - 67% */}
-            <div className="flex-[2] min-w-0">
+            {/* CV Display Card - 50% */}
+            <div className="flex-1 min-w-0">
               <Card className="h-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2">
@@ -199,149 +198,257 @@ export default function CandidateDetail() {
               </Card>
             </div>
 
-            {/* Personal Details Card - 33% */}
+            {/* Candidate Details Card - 50% */}
             <div className="flex-1 min-w-0">
-              <Card className="h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+              <div className="h-full overflow-y-auto space-y-4">
+                {/* Header with name and edit button */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <User className="w-5 h-5" />
+                        {candidate.firstName} {candidate.lastName}
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(candidate.status || 'available')}>
+                          {getStatusText(candidate.status || 'available')}
+                        </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsEditMode(true)}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          עריכה
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Rating */}
+                    {candidate.rating && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">דירוג:</span>
+                        <div className="flex">
+                          {[1,2,3,4,5].map(i => (
+                            <span key={i} className={`text-lg ${i <= candidate.rating! ? 'text-yellow-400' : 'text-gray-300'}`}>
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Tags */}
+                    {candidate.tags && candidate.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {candidate.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary">{tag}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Contact Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Phone className="w-5 h-5" />
+                      פרטי קשר
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{candidate.email}</span>
+                    </div>
+                    {candidate.mobile && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{candidate.mobile}</span>
+                        <span className="text-xs text-gray-400">(נייד)</span>
+                      </div>
+                    )}
+                    {candidate.phone && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{candidate.phone}</span>
+                        <span className="text-xs text-gray-400">(בית)</span>
+                      </div>
+                    )}
+                    {candidate.phone2 && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{candidate.phone2}</span>
+                        <span className="text-xs text-gray-400">(נוסף)</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Personal Details */}
+                <Card>
+                  <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="w-5 h-5" />
                       פרטים אישיים
                     </CardTitle>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setIsEditMode(true)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                        ערוך
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => navigate(`/candidates/${id}/advanced`)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                        עריכה מתקדמת
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="h-[calc(100%-4rem)] overflow-auto">
-                  <div className="space-y-4">
-                    {/* Name and Status */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold">{candidate.firstName} {candidate.lastName}</h2>
-                        {candidate.profession && (
-                          <p className="text-gray-600 text-sm">{candidate.profession}</p>
-                        )}
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {candidate.nationalId && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">תעודת זהות:</span>
+                        <span className="text-sm">{candidate.nationalId}</span>
                       </div>
-                      <Badge className={getStatusColor(candidate.status || '')}>
-                        {getStatusText(candidate.status || '')}
-                      </Badge>
-                    </div>
-
-                    <Separator />
-
-                    {/* Contact Information */}
-                    <div className="space-y-3">
-                      {candidate.email && (
-                        <div className="flex items-center gap-3">
-                          <Mail className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">{candidate.email}</span>
-                        </div>
-                      )}
-                      
-                      {candidate.mobile && (
-                        <div className="flex items-center gap-3">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">{candidate.mobile}</span>
-                        </div>
-                      )}
-                      
-                      {candidate.phone && (
-                        <div className="flex items-center gap-3">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">{candidate.phone}</span>
-                        </div>
-                      )}
-
-                      {(candidate.city || candidate.street || candidate.houseNumber) && (
-                        <div className="flex items-center gap-3">
-                          <MapPin className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm">
-                            {[candidate.street, candidate.houseNumber, candidate.city].filter(Boolean).join(', ')}
-                            {candidate.zipCode && ` (${candidate.zipCode})`}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <Separator />
-
-                    {/* Additional Information */}
-                    <div className="grid grid-cols-1 gap-3 text-sm">
-                      {candidate.nationalId && (
-                        <div>
-                          <span className="text-gray-500 text-xs">תעודת זהות:</span>
-                          <p className="font-medium">{candidate.nationalId}</p>
-                        </div>
-                      )}
-                      
-                      {candidate.gender && (
-                        <div>
-                          <span className="text-gray-500 text-xs">מין:</span>
-                          <p className="font-medium">{candidate.gender}</p>
-                        </div>
-                      )}
-                      
-                      {candidate.maritalStatus && (
-                        <div>
-                          <span className="text-gray-500 text-xs">מצב משפחתי:</span>
-                          <p className="font-medium">{candidate.maritalStatus}</p>
-                        </div>
-                      )}
-                      
-                      {candidate.drivingLicense && (
-                        <div>
-                          <span className="text-gray-500 text-xs">רישיון נהיגה:</span>
-                          <p className="font-medium">{candidate.drivingLicense}</p>
-                        </div>
-                      )}
-                      
-                      {candidate.experience !== null && candidate.experience !== undefined && (
-                        <div>
-                          <span className="text-gray-500 text-xs">ניסיון (שנים):</span>
-                          <p className="font-medium">{candidate.experience}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {candidate.achievements && (
-                      <>
-                        <Separator />
-                        <div>
-                          <span className="text-gray-500 text-xs">הישגים:</span>
-                          <p className="mt-1 text-sm">{candidate.achievements}</p>
-                        </div>
-                      </>
                     )}
+                    {candidate.gender && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">מין:</span>
+                        <span className="text-sm">{candidate.gender}</span>
+                      </div>
+                    )}
+                    {candidate.maritalStatus && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">מצב משפחתי:</span>
+                        <span className="text-sm">{candidate.maritalStatus}</span>
+                      </div>
+                    )}
+                    {candidate.drivingLicense && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">רישיון נהיגה:</span>
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-green-600" />
+                          <span className="text-sm">{candidate.drivingLicense}</span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                    <Separator />
-                    
-                    <div className="text-xs text-gray-500">
-                      נוצר: {new Date(candidate.createdAt || new Date()).toLocaleDateString('he-IL')}
+                {/* Address */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      כתובת
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">עיר:</span>
+                      <span className="text-sm">{candidate.city}</span>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    {candidate.street && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">רחוב:</span>
+                        <span className="text-sm">{candidate.street}</span>
+                      </div>
+                    )}
+                    {candidate.houseNumber && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">מס' בית:</span>
+                        <span className="text-sm">{candidate.houseNumber}</span>
+                      </div>
+                    )}
+                    {candidate.zipCode && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">מיקוד:</span>
+                        <span className="text-sm">{candidate.zipCode}</span>
+                      </div>
+                    )}
+                    {candidate.receptionArea && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">איזור קליטה:</span>
+                        <span className="text-sm">{candidate.receptionArea}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Professional Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Briefcase className="w-5 h-5" />
+                      מידע מקצועי
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {candidate.profession && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">מקצוע:</span>
+                        <span className="text-sm">{candidate.profession}</span>
+                      </div>
+                    )}
+                    {candidate.experience && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">ניסיון:</span>
+                        <span className="text-sm">{candidate.experience} שנים</span>
+                      </div>
+                    )}
+                    {candidate.expectedSalary && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">שכר צפוי:</span>
+                        <span className="text-sm">₪{candidate.expectedSalary.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {candidate.recruitmentSource && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">מקור גיוס:</span>
+                        <span className="text-sm">{candidate.recruitmentSource}</span>
+                      </div>
+                    )}
+                    {candidate.achievements && (
+                      <div>
+                        <span className="text-sm font-medium">הישגים:</span>
+                        <p className="text-sm mt-1 text-gray-600">{candidate.achievements}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Notes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      הערות
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {candidate.notes ? (
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{candidate.notes}</p>
+                    ) : (
+                      <p className="text-sm text-gray-400">אין הערות</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Timeline */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      מידע נוסף
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">נוצר בתאריך:</span>
+                      <span className="text-sm">{candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString('he-IL') : 'לא זמין'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">עודכן לאחרונה:</span>
+                      <span className="text-sm">{candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString('he-IL') : 'לא זמין'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </main>
-    </div>
-  );
-}
+      </div>
+    );
+  }
