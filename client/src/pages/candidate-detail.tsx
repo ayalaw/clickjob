@@ -112,18 +112,11 @@ export default function CandidateDetail() {
     enabled: isAuthenticated,
   });
 
-  // Handle different possible data structures for jobs
-  let jobs: any[] = [];
-  if (Array.isArray(jobsData?.jobs)) {
-    jobs = jobsData.jobs;
-  } else if (Array.isArray(jobsData)) {
-    jobs = jobsData;
-  }
-  console.log('Debug jobs data:', { jobsData, jobs, length: jobs.length });
+  // Handle different possible data structures for jobs - API returns {jobs: [...]}
+  const jobs = Array.isArray((jobsData as any)?.jobs) ? (jobsData as any).jobs : [];
 
   // Filter notes from events
   const noteEvents = candidateEvents?.filter((event: any) => event.eventType === 'note_added') || [];
-  console.log('Debug notes:', { candidateEvents, noteEvents, length: noteEvents.length });
 
   // Filter jobs based on search term
   const filteredJobs = jobs.filter((job: any) => 
