@@ -37,7 +37,25 @@ export const users = pgTable("users", {
 });
 
 // Enums
-export const candidateStatusEnum = pgEnum('candidate_status', ['available', 'employed', 'inactive', 'blacklisted']);
+export const candidateStatusEnum = pgEnum('candidate_status', [
+  'available', 'employed', 'inactive', 'blacklisted', // Keep existing statuses for compatibility
+  'new_candidate',
+  'pending_initial_screening', 
+  'in_initial_screening',
+  'passed_initial_screening',
+  'failed_initial_screening',
+  'sent_to_employer',
+  'whatsapp_sent',
+  'phone_contact_made',
+  'waiting_employer_response',
+  'invited_to_interview',
+  'attended_interview',
+  'missed_interview',
+  'passed_interview',
+  'rejected_by_employer',
+  'hired',
+  'employment_ended'
+]);
 export const jobStatusEnum = pgEnum('job_status', ['active', 'paused', 'closed']);
 export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'rejected', 'accepted']);
 export const rejectionReasonEnum = pgEnum('rejection_reason', ['lack_of_experience', 'geographic_mismatch', 'salary_demands', 'qualifications_mismatch', 'other']);

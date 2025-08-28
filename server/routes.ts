@@ -754,10 +754,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if status was manually changed and add specific event
       if (candidateData.status && currentCandidate?.status !== candidateData.status) {
         const statusTranslations = {
+          // Legacy statuses
           'available': 'זמין',
           'employed': 'מועסק',
           'inactive': 'לא פעיל',
-          'blacklisted': 'ברשימה שחורה'
+          'blacklisted': 'ברשימה שחורה',
+          // New detailed statuses
+          'new_candidate': 'חדש במערכת',
+          'pending_initial_screening': 'ממתין לסינון ראשוני',
+          'in_initial_screening': 'בסינון ראשוני',
+          'passed_initial_screening': 'עבר סינון ראשוני',
+          'failed_initial_screening': 'נפסל בסינון ראשוני',
+          'sent_to_employer': 'נשלח למעסיק',
+          'whatsapp_sent': 'נשלחה הודעת ווצאפ',
+          'phone_contact_made': 'נוצר קשר טלפוני',
+          'waiting_employer_response': 'מועמד ממתין לתשובת מעסיק',
+          'invited_to_interview': 'זומן לראיון אצל מעסיק',
+          'attended_interview': 'הגיע לראיון אצל מעסיק',
+          'missed_interview': 'לא הגיע לראיון',
+          'passed_interview': 'עבר ראיון אצל מעסיק',
+          'rejected_by_employer': 'נפסל ע"י מעסיק',
+          'hired': 'התקבל לעבודה',
+          'employment_ended': 'סיים העסקה'
         };
         
         await storage.addCandidateEvent({
@@ -1198,7 +1216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Update candidate status automatically when applying to a job
-        await storage.updateCandidate(applicationData.candidateId, { status: 'employed' });
+        await storage.updateCandidate(applicationData.candidateId, { status: 'sent_to_employer' });
       }
       
       res.status(201).json(application);
@@ -1234,11 +1252,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Update candidate status automatically based on application status
         if (applicationData.status === 'hired') {
-          await storage.updateCandidate(application.candidateId, { status: 'employed' });
+          await storage.updateCandidate(application.candidateId, { status: 'hired' });
         } else if (applicationData.status === 'interview_scheduled') {
-          await storage.updateCandidate(application.candidateId, { status: 'employed' });
+          await storage.updateCandidate(application.candidateId, { status: 'invited_to_interview' });
         } else if (applicationData.status === 'rejected') {
-          await storage.updateCandidate(application.candidateId, { status: 'available' });
+          await storage.updateCandidate(application.candidateId, { status: 'rejected_by_employer' });
         }
       }
       
@@ -1443,7 +1461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Update candidate status automatically when sent to employer
-        await storage.updateCandidate(candidateId, { status: 'employed' });
+        await storage.updateCandidate(candidateId, { status: 'sent_to_employer' });
         
         res.json({ success: true });
       } else {
@@ -1518,7 +1536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Update candidate status automatically when invited to interview
-        await storage.updateCandidate(candidateId, { status: 'employed' });
+        await storage.updateCandidate(candidateId, { status: 'invited_to_interview' });
         
         res.json({ success: true });
       } else {
@@ -1596,7 +1614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           // Update candidate status automatically when sent in shortlist
-          await storage.updateCandidate(candidate.id, { status: 'employed' });
+          await storage.updateCandidate(candidate.id, { status: 'sent_to_employer' });
         }
         
         res.json({ success: true });
@@ -2076,7 +2094,7 @@ ${recommendation}
           });
           
           // Update candidate status automatically when CV sent to employer
-          await storage.updateCandidate(candidateId, { status: 'employed' });
+          await storage.updateCandidate(candidateId, { status: 'sent_to_employer' });
           
         } catch (emailError) {
           console.error('Error sending referral email:', emailError);

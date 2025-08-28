@@ -104,20 +104,56 @@ export default function Candidates() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      // Legacy statuses
       case 'available': return 'bg-green-100 text-green-800';
       case 'employed': return 'bg-blue-100 text-blue-800';
       case 'inactive': return 'bg-gray-100 text-gray-800';
       case 'blacklisted': return 'bg-red-100 text-red-800';
+      // New detailed statuses
+      case 'new_candidate': return 'bg-purple-100 text-purple-800';
+      case 'pending_initial_screening': return 'bg-yellow-100 text-yellow-800';
+      case 'in_initial_screening': return 'bg-orange-100 text-orange-800';
+      case 'passed_initial_screening': return 'bg-green-100 text-green-800';
+      case 'failed_initial_screening': return 'bg-red-100 text-red-800';
+      case 'sent_to_employer': return 'bg-blue-100 text-blue-800';
+      case 'whatsapp_sent': return 'bg-green-100 text-green-800';
+      case 'phone_contact_made': return 'bg-cyan-100 text-cyan-800';
+      case 'waiting_employer_response': return 'bg-yellow-100 text-yellow-800';
+      case 'invited_to_interview': return 'bg-indigo-100 text-indigo-800';
+      case 'attended_interview': return 'bg-blue-100 text-blue-800';
+      case 'missed_interview': return 'bg-red-100 text-red-800';
+      case 'passed_interview': return 'bg-green-100 text-green-800';
+      case 'rejected_by_employer': return 'bg-red-100 text-red-800';
+      case 'hired': return 'bg-emerald-100 text-emerald-800';
+      case 'employment_ended': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
+      // Legacy statuses
       case 'available': return 'זמין';
       case 'employed': return 'מועסק';
       case 'inactive': return 'לא פעיל';
       case 'blacklisted': return 'ברשימה שחורה';
+      // New detailed statuses
+      case 'new_candidate': return 'חדש במערכת';
+      case 'pending_initial_screening': return 'ממתין לסינון ראשוני';
+      case 'in_initial_screening': return 'בסינון ראשוני';
+      case 'passed_initial_screening': return 'עבר סינון ראשוני';
+      case 'failed_initial_screening': return 'נפסל בסינון ראשוני';
+      case 'sent_to_employer': return 'נשלח למעסיק';
+      case 'whatsapp_sent': return 'נשלחה הודעת ווצאפ';
+      case 'phone_contact_made': return 'נוצר קשר טלפוני';
+      case 'waiting_employer_response': return 'מועמד ממתין לתשובת מעסיק';
+      case 'invited_to_interview': return 'זומן לראיון אצל מעסיק';
+      case 'attended_interview': return 'הגיע לראיון אצל מעסיק';
+      case 'missed_interview': return 'לא הגיע לראיון';
+      case 'passed_interview': return 'עבר ראיון אצל מעסיק';
+      case 'rejected_by_employer': return 'נפסל ע"י מעסיק';
+      case 'hired': return 'התקבל לעבודה';
+      case 'employment_ended': return 'סיים העסקה';
       default: return status;
     }
   };

@@ -94,10 +94,28 @@ export default function CandidateDetail() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      // Legacy statuses
       case 'available': return 'זמין';
       case 'employed': return 'מועסק';
       case 'inactive': return 'לא פעיל';
       case 'blacklisted': return 'ברשימה שחורה';
+      // New detailed statuses
+      case 'new_candidate': return 'חדש במערכת';
+      case 'pending_initial_screening': return 'ממתין לסינון ראשוני';
+      case 'in_initial_screening': return 'בסינון ראשוני';
+      case 'passed_initial_screening': return 'עבר סינון ראשוני';
+      case 'failed_initial_screening': return 'נפסל בסינון ראשוני';
+      case 'sent_to_employer': return 'נשלח למעסיק';
+      case 'whatsapp_sent': return 'נשלחה הודעת ווצאפ';
+      case 'phone_contact_made': return 'נוצר קשר טלפוני';
+      case 'waiting_employer_response': return 'מועמד ממתין לתשובת מעסיק';
+      case 'invited_to_interview': return 'זומן לראיון אצל מעסיק';
+      case 'attended_interview': return 'הגיע לראיון אצל מעסיק';
+      case 'missed_interview': return 'לא הגיע לראיון';
+      case 'passed_interview': return 'עבר ראיון אצל מעסיק';
+      case 'rejected_by_employer': return 'נפסל ע"י מעסיק';
+      case 'hired': return 'התקבל לעבודה';
+      case 'employment_ended': return 'סיים העסקה';
       default: return status;
     }
   };
@@ -682,22 +700,28 @@ export default function CandidateDetail() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium mb-2 block">סטטוס נוכחי: {
-                        candidate.status === 'available' ? 'זמין' :
-                        candidate.status === 'employed' ? 'מועסק' :
-                        candidate.status === 'inactive' ? 'לא פעיל' :
-                        candidate.status === 'blacklisted' ? 'ברשימה שחורה' :
-                        candidate.status
-                      }</label>
+                      <label className="text-sm font-medium mb-2 block">סטטוס נוכחי: {getStatusText(candidate.status || '')}</label>
                       <Select value={newStatus} onValueChange={setNewStatus}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="בחר סטטוס חדש" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="available">זמין</SelectItem>
-                          <SelectItem value="employed">מועסק</SelectItem>
-                          <SelectItem value="inactive">לא פעיל</SelectItem>
-                          <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
+                          <SelectItem value="new_candidate">חדש במערכת</SelectItem>
+                          <SelectItem value="pending_initial_screening">ממתין לסינון ראשוני</SelectItem>
+                          <SelectItem value="in_initial_screening">בסינון ראשוני</SelectItem>
+                          <SelectItem value="passed_initial_screening">עבר סינון ראשוני</SelectItem>
+                          <SelectItem value="failed_initial_screening">נפסל בסינון ראשוני</SelectItem>
+                          <SelectItem value="sent_to_employer">נשלח למעסיק</SelectItem>
+                          <SelectItem value="whatsapp_sent">נשלחה הודעת ווצאפ</SelectItem>
+                          <SelectItem value="phone_contact_made">נוצר קשר טלפוני</SelectItem>
+                          <SelectItem value="waiting_employer_response">מועמד ממתין לתשובת מעסיק</SelectItem>
+                          <SelectItem value="invited_to_interview">זומן לראיון אצל מעסיק</SelectItem>
+                          <SelectItem value="attended_interview">הגיע לראיון אצל מעסיק</SelectItem>
+                          <SelectItem value="missed_interview">לא הגיע לראיון</SelectItem>
+                          <SelectItem value="passed_interview">עבר ראיון אצל מעסיק</SelectItem>
+                          <SelectItem value="rejected_by_employer">נפסל ע"י מעסיק</SelectItem>
+                          <SelectItem value="hired">התקבל לעבודה</SelectItem>
+                          <SelectItem value="employment_ended">סיים העסקה</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -42,10 +42,28 @@ export default function SystemSettings() {
 
   // Candidate statuses
   const [candidateStatuses, setCandidateStatuses] = useState<Array<{id: string, name: string, color: string}>>([
+    // Legacy statuses
     { id: 'available', name: 'זמין', color: 'bg-green-100 text-green-800' },
     { id: 'employed', name: 'מועסק', color: 'bg-blue-100 text-blue-800' },
     { id: 'inactive', name: 'לא פעיל', color: 'bg-gray-100 text-gray-800' },
-    { id: 'blacklisted', name: 'ברשימה שחורה', color: 'bg-red-100 text-red-800' }
+    { id: 'blacklisted', name: 'ברשימה שחורה', color: 'bg-red-100 text-red-800' },
+    // New detailed statuses
+    { id: 'new_candidate', name: 'חדש במערכת', color: 'bg-purple-100 text-purple-800' },
+    { id: 'pending_initial_screening', name: 'ממתין לסינון ראשוני', color: 'bg-yellow-100 text-yellow-800' },
+    { id: 'in_initial_screening', name: 'בסינון ראשוני', color: 'bg-orange-100 text-orange-800' },
+    { id: 'passed_initial_screening', name: 'עבר סינון ראשוני', color: 'bg-green-100 text-green-800' },
+    { id: 'failed_initial_screening', name: 'נפסל בסינון ראשוני', color: 'bg-red-100 text-red-800' },
+    { id: 'sent_to_employer', name: 'נשלח למעסיק', color: 'bg-blue-100 text-blue-800' },
+    { id: 'whatsapp_sent', name: 'נשלחה הודעת ווצאפ', color: 'bg-green-100 text-green-800' },
+    { id: 'phone_contact_made', name: 'נוצר קשר טלפוני', color: 'bg-cyan-100 text-cyan-800' },
+    { id: 'waiting_employer_response', name: 'מועמד ממתין לתשובת מעסיק', color: 'bg-yellow-100 text-yellow-800' },
+    { id: 'invited_to_interview', name: 'זומן לראיון אצל מעסיק', color: 'bg-indigo-100 text-indigo-800' },
+    { id: 'attended_interview', name: 'הגיע לראיון אצל מעסיק', color: 'bg-blue-100 text-blue-800' },
+    { id: 'missed_interview', name: 'לא הגיע לראיון', color: 'bg-red-100 text-red-800' },
+    { id: 'passed_interview', name: 'עבר ראיון אצל מעסיק', color: 'bg-green-100 text-green-800' },
+    { id: 'rejected_by_employer', name: 'נפסל ע"י מעסיק', color: 'bg-red-100 text-red-800' },
+    { id: 'hired', name: 'התקבל לעבודה', color: 'bg-emerald-100 text-emerald-800' },
+    { id: 'employment_ended', name: 'סיים העסקה', color: 'bg-gray-100 text-gray-800' }
   ]);
   const [newStatusName, setNewStatusName] = useState('');
   const [selectedStatusColor, setSelectedStatusColor] = useState('bg-blue-100 text-blue-800');
