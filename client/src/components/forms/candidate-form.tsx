@@ -619,20 +619,31 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     
                     {/* CV Display */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {uploadedFile.name.toLowerCase().includes('.pdf') ? (
-                        <iframe
+                      {uploadedFile.type === 'application/pdf' ? (
+                        <embed
                           src={URL.createObjectURL(uploadedFile)}
+                          type="application/pdf"
                           className="w-full h-full border-0"
                           title="קורות חיים"
                         />
-                      ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
-                        <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(URL.createObjectURL(uploadedFile))}`}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
+                      ) : uploadedFile.name.toLowerCase().includes('.doc') || uploadedFile.name.toLowerCase().includes('.docx') ? (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                          <div className="text-center p-8">
+                            <FileText className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+                            <h3 className="font-bold text-blue-800 text-lg mb-2">{uploadedFile.name}</h3>
+                            <p className="text-blue-600 mb-4">
+                              מסמך Word - {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                              <p className="text-blue-800 font-medium mb-2">קובץ הועלה בהצלחה</p>
+                              <p className="text-sm text-blue-600">
+                                הקובץ יהיה זמין לצפייה בעמוד המועמד לאחר השמירה
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       ) : uploadedFile.type.startsWith('image/') ? (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
                           <img
                             src={URL.createObjectURL(uploadedFile)}
                             alt="קורות חיים"
@@ -640,8 +651,12 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           />
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
+                        <div className="flex items-center justify-center h-full bg-gray-50">
+                          <div className="text-center">
+                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600 text-lg font-medium mb-2">{uploadedFile.name}</p>
+                            <p className="text-gray-500 text-sm">תצוגה מקדימה לא זמינה</p>
+                          </div>
                         </div>
                       )}
                     </div>
