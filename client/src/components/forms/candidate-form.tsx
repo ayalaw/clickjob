@@ -252,15 +252,20 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       if (response.ok) {
         const result = await response.json();
         console.log('Extracted data:', result);
+        console.log('Result error:', result.error);
+        console.log('ExtractedData error:', result.extractedData?.error);
         
         // The actual data is inside extractedData
         const data = result.extractedData || result;
         
         // Check if there's an error indicating candidate already exists
-        if (result.error && (
+        if ((result.error && (
           result.error.includes('duplicate key value violates unique constraint') ||
           result.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')
-        )) {
+        )) || (result.extractedData && result.extractedData.error && (
+          result.extractedData.error.includes('duplicate key value violates unique constraint') ||
+          result.extractedData.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')
+        ))) {
           // Find the existing candidate to get their ID
           try {
             const candidatesResponse = await fetch('/api/candidates');
