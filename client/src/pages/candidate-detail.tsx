@@ -84,10 +84,28 @@ export default function CandidateDetail() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      // Legacy statuses
       case 'available': return 'bg-green-100 text-green-800';
       case 'employed': return 'bg-blue-100 text-blue-800';
       case 'inactive': return 'bg-gray-100 text-gray-800';
       case 'blacklisted': return 'bg-red-100 text-red-800';
+      // New detailed statuses
+      case 'pending': return 'bg-purple-100 text-purple-800';
+      case 'pending_initial_screening': return 'bg-yellow-100 text-yellow-800';
+      case 'in_initial_screening': return 'bg-orange-100 text-orange-800';
+      case 'passed_initial_screening': return 'bg-green-100 text-green-800';
+      case 'failed_initial_screening': return 'bg-red-100 text-red-800';
+      case 'sent_to_employer': return 'bg-blue-100 text-blue-800';
+      case 'whatsapp_sent': return 'bg-green-100 text-green-800';
+      case 'phone_contact_made': return 'bg-cyan-100 text-cyan-800';
+      case 'waiting_employer_response': return 'bg-yellow-100 text-yellow-800';
+      case 'invited_to_interview': return 'bg-indigo-100 text-indigo-800';
+      case 'attended_interview': return 'bg-blue-100 text-blue-800';
+      case 'missed_interview': return 'bg-red-100 text-red-800';
+      case 'passed_interview': return 'bg-green-100 text-green-800';
+      case 'rejected_by_employer': return 'bg-red-100 text-red-800';
+      case 'hired': return 'bg-emerald-100 text-emerald-800';
+      case 'employment_ended': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -100,7 +118,7 @@ export default function CandidateDetail() {
       case 'inactive': return 'לא פעיל';
       case 'blacklisted': return 'ברשימה שחורה';
       // New detailed statuses
-      case 'new_candidate': return 'חדש במערכת';
+      case 'pending': return 'ממתין';
       case 'pending_initial_screening': return 'ממתין לסינון ראשוני';
       case 'in_initial_screening': return 'בסינון ראשוני';
       case 'passed_initial_screening': return 'עבר סינון ראשוני';
@@ -706,7 +724,7 @@ export default function CandidateDetail() {
                           <SelectValue placeholder="בחר סטטוס חדש" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="new_candidate">חדש במערכת</SelectItem>
+                          <SelectItem value="pending">ממתין</SelectItem>
                           <SelectItem value="pending_initial_screening">ממתין לסינון ראשוני</SelectItem>
                           <SelectItem value="in_initial_screening">בסינון ראשוני</SelectItem>
                           <SelectItem value="passed_initial_screening">עבר סינון ראשוני</SelectItem>

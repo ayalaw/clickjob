@@ -760,7 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'inactive': 'לא פעיל',
           'blacklisted': 'ברשימה שחורה',
           // New detailed statuses
-          'new_candidate': 'חדש במערכת',
+          'pending': 'ממתין',
           'pending_initial_screening': 'ממתין לסינון ראשוני',
           'in_initial_screening': 'בסינון ראשוני',
           'passed_initial_screening': 'עבר סינון ראשוני',

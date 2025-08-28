@@ -110,7 +110,7 @@ export default function Candidates() {
       case 'inactive': return 'bg-gray-100 text-gray-800';
       case 'blacklisted': return 'bg-red-100 text-red-800';
       // New detailed statuses
-      case 'new_candidate': return 'bg-purple-100 text-purple-800';
+      case 'pending': return 'bg-purple-100 text-purple-800';
       case 'pending_initial_screening': return 'bg-yellow-100 text-yellow-800';
       case 'in_initial_screening': return 'bg-orange-100 text-orange-800';
       case 'passed_initial_screening': return 'bg-green-100 text-green-800';
@@ -138,7 +138,7 @@ export default function Candidates() {
       case 'inactive': return 'לא פעיל';
       case 'blacklisted': return 'ברשימה שחורה';
       // New detailed statuses
-      case 'new_candidate': return 'חדש במערכת';
+      case 'pending': return 'ממתין';
       case 'pending_initial_screening': return 'ממתין לסינון ראשוני';
       case 'in_initial_screening': return 'בסינון ראשוני';
       case 'passed_initial_screening': return 'עבר סינון ראשוני';

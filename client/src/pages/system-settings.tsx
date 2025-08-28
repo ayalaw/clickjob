@@ -48,7 +48,7 @@ export default function SystemSettings() {
     { id: 'inactive', name: 'לא פעיל', color: 'bg-gray-100 text-gray-800' },
     { id: 'blacklisted', name: 'ברשימה שחורה', color: 'bg-red-100 text-red-800' },
     // New detailed statuses
-    { id: 'new_candidate', name: 'חדש במערכת', color: 'bg-purple-100 text-purple-800' },
+    { id: 'pending', name: 'ממתין', color: 'bg-purple-100 text-purple-800' },
     { id: 'pending_initial_screening', name: 'ממתין לסינון ראשוני', color: 'bg-yellow-100 text-yellow-800' },
     { id: 'in_initial_screening', name: 'בסינון ראשוני', color: 'bg-orange-100 text-orange-800' },
     { id: 'passed_initial_screening', name: 'עבר סינון ראשוני', color: 'bg-green-100 text-green-800' },

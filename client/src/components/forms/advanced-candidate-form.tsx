@@ -852,7 +852,7 @@ export default function AdvancedCandidateForm({
                                 <SelectItem value="inactive">לא פעיל</SelectItem>
                                 <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
                                 {/* New detailed statuses */}
-                                <SelectItem value="new_candidate">חדש במערכת</SelectItem>
+                                <SelectItem value="pending">ממתין</SelectItem>
                                 <SelectItem value="pending_initial_screening">ממתין לסינון ראשוני</SelectItem>
                                 <SelectItem value="in_initial_screening">בסינון ראשוני</SelectItem>
                                 <SelectItem value="passed_initial_screening">עבר סינון ראשוני</SelectItem>

@@ -39,7 +39,7 @@ export const users = pgTable("users", {
 // Enums
 export const candidateStatusEnum = pgEnum('candidate_status', [
   'available', 'employed', 'inactive', 'blacklisted', // Keep existing statuses for compatibility
-  'new_candidate',
+  'pending',
   'pending_initial_screening', 
   'in_initial_screening',
   'passed_initial_screening',
@@ -106,7 +106,7 @@ export const candidates = pgTable("candidates", {
   expectedSalary: integer("expected_salary"),
   cvPath: varchar("cv_path"), // file path for uploaded CV
   cvContent: text("cv_content"), // extracted text content from CV for searching
-  status: candidateStatusEnum("status").default('available'),
+  status: candidateStatusEnum("status").default('pending'),
   rating: integer("rating"), // 1-5 rating
   notes: text("notes"),
   tags: text("tags").array(), // array of tags
