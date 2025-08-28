@@ -202,6 +202,7 @@ export default function Jobs() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50 dark:bg-gray-900">
+                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">קוד משרה</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">כותרת המשרה</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">לקוח</TableHead>
                         <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מיקום</TableHead>
@@ -216,6 +217,22 @@ export default function Jobs() {
                     <TableBody>
                       {jobsData.jobs.map((job: JobWithClient) => (
                         <TableRow key={job.id} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`row-job-${job.id}`}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="text-primary font-mono text-sm" data-testid={`text-job-code-${job.id}`}>
+                                {job.jobCode}
+                              </p>
+                              {job.additionalCodes && job.additionalCodes.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {job.additionalCodes.map((code, index) => (
+                                    <span key={index} className="text-xs bg-blue-100 text-blue-700 px-1 rounded">
+                                      {code}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell className="font-medium">
                             <div>
                               <p className="text-secondary dark:text-white" data-testid={`text-job-title-${job.id}`}>
