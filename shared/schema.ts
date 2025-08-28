@@ -37,25 +37,6 @@ export const users = pgTable("users", {
 });
 
 // Enums
-export const candidateStatusEnum = pgEnum('candidate_status', [
-  'available', 'employed', 'inactive', 'blacklisted', // Keep existing statuses for compatibility
-  'pending',
-  'pending_initial_screening', 
-  'in_initial_screening',
-  'passed_initial_screening',
-  'failed_initial_screening',
-  'sent_to_employer',
-  'whatsapp_sent',
-  'phone_contact_made',
-  'waiting_employer_response',
-  'invited_to_interview',
-  'attended_interview',
-  'missed_interview',
-  'passed_interview',
-  'rejected_by_employer',
-  'hired',
-  'employment_ended'
-]);
 export const jobStatusEnum = pgEnum('job_status', ['active', 'paused', 'closed']);
 export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'rejected', 'accepted']);
 export const rejectionReasonEnum = pgEnum('rejection_reason', ['lack_of_experience', 'geographic_mismatch', 'salary_demands', 'qualifications_mismatch', 'other']);
@@ -106,7 +87,7 @@ export const candidates = pgTable("candidates", {
   expectedSalary: integer("expected_salary"),
   cvPath: varchar("cv_path"), // file path for uploaded CV
   cvContent: text("cv_content"), // extracted text content from CV for searching
-  status: candidateStatusEnum("status").default('pending'),
+  status: text("status").default('pending'),
   rating: integer("rating"), // 1-5 rating
   notes: text("notes"),
   tags: text("tags").array(), // array of tags
@@ -211,16 +192,34 @@ export const candidateEvents = pgTable("candidate_events", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Reminders table
+export const reminders = pgTable("reminders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  reminderDate: timestamp("reminder_date").notNull(),
+  priority: varchar("priority").default('medium'), // low, medium, high
+  isCompleted: boolean("is_completed").default(false),
+  candidateId: varchar("candidate_id").references(() => candidates.id),
+  jobId: varchar("job_id").references(() => jobs.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const candidatesRelations = relations(candidates, ({ many }) => ({
   applications: many(jobApplications),
   tasks: many(tasks),
   events: many(candidateEvents),
+  reminders: many(reminders),
 }));
 
 export const clientsRelations = relations(clients, ({ many }) => ({
   jobs: many(jobs),
   tasks: many(tasks),
+  reminders: many(reminders),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
@@ -230,6 +229,7 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
   }),
   applications: many(jobApplications),
   tasks: many(tasks),
+  reminders: many(reminders),
 }));
 
 export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
@@ -262,6 +262,25 @@ export const candidateEventsRelations = relations(candidateEvents, ({ one }) => 
   candidate: one(candidates, {
     fields: [candidateEvents.candidateId],
     references: [candidates.id],
+  }),
+}));
+
+export const remindersRelations = relations(reminders, ({ one }) => ({
+  candidate: one(candidates, {
+    fields: [reminders.candidateId],
+    references: [candidates.id],
+  }),
+  job: one(jobs, {
+    fields: [reminders.jobId],
+    references: [jobs.id],
+  }),
+  client: one(clients, {
+    fields: [reminders.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [reminders.createdBy],
+    references: [users.id],
   }),
 }));
 
@@ -325,6 +344,11 @@ export const insertCandidateEventSchema = createInsertSchema(candidateEvents).om
   id: true,
   createdAt: true,
 });
+export const insertReminderSchema = createInsertSchema(reminders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).omit({
   id: true,
   createdAt: true,
@@ -344,6 +368,9 @@ export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertCandidateEvent = z.infer<typeof insertCandidateEventSchema>;
 export type CandidateEvent = typeof candidateEvents.$inferSelect;
+export type InsertReminder = z.infer<typeof insertReminderSchema>;
+export type Reminder = typeof reminders.$inferSelect;
+export type ReminderWithDetails = Reminder & { candidate?: Candidate; job?: JobWithClient; client?: Client; };
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;

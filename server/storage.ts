@@ -9,6 +9,7 @@ import {
   candidateEvents,
   messageTemplates,
   systemSettings,
+  reminders,
   type User,
   type UpsertUser,
   type Candidate,
@@ -32,6 +33,9 @@ import {
   type InsertMessageTemplate,
   type SystemSetting,
   type InsertSystemSetting,
+  type Reminder,
+  type ReminderWithDetails,
+  type InsertReminder,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
@@ -50,6 +54,14 @@ export interface IStorage {
   findCandidateByMobileOrId(mobile?: string, nationalId?: string): Promise<Candidate | undefined>;
   addCandidateEvent(event: InsertCandidateEvent): Promise<CandidateEvent>;
   getCandidateEvents(candidateId: string): Promise<CandidateEvent[]>;
+
+  // Reminder operations
+  getReminders(userId?: string): Promise<ReminderWithDetails[]>;
+  getReminder(id: string): Promise<ReminderWithDetails | undefined>;
+  createReminder(reminder: InsertReminder): Promise<Reminder>;
+  updateReminder(id: string, reminder: Partial<InsertReminder>): Promise<Reminder>;
+  deleteReminder(id: string): Promise<void>;
+  getDueReminders(userId?: string): Promise<ReminderWithDetails[]>;
 
   // Client operations
   getClients(limit?: number, offset?: number, search?: string): Promise<{ clients: Client[]; total: number }>;
@@ -960,6 +972,164 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSystemSetting(key: string): Promise<void> {
     await db.delete(systemSettings).where(eq(systemSettings.key, key));
+  }
+
+  // Reminder operations
+  async getReminders(userId?: string): Promise<ReminderWithDetails[]> {
+    const query = db.select({
+      id: reminders.id,
+      title: reminders.title,
+      description: reminders.description,
+      reminderDate: reminders.reminderDate,
+      priority: reminders.priority,
+      isCompleted: reminders.isCompleted,
+      candidateId: reminders.candidateId,
+      jobId: reminders.jobId,
+      clientId: reminders.clientId,
+      createdBy: reminders.createdBy,
+      createdAt: reminders.createdAt,
+      updatedAt: reminders.updatedAt,
+      candidate: {
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+      },
+      job: {
+        id: jobs.id,
+        title: jobs.title,
+        jobCode: jobs.jobCode,
+      },
+      client: {
+        id: clients.id,
+        companyName: clients.companyName,
+        contactName: clients.contactName,
+      }
+    })
+    .from(reminders)
+    .leftJoin(candidates, eq(reminders.candidateId, candidates.id))
+    .leftJoin(jobs, eq(reminders.jobId, jobs.id))
+    .leftJoin(clients, eq(reminders.clientId, clients.id))
+    .orderBy(desc(reminders.reminderDate));
+
+    if (userId) {
+      query.where(eq(reminders.createdBy, userId));
+    }
+
+    return await query;
+  }
+
+  async getReminder(id: string): Promise<ReminderWithDetails | undefined> {
+    const [reminder] = await db.select({
+      id: reminders.id,
+      title: reminders.title,
+      description: reminders.description,
+      reminderDate: reminders.reminderDate,
+      priority: reminders.priority,
+      isCompleted: reminders.isCompleted,
+      candidateId: reminders.candidateId,
+      jobId: reminders.jobId,
+      clientId: reminders.clientId,
+      createdBy: reminders.createdBy,
+      createdAt: reminders.createdAt,
+      updatedAt: reminders.updatedAt,
+      candidate: {
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+      },
+      job: {
+        id: jobs.id,
+        title: jobs.title,
+        jobCode: jobs.jobCode,
+      },
+      client: {
+        id: clients.id,
+        companyName: clients.companyName,
+        contactName: clients.contactName,
+      }
+    })
+    .from(reminders)
+    .leftJoin(candidates, eq(reminders.candidateId, candidates.id))
+    .leftJoin(jobs, eq(reminders.jobId, jobs.id))
+    .leftJoin(clients, eq(reminders.clientId, clients.id))
+    .where(eq(reminders.id, id));
+
+    return reminder;
+  }
+
+  async createReminder(reminder: InsertReminder): Promise<Reminder> {
+    const [newReminder] = await db.insert(reminders).values(reminder).returning();
+    return newReminder;
+  }
+
+  async updateReminder(id: string, reminder: Partial<InsertReminder>): Promise<Reminder> {
+    const [updatedReminder] = await db
+      .update(reminders)
+      .set({ ...reminder, updatedAt: new Date() })
+      .where(eq(reminders.id, id))
+      .returning();
+    return updatedReminder;
+  }
+
+  async deleteReminder(id: string): Promise<void> {
+    await db.delete(reminders).where(eq(reminders.id, id));
+  }
+
+  async getDueReminders(userId?: string): Promise<ReminderWithDetails[]> {
+    const query = db.select({
+      id: reminders.id,
+      title: reminders.title,
+      description: reminders.description,
+      reminderDate: reminders.reminderDate,
+      priority: reminders.priority,
+      isCompleted: reminders.isCompleted,
+      candidateId: reminders.candidateId,
+      jobId: reminders.jobId,
+      clientId: reminders.clientId,
+      createdBy: reminders.createdBy,
+      createdAt: reminders.createdAt,
+      updatedAt: reminders.updatedAt,
+      candidate: {
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+      },
+      job: {
+        id: jobs.id,
+        title: jobs.title,
+        jobCode: jobs.jobCode,
+      },
+      client: {
+        id: clients.id,
+        companyName: clients.companyName,
+        contactName: clients.contactName,
+      }
+    })
+    .from(reminders)
+    .leftJoin(candidates, eq(reminders.candidateId, candidates.id))
+    .leftJoin(jobs, eq(reminders.jobId, jobs.id))
+    .leftJoin(clients, eq(reminders.clientId, clients.id))
+    .where(and(
+      eq(reminders.isCompleted, false),
+      sql`${reminders.reminderDate} <= ${new Date()}`
+    ))
+    .orderBy(desc(reminders.reminderDate));
+
+    if (userId) {
+      query.where(and(
+        eq(reminders.createdBy, userId),
+        eq(reminders.isCompleted, false),
+        sql`${reminders.reminderDate} <= ${new Date()}`
+      ));
+    }
+
+    return await query;
   }
 }
 

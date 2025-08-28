@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/layout/navbar";
+import { ReminderPopup } from "@/components/reminder-popup";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
@@ -21,6 +22,7 @@ import EmailSettings from "@/pages/email-settings";
 import SystemSettings from "@/pages/system-settings";
 import Settings from "@/pages/settings";
 import CVSearch from "@/pages/cv-search";
+import Calendar from "@/pages/calendar";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +39,7 @@ function Router() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
+      <ReminderPopup />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Switch>
           <Route path="/" component={Dashboard} />
@@ -47,6 +50,7 @@ function Router() {
           <Route path="/candidates/:id/advanced" component={AdvancedCandidate} />
           <Route path="/candidates/:id" component={CandidateDetail} />
           <Route path="/cv-search" component={CVSearch} />
+          <Route path="/calendar" component={Calendar} />
           <Route path="/clients" component={Clients} />
           <Route path="/jobs" component={Jobs} />
           <Route path="/interviews" component={Interviews} />

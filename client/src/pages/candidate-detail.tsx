@@ -35,6 +35,7 @@ import {
   MessageCircle
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import { ReminderForm } from "@/components/reminder-form";
 import type { Candidate } from "@shared/schema";
 
 export default function CandidateDetail() {
@@ -764,6 +765,8 @@ export default function CandidateDetail() {
                 </DialogContent>
               </Dialog>
               
+              <ReminderForm candidateId={candidate.id} />
+
               <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
                 <DialogTrigger asChild>
                   <Button

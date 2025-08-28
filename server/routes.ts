@@ -2133,6 +2133,84 @@ ${recommendation}
     }
   });
 
+  // Reminders API routes
+  app.get('/api/reminders', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.claims?.sub;
+      const reminders = await storage.getReminders(userId);
+      res.json(reminders);
+    } catch (error) {
+      console.error('Error fetching reminders:', error);
+      res.status(500).json({ error: 'שגיאה באחזור התזכורות' });
+    }
+  });
+
+  app.get('/api/reminders/due', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.claims?.sub;
+      const dueReminders = await storage.getDueReminders(userId);
+      res.json(dueReminders);
+    } catch (error) {
+      console.error('Error fetching due reminders:', error);
+      res.status(500).json({ error: 'שגיאה באחזור התזכורות הפעילות' });
+    }
+  });
+
+  app.get('/api/reminders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const reminder = await storage.getReminder(req.params.id);
+      if (!reminder) {
+        return res.status(404).json({ error: 'תזכורת לא נמצאה' });
+      }
+      res.json(reminder);
+    } catch (error) {
+      console.error('Error fetching reminder:', error);
+      res.status(500).json({ error: 'שגיאה באחזור התזכורת' });
+    }
+  });
+
+  app.post('/api/reminders', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.claims?.sub;
+      const reminderData = {
+        ...req.body,
+        createdBy: userId,
+        reminderDate: new Date(req.body.reminderDate)
+      };
+
+      const reminder = await storage.createReminder(reminderData);
+      res.json(reminder);
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      res.status(500).json({ error: 'שגיאה ביצירת התזכורת' });
+    }
+  });
+
+  app.put('/api/reminders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const reminderData = {
+        ...req.body,
+        reminderDate: req.body.reminderDate ? new Date(req.body.reminderDate) : undefined
+      };
+
+      const reminder = await storage.updateReminder(req.params.id, reminderData);
+      res.json(reminder);
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+      res.status(500).json({ error: 'שגיאה בעדכון התזכורת' });
+    }
+  });
+
+  app.delete('/api/reminders/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteReminder(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      res.status(500).json({ error: 'שגיאה במחיקת התזכורת' });
+    }
+  });
+
   // Start automatic email monitoring 
   if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
     console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
