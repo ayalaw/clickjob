@@ -216,71 +216,13 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
-    setIsProcessingCV(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("cv", file);
-
-      const response = await fetch("/api/extract-cv-data", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`${response.status}: ${text}`);
-      }
-
-      const result = await response.json();
-
-      if (result.extractedData) {
-        setExtractedData(result.extractedData);
-        
-        // Save file content for display
-        if (result.fileContent) {
-          setFileContent(result.fileContent);
-        }
-
-        // Auto-fill form with extracted data
-        if (result.extractedData.firstName) {
-          form.setValue("firstName", result.extractedData.firstName);
-        }
-        if (result.extractedData.lastName) {
-          form.setValue("lastName", result.extractedData.lastName);
-        }
-        if (result.extractedData.email) {
-          form.setValue("email", result.extractedData.email);
-        }
-        if (result.extractedData.mobile) {
-          form.setValue("mobile", result.extractedData.mobile);
-        }
-        if (result.extractedData.profession) {
-          form.setValue("profession", result.extractedData.profession);
-        }
-
-        // Check if candidate was automatically created
-        if (result.extractedData.candidateCreated) {
-          toast({
-            title: "מועמד נוצר אוטומטית!",
-            description: "המערכת זיהתה פרטים מספיקים וצרה את המועמד אוטומטית",
-          });
-          queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
-          onSuccess();
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("Error processing CV:", error);
-      toast({
-        title: "שגיאה בעיבוד קורות החיים",
-        description: "לא ניתן היה לחלץ מידע מהקובץ",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessingCV(false);
-    }
+    setIsProcessingCV(false); // Don't process - just display the file
+    
+    // Just set the file for display - no data extraction
+    toast({
+      title: "קובץ הועלה בהצלחה",
+      description: "קובץ קורות החיים מוכן לצפייה",
+    });
   };
 
   const onSubmit = async (data: FormData) => {
@@ -706,7 +648,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       )}
                     </div>
 
-                    {/* File Viewer - Actual CV Content */}
+                    {/* File Viewer - Display original file */}
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
                         <h4 className="font-medium text-gray-800">תצוגת קורות החיים</h4>
@@ -717,90 +659,45 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       
                       <div className="h-[800px] bg-white overflow-auto">
                         {uploadedFile.type === 'application/pdf' ? (
-                          // PDF Display - Show content directly
-                          <div className="w-full h-full bg-white overflow-auto">
-                            <div className="p-4 border-b bg-red-50">
-                              <div className="flex items-center gap-3 mb-2">
-                                <FileText className="w-6 h-6 text-red-600" />
-                                <div>
-                                  <h3 className="font-bold text-red-800">{uploadedFile.name}</h3>
-                                  <p className="text-sm text-red-600">
-                                    קובץ PDF - {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                קובץ PDF מועלה ומוכן
-                              </div>
-                            </div>
-                            
-                            {fileContent ? (
-                              <div className="p-6">
-                                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                                  {fileContent}
-                                </pre>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center h-64">
-                                <div className="text-center">
-                                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                  <p className="text-gray-500">מחלץ תוכן הקובץ...</p>
-                                  {isProcessingCV && (
-                                    <div className="mt-2">
-                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                          // PDF Display - Show original file using embed/iframe
+                          <div className="w-full h-full">
+                            <embed
+                              src={URL.createObjectURL(uploadedFile)}
+                              type="application/pdf"
+                              width="100%"
+                              height="100%"
+                              className="border-0"
+                            />
                           </div>
-                        ) : uploadedFile.type.includes('document') ? (
-                          // DOC/DOCX - Display content directly
+                        ) : uploadedFile.type.includes('document') || uploadedFile.name.endsWith('.doc') || uploadedFile.name.endsWith('.docx') ? (
+                          // DOC/DOCX - Show file info and preview message
                           <div className="w-full h-full bg-white overflow-auto">
-                            <div className="p-4 border-b bg-blue-50">
-                              <div className="flex items-center gap-3 mb-2">
-                                <FileText className="w-6 h-6 text-blue-600" />
-                                <div>
-                                  <h3 className="font-bold text-blue-800">{uploadedFile.name}</h3>
+                            <div className="p-6 text-center">
+                              <div className="flex items-center justify-center gap-3 mb-4">
+                                <FileText className="w-16 h-16 text-blue-600" />
+                                <div className="text-right">
+                                  <h3 className="font-bold text-blue-800 text-lg">{uploadedFile.name}</h3>
                                   <p className="text-sm text-blue-600">
                                     מסמך Word - {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
                                   </p>
                                 </div>
                               </div>
-                              <div className="text-xs text-gray-600">
-                                מסמך Word מועלה ומוכן
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                                <p className="text-blue-800 font-medium mb-2">קובץ Word מועלה בהצלחה</p>
+                                <p className="text-sm text-blue-600">
+                                  הקובץ נשמר ויהיה זמין לצפייה בעמוד המועמד לאחר השמירה
+                                </p>
                               </div>
                             </div>
-                            
-                            {fileContent ? (
-                              <div className="p-6">
-                                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                                  {fileContent}
-                                </pre>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center h-64">
-                                <div className="text-center">
-                                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                  <p className="text-gray-500">מחלץ תוכן הקובץ...</p>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         ) : uploadedFile.type.startsWith('image/') ? (
-                          // Image Files Viewer
-                          <div className="w-full h-full flex items-center justify-center bg-gray-50 p-4">
+                          // Image files - display directly
+                          <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={URL.createObjectURL(uploadedFile)}
-                              alt="CV Image"
+                              alt="קורות חיים"
                               className="max-w-full max-h-full object-contain"
-                              style={{ maxHeight: '550px' }}
                             />
-                          </div>
-                        ) : uploadedFile.type === 'text/plain' ? (
-                          // Text Files Viewer
-                          <div className="w-full h-full p-4 overflow-auto">
-                            <TextFileViewer file={uploadedFile} />
                           </div>
                         ) : (
                           // Fallback for unsupported file types
