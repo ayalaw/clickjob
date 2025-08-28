@@ -455,16 +455,15 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
                           <p className="text-xs text-gray-500 mb-2">סוג: {selectedFile?.type}</p>
                           <p className="text-xs text-gray-500 mb-4">קובץ נבחר בהצלחה!</p>
-                          {selectedFile?.file && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={async () => {
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={async () => {
                                 try {
                                   // Try to extract data from the Word file
                                   const formData = new FormData();
                                   if (selectedFile.file) {
-                                    formData.append('file', selectedFile.file);
+                                    formData.append('cv', selectedFile.file);
                                   }
                                   
                                   const response = await fetch('/api/extract-cv-data', {
@@ -501,7 +500,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             >
                               חלץ נתונים מהקובץ
                             </Button>
-                          )}
                         </div>
                       </div>
                     </div>
