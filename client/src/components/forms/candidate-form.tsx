@@ -280,6 +280,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               );
               
               if (existingCandidate) {
+                console.log('Found existing candidate:', existingCandidate);
                 setDuplicateDialog({
                   open: true,
                   candidateData: data,
