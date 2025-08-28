@@ -250,8 +250,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       });
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('Extracted data:', data);
+        const result = await response.json();
+        console.log('Extracted data:', result);
+        
+        // The actual data is inside extractedData
+        const data = result.extractedData || result;
         
         // Update form fields with extracted data
         if (data.firstName) form.setValue('firstName', data.firstName);
@@ -455,7 +458,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
-                {console.log('DEBUG: selectedFile exists?', !!selectedFile, 'name:', selectedFile?.name)}
                 {!selectedFile ? (
                   // Upload area when no file is uploaded
                   <div className="h-full">
