@@ -589,12 +589,13 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
             </Card>
           </div>
 
-          {/* CV Upload & Display Section - Right Side - BIGGER */}
+          {/* CV Display Card - EXACTLY like candidate detail */}
           <div className="lg:col-span-2 lg:order-2">
-            <Card className="sticky top-6 h-[calc(100vh-8rem)]">
-              <CardHeader>
-                <CardTitle className="text-center text-gray-700">
-                  {uploadedFile ? "קורות החיים שהועלה" : "העלאת קורות חיים"}
+            <Card className="h-[calc(100vh-8rem)]">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {uploadedFile ? "קורות חיים" : "העלאת קורות חיים"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
@@ -624,7 +625,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     )}
                   </div>
                 ) : (
-                  // File display when uploaded - EXACTLY like candidate detail
+                  // EXACT COPY from candidate-detail.tsx
                   <div className="h-full flex flex-col">
                     {/* File info */}
                     <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
