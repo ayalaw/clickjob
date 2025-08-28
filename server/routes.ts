@@ -1588,16 +1588,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { to, subject, text } = req.body;
       
-      await sendEmail({
+      console.log('🔄 מנסה לשלוח מייל ניסיון ל:', to);
+      
+      const result = await sendEmail({
         to,
         subject: subject || 'בדיקת מייל ממערכת הגיוס',
         text: text || 'זהו מייל ניסיון לבדיקת הגדרות המערכת.',
         from: 'dolev@h-group.org.il'
       });
       
-      res.json({ success: true, message: 'מייל נשלח בהצלחה' });
+      if (result.success) {
+        console.log('✅ מייל נשלח בהצלחה ל:', to);
+        res.json({ success: true, message: 'מייל נשלח בהצלחה' });
+      } else {
+        console.error('❌ שגיאה בשליחת מייל:', result.error);
+        res.status(500).json({ success: false, message: 'שגיאה בשליחת המייל', error: result.error });
+      }
     } catch (error) {
-      console.error('Error sending test email:', error);
+      console.error('❌ שגיאה כללית בשליחת מייל:', error);
       res.status(500).json({ success: false, message: 'שגיאה בשליחת המייל', error: error.message });
     }
   });
