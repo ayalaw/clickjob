@@ -40,6 +40,33 @@ export default function SystemSettings() {
   ]);
   const [newSource, setNewSource] = useState('');
 
+  // Candidate statuses
+  const [candidateStatuses, setCandidateStatuses] = useState<Array<{id: string, name: string, color: string}>>([
+    { id: 'available', name: 'זמין', color: 'bg-green-100 text-green-800' },
+    { id: 'employed', name: 'מועסק', color: 'bg-blue-100 text-blue-800' },
+    { id: 'inactive', name: 'לא פעיל', color: 'bg-gray-100 text-gray-800' },
+    { id: 'blacklisted', name: 'ברשימה שחורה', color: 'bg-red-100 text-red-800' }
+  ]);
+  const [newStatusName, setNewStatusName] = useState('');
+  const [selectedStatusColor, setSelectedStatusColor] = useState('bg-blue-100 text-blue-800');
+
+  // Load candidate statuses on component mount
+  useEffect(() => {
+    loadCandidateStatuses();
+  }, []);
+
+  const loadCandidateStatuses = async () => {
+    try {
+      const response = await fetch('/api/settings/candidate-statuses');
+      if (response.ok) {
+        const data = await response.json();
+        setCandidateStatuses(data.statuses);
+      }
+    } catch (error) {
+      console.error('Error loading candidate statuses:', error);
+    }
+  };
+
   const handleSaveOutgoing = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -209,6 +236,67 @@ export default function SystemSettings() {
     }
   };
 
+  const addCandidateStatus = () => {
+    if (newStatusName.trim() && !candidateStatuses.find(s => s.name === newStatusName.trim())) {
+      const newStatus = {
+        id: Date.now().toString(),
+        name: newStatusName.trim(),
+        color: selectedStatusColor
+      };
+      setCandidateStatuses([...candidateStatuses, newStatus]);
+      setNewStatusName('');
+      toast({
+        title: "סטטוס מועמד נוסף",
+        description: `הסטטוס "${newStatusName}" נוסף בהצלחה`,
+      });
+    }
+  };
+
+  const removeCandidateStatus = (statusId: string) => {
+    const status = candidateStatuses.find(s => s.id === statusId);
+    if (['available', 'employed', 'inactive', 'blacklisted'].includes(statusId)) {
+      toast({
+        title: "לא ניתן למחוק",
+        description: "לא ניתן למחוק סטטוס ברירת מחדל",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setCandidateStatuses(candidateStatuses.filter(s => s.id !== statusId));
+    toast({
+      title: "סטטוס מועמד הוסר",
+      description: `הסטטוס "${status?.name}" הוסר בהצלחה`,
+    });
+  };
+
+  const saveCandidateStatuses = async () => {
+    try {
+      const response = await fetch('/api/settings/candidate-statuses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ statuses: candidateStatuses }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "סטטוסי מועמדים נשמרו",
+          description: "רשימת סטטוסי המועמדים עודכנה בהצלחה",
+        });
+        // Reload statuses after saving
+        await loadCandidateStatuses();
+      }
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לשמור את סטטוסי המועמדים",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusIcon = () => {
     switch (connectionStatus) {
       case 'testing':
@@ -229,7 +317,7 @@ export default function SystemSettings() {
           <div className="max-w-4xl mx-auto">
             
             <Tabs defaultValue="outgoing" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="outgoing" className="flex items-center gap-2">
                   <Send className="w-4 h-4" />
                   מיילים יוצאים
@@ -241,6 +329,10 @@ export default function SystemSettings() {
                 <TabsTrigger value="sources" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   מקורות גיוס
+                </TabsTrigger>
+                <TabsTrigger value="statuses" className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  סטטוסי מועמדים
                 </TabsTrigger>
               </TabsList>
 
@@ -467,6 +559,106 @@ export default function SystemSettings() {
                       <Settings className="w-4 h-4" />
                       שמור מקורות גיוס
                     </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Candidate Statuses */}
+              <TabsContent value="statuses" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      ניהול סטטוסי מועמדים
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    
+                    {/* Add new status */}
+                    <div className="space-y-4">
+                      <div className="flex gap-3">
+                        <Input
+                          placeholder="הוסף סטטוס מועמד חדש..."
+                          value={newStatusName}
+                          onChange={(e) => setNewStatusName(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addCandidateStatus()}
+                        />
+                        <select 
+                          value={selectedStatusColor}
+                          onChange={(e) => setSelectedStatusColor(e.target.value)}
+                          className="px-3 py-2 border rounded-md"
+                        >
+                          <option value="bg-green-100 text-green-800">ירוק</option>
+                          <option value="bg-blue-100 text-blue-800">כחול</option>
+                          <option value="bg-yellow-100 text-yellow-800">צהוב</option>
+                          <option value="bg-orange-100 text-orange-800">כתום</option>
+                          <option value="bg-red-100 text-red-800">אדום</option>
+                          <option value="bg-purple-100 text-purple-800">סגול</option>
+                          <option value="bg-pink-100 text-pink-800">ורוד</option>
+                          <option value="bg-gray-100 text-gray-800">אפור</option>
+                        </select>
+                        <Button 
+                          onClick={addCandidateStatus}
+                          disabled={!newStatusName.trim()}
+                          className="flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          הוסף
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Current statuses */}
+                    <div className="space-y-4">
+                      <h3 className="font-medium">סטטוסי מועמדים קיימים:</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {candidateStatuses.map((status) => (
+                          <div 
+                            key={status.id} 
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`px-3 py-1 rounded-full text-sm ${status.color}`}>
+                                {status.name}
+                              </div>
+                            </div>
+                            {!['available', 'employed', 'inactive', 'blacklisted'].includes(status.id) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeCandidateStatus(status.id)}
+                                className="text-red-600 hover:bg-red-100"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {candidateStatuses.length === 0 && (
+                        <p className="text-gray-500 text-sm">אין סטטוסים מותאמים אישית. הוסף סטטוס ראשון...</p>
+                      )}
+                    </div>
+
+                    <div className="pt-4 border-t">
+                      <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                        <h4 className="font-medium mb-2">הערה חשובה:</h4>
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          <li>• הסטטוסים הבסיסיים (זמין, מועסק, לא פעיל, ברשימה שחורה) אינם ניתנים למחיקה</li>
+                          <li>• ניתן להוסיף סטטוסים מותאמים אישית לפי צרכי הארגון</li>
+                          <li>• בחר צבע מתאים לכל סטטוס לזיהוי חזותי טוב יותר</li>
+                        </ul>
+                      </div>
+                      
+                      <Button 
+                        onClick={saveCandidateStatuses}
+                        className="flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        שמור סטטוסי מועמדים
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

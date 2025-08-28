@@ -1799,6 +1799,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Save candidate statuses
+  app.post('/api/settings/candidate-statuses', isAuthenticated, async (req: any, res) => {
+    try {
+      const { statuses } = req.body;
+      
+      if (!Array.isArray(statuses)) {
+        return res.status(400).json({ message: "Invalid statuses format" });
+      }
+      
+      // Store candidate statuses in system settings
+      await storage.setSystemSetting('CANDIDATE_STATUSES', JSON.stringify(statuses), 'Custom candidate statuses configuration');
+      
+      console.log('Candidate statuses updated:', statuses);
+      
+      res.json({ success: true, message: "סטטוסי מועמדים נשמרו בהצלחה" });
+    } catch (error) {
+      console.error("Error saving candidate statuses:", error);
+      res.status(500).json({ message: "Failed to save candidate statuses" });
+    }
+  });
+
+  // Get candidate statuses
+  app.get('/api/settings/candidate-statuses', isAuthenticated, async (req: any, res) => {
+    try {
+      const statusesSetting = await storage.getSystemSetting('CANDIDATE_STATUSES');
+      
+      let statuses = [
+        { id: 'available', name: 'זמין', color: 'bg-green-100 text-green-800' },
+        { id: 'employed', name: 'מועסק', color: 'bg-blue-100 text-blue-800' },
+        { id: 'inactive', name: 'לא פעיל', color: 'bg-gray-100 text-gray-800' },
+        { id: 'blacklisted', name: 'ברשימה שחורה', color: 'bg-red-100 text-red-800' }
+      ];
+      
+      if (statusesSetting?.value) {
+        try {
+          statuses = JSON.parse(statusesSetting.value);
+        } catch (parseError) {
+          console.error('Error parsing candidate statuses:', parseError);
+        }
+      }
+      
+      res.json({ statuses });
+    } catch (error) {
+      console.error("Error getting candidate statuses:", error);
+      res.status(500).json({ message: "Failed to get candidate statuses" });
+    }
+  });
+
   // CV Search routes
   app.get('/api/candidates/search', isAuthenticated, async (req, res) => {
     try {
