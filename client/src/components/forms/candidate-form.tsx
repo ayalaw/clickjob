@@ -447,35 +447,83 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     
                     {/* CV Display */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile.type.includes('image') || 
-                       selectedFile.name.toLowerCase().includes('.jpg') ||
-                       selectedFile.name.toLowerCase().includes('.jpeg') ||
-                       selectedFile.name.toLowerCase().includes('.png') ||
-                       selectedFile.name.toLowerCase().includes('.gif') ? (
-                        <img
-                          src={selectedFile.url}
-                          alt={selectedFile.name}
-                          className="w-full h-full object-contain"
-                        />
-                      ) : selectedFile.type.includes('pdf') || selectedFile.name.toLowerCase().includes('.pdf') ? (
-                        <iframe
-                          src={selectedFile.url}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
-                      ) : selectedFile.type.includes('word') || 
-                           selectedFile.name.toLowerCase().includes('.doc') ||
-                           selectedFile.name.toLowerCase().includes('.docx') ? (
-                        <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + selectedFile.url)}`}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
-                        </div>
-                      )}
+                      {(() => {
+                        const fileName = selectedFile.name.toLowerCase();
+                        const fileType = selectedFile.type;
+                        
+                        // Check for images
+                        if (fileType.startsWith('image/') || 
+                            fileName.includes('.jpg') || 
+                            fileName.includes('.jpeg') || 
+                            fileName.includes('.png') || 
+                            fileName.includes('.gif')) {
+                          return (
+                            <img
+                              src={selectedFile.url}
+                              alt={selectedFile.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                console.error('Image load error:', e);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          );
+                        }
+                        
+                        // Check for PDF
+                        if (fileType === 'application/pdf' || fileName.includes('.pdf')) {
+                          return (
+                            <iframe
+                              src={selectedFile.url + '#toolbar=0&navpanes=0&scrollbar=0'}
+                              className="w-full h-full border-0"
+                              title="קורות חיים"
+                              onError={(e) => {
+                                console.error('PDF load error:', e);
+                              }}
+                            />
+                          );
+                        }
+                        
+                        // Check for Word documents
+                        if (fileType.includes('word') || 
+                            fileType.includes('document') ||
+                            fileName.includes('.doc') || 
+                            fileName.includes('.docx')) {
+                          const fullUrl = selectedFile.url.startsWith('http') ? 
+                            selectedFile.url : 
+                            window.location.origin + selectedFile.url;
+                          
+                          return (
+                            <iframe
+                              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`}
+                              className="w-full h-full border-0"
+                              title="קורות חיים"
+                              onError={(e) => {
+                                console.error('Word document load error:', e);
+                              }}
+                            />
+                          );
+                        }
+                        
+                        // Fallback for unsupported files
+                        return (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                              <p className="text-sm text-gray-600 mb-2">{selectedFile.name}</p>
+                              <p className="text-xs text-gray-500">תצוגה מקדימה לא זמינה לסוג קובץ זה</p>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-2"
+                                onClick={() => window.open(selectedFile.url, '_blank')}
+                              >
+                                פתח בחלון חדש
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
