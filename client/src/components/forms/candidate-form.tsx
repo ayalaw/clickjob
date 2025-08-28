@@ -416,24 +416,24 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 {!selectedFile ? (
                   // Upload area when no file is uploaded
                   <div className="h-full">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors h-full flex flex-col items-center justify-center">
-                      <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-lg text-gray-600 mb-4">גרור קבצים או לחץ לבחירה</p>
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                        <Button variant="outline" size="lg" type="button">
+                    <label className="cursor-pointer h-full w-full block">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors h-full flex flex-col items-center justify-center">
+                        <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-lg text-gray-600 mb-4">גרור קבצים או לחץ כאן לבחירה</p>
+                        <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
                           בחר קבצים
-                        </Button>
-                      </label>
-                      <p className="text-sm text-gray-500 mt-4">
-                        PDF, DOC, DOCX, JPG, PNG (עד 10MB)
-                      </p>
-                    </div>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-4">
+                          PDF, DOC, DOCX, JPG, PNG (עד 10MB)
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 ) : (
                   <div className="h-full flex flex-col">
