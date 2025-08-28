@@ -1833,29 +1833,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'מועמד או משרה לא נמצאו' });
       }
 
-      // Send email to employer
+      // Send email to employer using the professional template
       const emailSubject = `המלצה על מועמד: ${candidate.firstName} ${candidate.lastName} - ${job.title}`;
+      const currentDate = new Date().toLocaleDateString('he-IL');
+      const userFullName = (req as AuthenticatedRequest).user?.displayName || 'רכז/ת הגיוס';
+      
       const emailBody = `
-<div dir="rtl" style="font-family: Arial, sans-serif;">
-  <h2>המלצה על מועמד למשרה</h2>
+<div dir="rtl" style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 700px;">
+  <!-- ברכת פתיחה -->
+  <p>שלום רב!</p>
   
-  <h3>פרטי המשרה:</h3>
-  <p><strong>תפקיד:</strong> ${job.title}</p>
-  <p><strong>חברה:</strong> ${job.client?.name}</p>
+  <!-- משפט פתיחה עם פרטי המשרה -->
+  <p>מצורפים למייל זה קורות חיים של המועמד/ת לתפקיד <strong>${job.title}</strong>.</p>
   
-  <h3>פרטי המועמד:</h3>
-  <p><strong>שם:</strong> ${candidate.firstName} ${candidate.lastName}</p>
-  <p><strong>אימייל:</strong> ${candidate.email}</p>
+  <!-- פרטי המועמד -->
+  <h3 style="color: #2563eb; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">פרטי המועמד:</h3>
+  
+  <p><strong>שם מלא:</strong> ${candidate.firstName} ${candidate.lastName}</p>
   <p><strong>טלפון:</strong> ${candidate.mobile || candidate.phone || 'לא צוין'}</p>
-  <p><strong>עיר:</strong> ${candidate.city}</p>
-  <p><strong>מקצוע:</strong> ${candidate.profession || 'לא צוין'}</p>
+  <p><strong>ישוב:</strong> ${candidate.city || 'לא צוין'}</p>
   
-  <h3>חוות דעת מקצועית:</h3>
-  <div style="background: #f5f5f5; padding: 15px; border-right: 4px solid #007bff; margin: 15px 0;">
-    ${recommendation.replace(/\n/g, '<br>')}
+  <!-- סיכום סינון ראשוני -->
+  <h3 style="color: #2563eb; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">סיכום סינון ראשוני מתאריך ${currentDate}:</h3>
+  
+  <!-- חוות דעת והערות -->
+  <h3 style="color: #2563eb; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">חוות דעת והערות:</h3>
+  <div style="background: #f8f9fa; padding: 15px; border-right: 4px solid #2563eb; margin: 15px 0; white-space: pre-line;">
+${recommendation}
   </div>
   
-  <p>בברכה,<br>צוות הגיוס</p>
+  <br>
+  <br>
+  
+  <!-- חתימה -->
+  <p>--<br>
+  בברכה,<br>
+  <strong>${userFullName}</strong></p>
 </div>
       `;
 
