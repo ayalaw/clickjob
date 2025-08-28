@@ -10,6 +10,7 @@ import {
   messageTemplates,
   systemSettings,
   reminders,
+  interviewEvents,
   type User,
   type UpsertUser,
   type Candidate,
@@ -36,6 +37,9 @@ import {
   type Reminder,
   type ReminderWithDetails,
   type InsertReminder,
+  type InterviewEvent,
+  type InterviewEventWithDetails,
+  type InsertInterviewEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
@@ -62,6 +66,14 @@ export interface IStorage {
   updateReminder(id: string, reminder: Partial<InsertReminder>): Promise<Reminder>;
   deleteReminder(id: string): Promise<void>;
   getDueReminders(userId?: string): Promise<ReminderWithDetails[]>;
+
+  // Interview Event operations
+  getInterviewEvents(userId?: string): Promise<InterviewEventWithDetails[]>;
+  getInterviewEvent(id: string): Promise<InterviewEventWithDetails | undefined>;
+  createInterviewEvent(event: InsertInterviewEvent): Promise<InterviewEvent>;
+  updateInterviewEvent(id: string, event: Partial<InsertInterviewEvent>): Promise<InterviewEvent>;
+  deleteInterviewEvent(id: string): Promise<void>;
+  getUpcomingInterviewEvents(userId?: string): Promise<InterviewEventWithDetails[]>;
 
   // Client operations
   getClients(limit?: number, offset?: number, search?: string): Promise<{ clients: Client[]; total: number }>;
@@ -1126,6 +1138,203 @@ export class DatabaseStorage implements IStorage {
         eq(reminders.createdBy, userId),
         eq(reminders.isCompleted, false),
         sql`${reminders.reminderDate} <= ${new Date()}`
+      ));
+    }
+
+    return await query;
+  }
+
+  // Interview Event operations
+  async getInterviewEvents(userId?: string): Promise<InterviewEventWithDetails[]> {
+    const query = db.select({
+      id: interviewEvents.id,
+      title: interviewEvents.title,
+      description: interviewEvents.description,
+      eventDate: interviewEvents.eventDate,
+      eventType: interviewEvents.eventType,
+      status: interviewEvents.status,
+      candidateId: interviewEvents.candidateId,
+      jobId: interviewEvents.jobId,
+      clientId: interviewEvents.clientId,
+      recruiterId: interviewEvents.recruiterId,
+      recruiterName: interviewEvents.recruiterName,
+      recruiterColor: interviewEvents.recruiterColor,
+      location: interviewEvents.location,
+      notes: interviewEvents.notes,
+      metadata: interviewEvents.metadata,
+      createdBy: interviewEvents.createdBy,
+      createdAt: interviewEvents.createdAt,
+      updatedAt: interviewEvents.updatedAt,
+      candidate: {
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+      },
+      job: {
+        id: jobs.id,
+        title: jobs.title,
+        jobCode: jobs.jobCode,
+      },
+      client: {
+        id: clients.id,
+        companyName: clients.companyName,
+        contactName: clients.contactName,
+      },
+      recruiter: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      }
+    })
+    .from(interviewEvents)
+    .innerJoin(candidates, eq(interviewEvents.candidateId, candidates.id))
+    .leftJoin(jobs, eq(interviewEvents.jobId, jobs.id))
+    .leftJoin(clients, eq(interviewEvents.clientId, clients.id))
+    .leftJoin(users, eq(interviewEvents.recruiterId, users.id))
+    .orderBy(desc(interviewEvents.eventDate));
+
+    if (userId) {
+      query.where(eq(interviewEvents.createdBy, userId));
+    }
+
+    return await query;
+  }
+
+  async getInterviewEvent(id: string): Promise<InterviewEventWithDetails | undefined> {
+    const [event] = await db.select({
+      id: interviewEvents.id,
+      title: interviewEvents.title,
+      description: interviewEvents.description,
+      eventDate: interviewEvents.eventDate,
+      eventType: interviewEvents.eventType,
+      status: interviewEvents.status,
+      candidateId: interviewEvents.candidateId,
+      jobId: interviewEvents.jobId,
+      clientId: interviewEvents.clientId,
+      recruiterId: interviewEvents.recruiterId,
+      recruiterName: interviewEvents.recruiterName,
+      recruiterColor: interviewEvents.recruiterColor,
+      location: interviewEvents.location,
+      notes: interviewEvents.notes,
+      metadata: interviewEvents.metadata,
+      createdBy: interviewEvents.createdBy,
+      createdAt: interviewEvents.createdAt,
+      updatedAt: interviewEvents.updatedAt,
+      candidate: {
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+      },
+      job: {
+        id: jobs.id,
+        title: jobs.title,
+        jobCode: jobs.jobCode,
+      },
+      client: {
+        id: clients.id,
+        companyName: clients.companyName,
+        contactName: clients.contactName,
+      },
+      recruiter: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      }
+    })
+    .from(interviewEvents)
+    .innerJoin(candidates, eq(interviewEvents.candidateId, candidates.id))
+    .leftJoin(jobs, eq(interviewEvents.jobId, jobs.id))
+    .leftJoin(clients, eq(interviewEvents.clientId, clients.id))
+    .leftJoin(users, eq(interviewEvents.recruiterId, users.id))
+    .where(eq(interviewEvents.id, id));
+
+    return event;
+  }
+
+  async createInterviewEvent(event: InsertInterviewEvent): Promise<InterviewEvent> {
+    const [newEvent] = await db.insert(interviewEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async updateInterviewEvent(id: string, event: Partial<InsertInterviewEvent>): Promise<InterviewEvent> {
+    const [updatedEvent] = await db
+      .update(interviewEvents)
+      .set({ ...event, updatedAt: new Date() })
+      .where(eq(interviewEvents.id, id))
+      .returning();
+    return updatedEvent;
+  }
+
+  async deleteInterviewEvent(id: string): Promise<void> {
+    await db.delete(interviewEvents).where(eq(interviewEvents.id, id));
+  }
+
+  async getUpcomingInterviewEvents(userId?: string): Promise<InterviewEventWithDetails[]> {
+    const query = db.select({
+      id: interviewEvents.id,
+      title: interviewEvents.title,
+      description: interviewEvents.description,
+      eventDate: interviewEvents.eventDate,
+      eventType: interviewEvents.eventType,
+      status: interviewEvents.status,
+      candidateId: interviewEvents.candidateId,
+      jobId: interviewEvents.jobId,
+      clientId: interviewEvents.clientId,
+      recruiterId: interviewEvents.recruiterId,
+      recruiterName: interviewEvents.recruiterName,
+      recruiterColor: interviewEvents.recruiterColor,
+      location: interviewEvents.location,
+      notes: interviewEvents.notes,
+      metadata: interviewEvents.metadata,
+      createdBy: interviewEvents.createdBy,
+      createdAt: interviewEvents.createdAt,
+      updatedAt: interviewEvents.updatedAt,
+      candidate: {
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        mobile: candidates.mobile,
+      },
+      job: {
+        id: jobs.id,
+        title: jobs.title,
+        jobCode: jobs.jobCode,
+      },
+      client: {
+        id: clients.id,
+        companyName: clients.companyName,
+        contactName: clients.contactName,
+      },
+      recruiter: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      }
+    })
+    .from(interviewEvents)
+    .innerJoin(candidates, eq(interviewEvents.candidateId, candidates.id))
+    .leftJoin(jobs, eq(interviewEvents.jobId, jobs.id))
+    .leftJoin(clients, eq(interviewEvents.clientId, clients.id))
+    .leftJoin(users, eq(interviewEvents.recruiterId, users.id))
+    .where(and(
+      eq(interviewEvents.status, 'scheduled'),
+      sql`${interviewEvents.eventDate} >= ${new Date()}`
+    ))
+    .orderBy(asc(interviewEvents.eventDate));
+
+    if (userId) {
+      query.where(and(
+        eq(interviewEvents.createdBy, userId),
+        eq(interviewEvents.status, 'scheduled'),
+        sql`${interviewEvents.eventDate} >= ${new Date()}`
       ));
     }
 

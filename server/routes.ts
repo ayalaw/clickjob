@@ -2211,6 +2211,84 @@ ${recommendation}
     }
   });
 
+  // Interview Events API routes
+  app.get('/api/interview-events', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.claims?.sub;
+      const events = await storage.getInterviewEvents(userId);
+      res.json(events);
+    } catch (error) {
+      console.error('Error fetching interview events:', error);
+      res.status(500).json({ error: 'שגיאה באחזור אירועי הראיונות' });
+    }
+  });
+
+  app.get('/api/interview-events/upcoming', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.claims?.sub;
+      const upcomingEvents = await storage.getUpcomingInterviewEvents(userId);
+      res.json(upcomingEvents);
+    } catch (error) {
+      console.error('Error fetching upcoming interview events:', error);
+      res.status(500).json({ error: 'שגיאה באחזור אירועי הראיונות הקרובים' });
+    }
+  });
+
+  app.get('/api/interview-events/:id', isAuthenticated, async (req, res) => {
+    try {
+      const event = await storage.getInterviewEvent(req.params.id);
+      if (!event) {
+        return res.status(404).json({ error: 'אירוע לא נמצא' });
+      }
+      res.json(event);
+    } catch (error) {
+      console.error('Error fetching interview event:', error);
+      res.status(500).json({ error: 'שגיאה באחזור האירוע' });
+    }
+  });
+
+  app.post('/api/interview-events', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.claims?.sub;
+      const eventData = {
+        ...req.body,
+        createdBy: userId,
+        eventDate: new Date(req.body.eventDate)
+      };
+
+      const event = await storage.createInterviewEvent(eventData);
+      res.json(event);
+    } catch (error) {
+      console.error('Error creating interview event:', error);
+      res.status(500).json({ error: 'שגיאה ביצירת האירוע' });
+    }
+  });
+
+  app.put('/api/interview-events/:id', isAuthenticated, async (req, res) => {
+    try {
+      const eventData = {
+        ...req.body,
+        eventDate: req.body.eventDate ? new Date(req.body.eventDate) : undefined
+      };
+
+      const event = await storage.updateInterviewEvent(req.params.id, eventData);
+      res.json(event);
+    } catch (error) {
+      console.error('Error updating interview event:', error);
+      res.status(500).json({ error: 'שגיאה בעדכון האירוע' });
+    }
+  });
+
+  app.delete('/api/interview-events/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteInterviewEvent(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting interview event:', error);
+      res.status(500).json({ error: 'שגיאה במחיקת האירוע' });
+    }
+  });
+
   // Start automatic email monitoring 
   if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
     console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');

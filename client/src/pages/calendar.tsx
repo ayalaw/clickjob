@@ -9,13 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReminderForm } from "@/components/reminder-form";
-import { Calendar, Clock, User, Briefcase, Building, Check, Trash2, Edit } from "lucide-react";
-import type { ReminderWithDetails } from "@shared/schema";
+import { Calendar, Clock, User, Briefcase, Building, Check, Trash2, Edit, Video, Phone, Users } from "lucide-react";
+import type { ReminderWithDetails, InterviewEventWithDetails } from "@shared/schema";
 
 export default function CalendarPage() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [selectedTab, setSelectedTab] = useState("upcoming");
+  const [selectedTab, setSelectedTab] = useState("all");
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -33,6 +33,11 @@ export default function CalendarPage() {
 
   const { data: reminders = [], isLoading: remindersLoading } = useQuery<ReminderWithDetails[]>({
     queryKey: ["/api/reminders"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: interviewEvents = [], isLoading: eventsLoading } = useQuery<InterviewEventWithDetails[]>({
+    queryKey: ["/api/interview-events"],
     enabled: isAuthenticated,
   });
 
@@ -98,9 +103,77 @@ export default function CalendarPage() {
     },
   });
 
+  const deleteInterviewEvent = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/interview-events/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interview-events"] });
+      toast({
+        title: "הצלחה",
+        description: "אירוע הראיון נמחק בהצלחה",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "לא מורשה",
+          description: "אתה מנותק. מתחבר שוב...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "שגיאה",
+        description: "שגיאה במחיקת אירוע הראיון",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateInterviewEventStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await apiRequest("PUT", `/api/interview-events/${id}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interview-events"] });
+      toast({
+        title: "הצלחה",
+        description: "סטטוס אירוע הראיון עודכן בהצלחה",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "לא מורשה",
+          description: "אתה מנותק. מתחבר שוב...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בעדכון סטטוס אירוע הראיון",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteReminder = (id: string) => {
     if (confirm("האם אתה בטוח שברצונך למחוק את התזכורת?")) {
       deleteReminder.mutate(id);
+    }
+  };
+
+  const handleDeleteInterviewEvent = (id: string) => {
+    if (confirm("האם אתה בטוח שברצונך למחוק את אירוע הראיון?")) {
+      deleteInterviewEvent.mutate(id);
     }
   };
 
@@ -136,6 +209,44 @@ export default function CalendarPage() {
     return new Date(date) < new Date();
   };
 
+  const getEventTypeIcon = (type: string) => {
+    switch (type) {
+      case 'phone': return <Phone className="h-4 w-4" />;
+      case 'in-person': return <Users className="h-4 w-4" />;
+      case 'video': return <Video className="h-4 w-4" />;
+      default: return <Users className="h-4 w-4" />;
+    }
+  };
+
+  const getEventTypeText = (type: string) => {
+    switch (type) {
+      case 'phone': return 'שיחת טלפון';
+      case 'in-person': return 'פגישה פרונטלית';
+      case 'video': return 'שיחת וידאו';
+      default: return type;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'rescheduled': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'מתוכנן';
+      case 'completed': return 'הושלם';
+      case 'cancelled': return 'בוטל';
+      case 'rescheduled': return 'נדחה';
+      default: return status;
+    }
+  };
+
   const filterReminders = (status: string) => {
     const now = new Date();
     switch (status) {
@@ -149,6 +260,29 @@ export default function CalendarPage() {
         return reminders;
     }
   };
+
+  const filterInterviewEvents = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return interviewEvents.filter(e => e.status === 'scheduled');
+      case 'completed':
+        return interviewEvents.filter(e => e.status === 'completed');
+      case 'cancelled':
+        return interviewEvents.filter(e => e.status === 'cancelled');
+      default:
+        return interviewEvents;
+    }
+  };
+
+  // Combine and sort reminders and interview events by date
+  const allEvents = [
+    ...reminders.map(reminder => ({ ...reminder, type: 'reminder' as const })),
+    ...interviewEvents.map(event => ({ ...event, type: 'interview' as const }))
+  ].sort((a, b) => {
+    const dateA = new Date(a.type === 'reminder' ? a.reminderDate : a.eventDate);
+    const dateB = new Date(b.type === 'reminder' ? b.reminderDate : b.eventDate);
+    return dateB.getTime() - dateA.getTime();
+  });
 
   if (isLoading) {
     return (
@@ -170,7 +304,7 @@ export default function CalendarPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Calendar className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold">יומן תזכורות</h1>
+          <h1 className="text-3xl font-bold">יומן ואירועים</h1>
         </div>
         <ReminderForm 
           onSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/reminders"] })}
@@ -178,25 +312,50 @@ export default function CalendarPage() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upcoming" data-testid="tab-upcoming">
-            קרובות ({filterReminders('upcoming').length})
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all" data-testid="tab-all">
+            כל האירועים ({allEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="reminders" data-testid="tab-reminders">
+            תזכורות ({reminders.length})
+          </TabsTrigger>
+          <TabsTrigger value="interviews" data-testid="tab-interviews">
+            ראיונות ({interviewEvents.length})
           </TabsTrigger>
           <TabsTrigger value="overdue" data-testid="tab-overdue">
             באיחור ({filterReminders('overdue').length})
           </TabsTrigger>
-          <TabsTrigger value="completed" data-testid="tab-completed">
-            הושלמו ({filterReminders('completed').length})
-          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upcoming" className="mt-6">
+        <TabsContent value="all" className="mt-6">
+          <EventsList 
+            events={allEvents}
+            onToggleReminderCompleted={(id, isCompleted) => toggleCompleted.mutate({ id, isCompleted })}
+            onDeleteReminder={handleDeleteReminder}
+            onDeleteInterviewEvent={handleDeleteInterviewEvent}
+            onUpdateInterviewStatus={(id, status) => updateInterviewEventStatus.mutate({ id, status })}
+            loading={remindersLoading || eventsLoading}
+            emptyMessage="אין אירועים"
+          />
+        </TabsContent>
+
+        <TabsContent value="reminders" className="mt-6">
           <RemindersList 
-            reminders={filterReminders('upcoming')}
+            reminders={reminders}
             onToggleCompleted={(id, isCompleted) => toggleCompleted.mutate({ id, isCompleted })}
             onDelete={handleDeleteReminder}
             loading={remindersLoading}
-            emptyMessage="אין תזכורות קרובות"
+            emptyMessage="אין תזכורות"
+          />
+        </TabsContent>
+
+        <TabsContent value="interviews" className="mt-6">
+          <InterviewEventsList 
+            events={interviewEvents}
+            onDelete={handleDeleteInterviewEvent}
+            onUpdateStatus={(id, status) => updateInterviewEventStatus.mutate({ id, status })}
+            loading={eventsLoading}
+            emptyMessage="אין אירועי ראיונות"
           />
         </TabsContent>
 
@@ -208,17 +367,6 @@ export default function CalendarPage() {
             loading={remindersLoading}
             emptyMessage="אין תזכורות באיחור"
             isOverdue={true}
-          />
-        </TabsContent>
-
-        <TabsContent value="completed" className="mt-6">
-          <RemindersList 
-            reminders={filterReminders('completed')}
-            onToggleCompleted={(id, isCompleted) => toggleCompleted.mutate({ id, isCompleted })}
-            onDelete={handleDeleteReminder}
-            loading={remindersLoading}
-            emptyMessage="אין תזכורות שהושלמו"
-            showCompleted={true}
           />
         </TabsContent>
       </Tabs>
@@ -373,6 +521,303 @@ function RemindersList({
                   <span>לקוח: {reminder.client.companyName}</span>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+interface EventsListProps {
+  events: Array<(ReminderWithDetails & { type: 'reminder' }) | (InterviewEventWithDetails & { type: 'interview' })>;
+  onToggleReminderCompleted: (id: string, isCompleted: boolean) => void;
+  onDeleteReminder: (id: string) => void;
+  onDeleteInterviewEvent: (id: string) => void;
+  onUpdateInterviewStatus: (id: string, status: string) => void;
+  loading: boolean;
+  emptyMessage: string;
+}
+
+function EventsList({
+  events,
+  onToggleReminderCompleted,
+  onDeleteReminder,
+  onDeleteInterviewEvent,
+  onUpdateInterviewStatus,
+  loading,
+  emptyMessage
+}: EventsListProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return <p className="text-center text-gray-500 py-8">{emptyMessage}</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {events.map((event) => (
+        <Card key={`${event.type}-${event.id}`} className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  {event.type === 'reminder' ? (
+                    <Clock className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    getEventTypeIcon((event as InterviewEventWithDetails).eventType)
+                  )}
+                  <h3 className="font-semibold text-lg">
+                    {event.type === 'reminder' ? event.title : (event as InterviewEventWithDetails).title}
+                  </h3>
+                  <Badge variant="outline" className={
+                    event.type === 'reminder' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                  }>
+                    {event.type === 'reminder' ? 'תזכורת' : 'ראיון'}
+                  </Badge>
+                </div>
+
+                <p className="text-gray-600 mb-2">
+                  {event.type === 'reminder' ? event.description : (event as InterviewEventWithDetails).description}
+                </p>
+
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {formatDate(event.type === 'reminder' ? event.reminderDate : (event as InterviewEventWithDetails).eventDate)}
+                    </span>
+                  </div>
+
+                  {event.candidate && (
+                    <div className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      <span>{event.candidate.firstName} {event.candidate.lastName}</span>
+                    </div>
+                  )}
+
+                  {event.job && (
+                    <div className="flex items-center gap-1">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{event.job.title}</span>
+                    </div>
+                  )}
+
+                  {event.client && (
+                    <div className="flex items-center gap-1">
+                      <Building className="h-4 w-4" />
+                      <span>{event.client.companyName}</span>
+                    </div>
+                  )}
+                </div>
+
+                {event.type === 'reminder' && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge className={getPriorityColor(event.priority)}>
+                      {getPriorityText(event.priority)}
+                    </Badge>
+                    {event.isCompleted && (
+                      <Badge className="bg-green-100 text-green-800">
+                        הושלם
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {event.type === 'interview' && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge className={getStatusColor((event as InterviewEventWithDetails).status)}>
+                      {getStatusText((event as InterviewEventWithDetails).status)}
+                    </Badge>
+                    <Badge variant="outline">
+                      {getEventTypeText((event as InterviewEventWithDetails).eventType)}
+                    </Badge>
+                    {(event as InterviewEventWithDetails).recruiterName && (
+                      <Badge 
+                        style={{ 
+                          backgroundColor: (event as InterviewEventWithDetails).recruiterColor + '20', 
+                          color: (event as InterviewEventWithDetails).recruiterColor,
+                          borderColor: (event as InterviewEventWithDetails).recruiterColor 
+                        }}
+                      >
+                        {(event as InterviewEventWithDetails).recruiterName}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {event.type === 'reminder' && !event.isCompleted && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onToggleReminderCompleted(event.id, true)}
+                    data-testid={`button-complete-${event.id}`}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                )}
+                
+                {event.type === 'reminder' && event.isCompleted && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onToggleReminderCompleted(event.id, false)}
+                    data-testid={`button-uncomplete-${event.id}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                )}
+
+                {event.type === 'interview' && (event as InterviewEventWithDetails).status === 'scheduled' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onUpdateInterviewStatus(event.id, 'completed')}
+                    data-testid={`button-complete-interview-${event.id}`}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                )}
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => event.type === 'reminder' ? onDeleteReminder(event.id) : onDeleteInterviewEvent(event.id)}
+                  data-testid={`button-delete-${event.type}-${event.id}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+interface InterviewEventsListProps {
+  events: InterviewEventWithDetails[];
+  onDelete: (id: string) => void;
+  onUpdateStatus: (id: string, status: string) => void;
+  loading: boolean;
+  emptyMessage: string;
+}
+
+function InterviewEventsList({ 
+  events, 
+  onDelete, 
+  onUpdateStatus,
+  loading, 
+  emptyMessage
+}: InterviewEventsListProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return <p className="text-center text-gray-500 py-8">{emptyMessage}</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {events.map((event) => (
+        <Card key={event.id} className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  {getEventTypeIcon(event.eventType)}
+                  <h3 className="font-semibold text-lg">{event.title}</h3>
+                  <Badge className={getStatusColor(event.status)}>
+                    {getStatusText(event.status)}
+                  </Badge>
+                </div>
+
+                <p className="text-gray-600 mb-2">{event.description}</p>
+
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDate(event.eventDate)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    <span>{event.candidate.firstName} {event.candidate.lastName}</span>
+                  </div>
+
+                  {event.job && (
+                    <div className="flex items-center gap-1">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{event.job.title}</span>
+                    </div>
+                  )}
+
+                  {event.client && (
+                    <div className="flex items-center gap-1">
+                      <Building className="h-4 w-4" />
+                      <span>{event.client.companyName}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline">
+                    {getEventTypeText(event.eventType)}
+                  </Badge>
+                  {event.recruiterName && (
+                    <Badge 
+                      style={{ 
+                        backgroundColor: event.recruiterColor + '20', 
+                        color: event.recruiterColor,
+                        borderColor: event.recruiterColor 
+                      }}
+                    >
+                      {event.recruiterName}
+                    </Badge>
+                  )}
+                  {event.location && (
+                    <Badge variant="outline">
+                      {event.location}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {event.status === 'scheduled' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onUpdateStatus(event.id, 'completed')}
+                    data-testid={`button-complete-interview-${event.id}`}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                )}
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(event.id)}
+                  data-testid={`button-delete-interview-${event.id}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -208,18 +208,42 @@ export const reminders = pgTable("reminders", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Interview Events table - for tracking interview schedules and appointments
+export const interviewEvents = pgTable("interview_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  eventDate: timestamp("event_date").notNull(),
+  eventType: varchar("event_type").notNull(), // interview_phone, interview_face_to_face, callback_reminder, warranty_end, etc.
+  status: varchar("status").default('scheduled'), // scheduled, completed, cancelled, rescheduled
+  candidateId: varchar("candidate_id").references(() => candidates.id).notNull(),
+  jobId: varchar("job_id").references(() => jobs.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  recruiterId: varchar("recruiter_id").references(() => users.id), // הרכז האחראי
+  recruiterName: varchar("recruiter_name"), // שם הרכז
+  recruiterColor: varchar("recruiter_color").default('#3B82F6'), // צבע הרכז ביומן
+  location: varchar("location"), // מקום הראיון
+  notes: text("notes"),
+  metadata: jsonb("metadata"), // נתונים נוספים
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const candidatesRelations = relations(candidates, ({ many }) => ({
   applications: many(jobApplications),
   tasks: many(tasks),
   events: many(candidateEvents),
   reminders: many(reminders),
+  interviewEvents: many(interviewEvents),
 }));
 
 export const clientsRelations = relations(clients, ({ many }) => ({
   jobs: many(jobs),
   tasks: many(tasks),
   reminders: many(reminders),
+  interviewEvents: many(interviewEvents),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
@@ -230,6 +254,7 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
   applications: many(jobApplications),
   tasks: many(tasks),
   reminders: many(reminders),
+  interviewEvents: many(interviewEvents),
 }));
 
 export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
@@ -280,6 +305,29 @@ export const remindersRelations = relations(reminders, ({ one }) => ({
   }),
   createdByUser: one(users, {
     fields: [reminders.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const interviewEventsRelations = relations(interviewEvents, ({ one }) => ({
+  candidate: one(candidates, {
+    fields: [interviewEvents.candidateId],
+    references: [candidates.id],
+  }),
+  job: one(jobs, {
+    fields: [interviewEvents.jobId],
+    references: [jobs.id],
+  }),
+  client: one(clients, {
+    fields: [interviewEvents.clientId],
+    references: [clients.id],
+  }),
+  recruiter: one(users, {
+    fields: [interviewEvents.recruiterId],
+    references: [users.id],
+  }),
+  createdByUser: one(users, {
+    fields: [interviewEvents.createdBy],
     references: [users.id],
   }),
 }));
@@ -349,6 +397,11 @@ export const insertReminderSchema = createInsertSchema(reminders).omit({
   createdAt: true,
   updatedAt: true,
 });
+export const insertInterviewEventSchema = createInsertSchema(interviewEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).omit({
   id: true,
   createdAt: true,
@@ -371,6 +424,9 @@ export type CandidateEvent = typeof candidateEvents.$inferSelect;
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type Reminder = typeof reminders.$inferSelect;
 export type ReminderWithDetails = Reminder & { candidate?: Candidate; job?: JobWithClient; client?: Client; };
+export type InsertInterviewEvent = z.infer<typeof insertInterviewEventSchema>;
+export type InterviewEvent = typeof interviewEvents.$inferSelect;
+export type InterviewEventWithDetails = InterviewEvent & { candidate: Candidate; job?: JobWithClient; client?: Client; recruiter?: User; };
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
