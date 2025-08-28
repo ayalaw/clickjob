@@ -14,7 +14,7 @@ const navigation = [
   { name: "לוח בקרה", href: "/", icon: LayoutDashboard },
   { name: "מאגר מועמדים", href: "/candidates", icon: Users },
   { name: "חיפוש בקורות חיים", href: "/cv-search", icon: Search },
-  { name: "יומן תזכורות", href: "/calendar", icon: Calendar },
+  { name: "יומן", href: "/calendar", icon: Calendar },
   { name: "מאגר לקוחות", href: "/clients", icon: Building2 },
   { name: "מאגר משרות", href: "/jobs", icon: Briefcase },
   { name: "סינון ראיונות", href: "/interviews", icon: UserCheck },
