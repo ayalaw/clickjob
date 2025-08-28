@@ -19,8 +19,8 @@ processedEmails.clear();
 
 // דפוסי זיהוי מידע במיילים נכנסים
 const EMAIL_PATTERNS = {
-  // זיהוי קוד משרה: "קוד משרה: 12345" או "Job ID: 12345" או "#12345"
-  jobCode: /(?:קוד משרה|Job ID|משרה|#)\s*:?\s*([A-Z0-9-]+)/i,
+  // זיהוי קוד משרה: מספרים של 7 ספרות בלבד
+  jobCode: /(?:קוד משרה|Job ID|משרה|#)\s*:?\s*([0-9]{7})|\b([0-9]{7})\b/i,
   
   // זיהוי אימייל
   email: /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
@@ -40,23 +40,36 @@ function parseCV(text: string): any {
   // חילוץ שם מהמקום הראשון בטקסט (לא מהכותרות)
   const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   
-  for (let i = 0; i < Math.min(lines.length, 3); i++) {
-    const line = lines[i];
-    
-    // דלג על מילים נפוצות בקורות חיים
-    const skipWords = ['קורות', 'חיים', 'cv', 'resume', 'curriculum', 'vitae', 'נתונים', 'אישיים', 'פרטים'];
-    if (skipWords.some(word => line.toLowerCase().includes(word))) {
-      continue;
+  // חיפוש דפוס "שם: יחזקאל נתן" קודם
+  const namePattern = /שם\s*:?\s*([א-ת\s]{2,50})/i;
+  const nameMatch = text.match(namePattern);
+  if (nameMatch && nameMatch[1]) {
+    const fullName = nameMatch[1].trim();
+    const parts = fullName.split(/\s+/);
+    if (parts.length >= 2) {
+      result.firstName = parts[0];
+      result.lastName = parts.slice(1).join(' ');
     }
-    
-    // בדוק שזו שורה עם שם (רק מילים ובעברית/אנגלית)
-    const nameMatch = line.match(/^([א-ת\s]+|[a-zA-Z\s]+)$/);
-    if (nameMatch && line.split(' ').length >= 2 && line.split(' ').length <= 4) {
-      const parts = line.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        result.firstName = parts[0];
-        result.lastName = parts.slice(1).join(' ');
-        break;
+  } else {
+    // אם לא נמצא דפוס "שם:", חפש בשורות הראשונות
+    for (let i = 0; i < Math.min(lines.length, 10); i++) {
+      const line = lines[i];
+      
+      // דלג על מילים נפוצות בקורות חיים
+      const skipWords = ['קורות', 'חיים', 'cv', 'resume', 'curriculum', 'vitae', 'נתונים', 'אישיים', 'פרטים'];
+      if (skipWords.some(word => line.toLowerCase().includes(word))) {
+        continue;
+      }
+      
+      // בדוק שזו שורה עם שם (רק מילים ובעברית/אנגלית)
+      const lineNameMatch = line.match(/^([א-ת\s]+|[a-zA-Z\s]+)$/);
+      if (lineNameMatch && line.split(' ').length >= 2 && line.split(' ').length <= 4) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          result.firstName = parts[0];
+          result.lastName = parts.slice(1).join(' ');
+          break;
+        }
       }
     }
   }
@@ -269,7 +282,10 @@ async function checkCpanelEmails(): Promise<void> {
                       }
                     }
                     
-                    if (candidate.email) {
+                    // בדיקה אם יש לנו מועמד תקין (אימייל מקורות החיים או לפחות מידע בסיסי)
+                    const hasValidCandidate = candidate.email || candidate.firstName || candidate.mobile;
+                    
+                    if (hasValidCandidate) {
                       await createCandidateFromEmail(candidate);
                       console.log(`✅ נוצר מועמד חדש: ${candidate.firstName || 'מועמד'} ${candidate.lastName || 'חדש'}`);
                       
@@ -286,7 +302,7 @@ async function checkCpanelEmails(): Promise<void> {
                         console.error('❌ שגיאה בסימון מייל:', markError);
                       }
                     } else {
-                      console.log(`⚠️ חסר אימייל למועמד`);
+                      console.log(`⚠️ לא נמצאו פרטי מועמד תקינים בקורות החיים`);
                     }
                   } else {
                     console.log(`📧 מייל לא זוהה כמועמדות - נושא: "${parsed.subject}"`);
@@ -423,23 +439,18 @@ function isJobApplicationEmail(subject: string, body: string, from: string, hasA
 function parseCandidate(subject: string, body: string, from: string): ParsedCandidate {
   const fullText = `${subject}\n${body}`;
   
-  // חילוץ קוד משרה
+  // חילוץ קוד משרה - בדוק את שתי קבוצות הלכידה
   const jobCodeMatch = fullText.match(EMAIL_PATTERNS.jobCode);
-  const jobCode = jobCodeMatch ? jobCodeMatch[1] : undefined;
+  const jobCode = jobCodeMatch ? (jobCodeMatch[1] || jobCodeMatch[2]) : undefined;
   
-  // חילוץ אימייל משולח
-  const candidateEmail = from.match(/<(.+)>/) ? from.match(/<(.+)>/)![1] : from.split('<')[0].trim();
-  
-  // לא נחלץ שם מהשולח - רק מקורות החיים
-  // השם ייחלץ מהקובץ המצורף בלבד
-  const firstName = '';
-  const lastName = '';
+  // לא נחלץ פרטים מהמייל - רק מקורות החיים!
+  // כל הפרטים ייחלצו מהקובץ המצורף בלבד
   
   return {
-    firstName: firstName || undefined,
-    lastName: lastName || undefined,
-    email: candidateEmail,
-    phone: undefined, // לא נחלץ טלפון מתוכן המייל
+    firstName: undefined, // רק מקורות החיים
+    lastName: undefined, // רק מקורות החיים  
+    email: undefined, // רק מקורות החיים - לא מהשולח!
+    phone: undefined, // רק מקורות החיים
     jobCode,
     originalSubject: subject,
     originalBody: body.substring(0, 500), // שמירת חלק מהתוכן המקורי
@@ -575,7 +586,7 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
     return {
       firstName: extractedData.firstName,
       lastName: extractedData.lastName,
-      email: extractedData.email || email, // אימייל מקורות החיים קודם, אחר כך מהמייל
+      email: extractedData.email, // רק אימייל מקורות החיים - לא מהשולח!
       mobile: extractedData.phone, // הטלפון הנייד מקורות החיים
       phone: extractedData.phone,
       nationalId: extractedData.nationalId, // ת.ז. מקורות החיים
