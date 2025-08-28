@@ -6,8 +6,11 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ReminderForm } from "@/components/reminder-form";
-import { Calendar, Clock, User, Briefcase, Building, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, User, Briefcase, Building, ChevronLeft, ChevronRight, Bell, X, RotateCcw } from "lucide-react";
 import type { ReminderWithDetails, InterviewEventWithDetails } from "@shared/schema";
 
 export default function CalendarPage() {
@@ -21,6 +24,10 @@ export default function CalendarPage() {
     monday.setHours(0, 0, 0, 0);
     return monday;
   });
+  
+  const [activeReminderPopup, setActiveReminderPopup] = useState<ReminderWithDetails | null>(null);
+  const [snoozeMinutes, setSnoozeMinutes] = useState(15);
+  const [checkedReminders, setCheckedReminders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,6 +46,7 @@ export default function CalendarPage() {
   const { data: reminders = [], isLoading: remindersLoading } = useQuery<ReminderWithDetails[]>({
     queryKey: ["/api/reminders"],
     enabled: isAuthenticated,
+    refetchInterval: 30000, // Check every 30 seconds for new reminders
   });
 
   const { data: interviewEvents = [], isLoading: eventsLoading } = useQuery<InterviewEventWithDetails[]>({
@@ -169,6 +177,71 @@ export default function CalendarPage() {
       });
     },
   });
+
+  const snoozeReminder = useMutation({
+    mutationFn: async ({ id, minutes }: { id: string; minutes: number }) => {
+      const newDate = new Date();
+      newDate.setMinutes(newDate.getMinutes() + minutes);
+      await apiRequest("PUT", `/api/reminders/${id}`, { 
+        reminderDate: newDate.toISOString()
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reminders"] });
+      setActiveReminderPopup(null);
+      toast({
+        title: "הצלחה",
+        description: `התזכורת נדחתה ב-${snoozeMinutes} דקות`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בדחיית התזכורת",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check for due reminders every 30 seconds
+  useEffect(() => {
+    if (!isAuthenticated || !reminders.length) return;
+
+    const checkDueReminders = () => {
+      const now = new Date();
+      const dueReminders = reminders.filter(reminder => {
+        if (reminder.isCompleted || checkedReminders.has(reminder.id)) return false;
+        
+        const reminderTime = new Date(reminder.reminderDate);
+        const timeDiff = reminderTime.getTime() - now.getTime();
+        
+        // Show popup if reminder is due (within 1 minute)
+        return timeDiff <= 60000 && timeDiff >= -60000;
+      });
+
+      if (dueReminders.length > 0 && !activeReminderPopup) {
+        setActiveReminderPopup(dueReminders[0]);
+      }
+    };
+
+    const interval = setInterval(checkDueReminders, 30000);
+    checkDueReminders(); // Check immediately
+
+    return () => clearInterval(interval);
+  }, [reminders, isAuthenticated, activeReminderPopup, checkedReminders]);
+
+  const markReminderAsRead = () => {
+    if (activeReminderPopup) {
+      setCheckedReminders(prev => new Set([...prev, activeReminderPopup.id]));
+      setActiveReminderPopup(null);
+    }
+  };
+
+  const handleSnoozeReminder = () => {
+    if (activeReminderPopup) {
+      snoozeReminder.mutate({ id: activeReminderPopup.id, minutes: snoozeMinutes });
+    }
+  };
 
   // Generate the 7 days of current week
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -425,6 +498,93 @@ export default function CalendarPage() {
           );
         })}
       </div>
+
+      {/* Reminder Popup Dialog */}
+      <Dialog open={!!activeReminderPopup} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <Bell className="h-5 w-5" />
+              תזכורת דחופה!
+            </DialogTitle>
+          </DialogHeader>
+          
+          {activeReminderPopup && (
+            <div className="space-y-4">
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <h3 className="font-semibold text-lg mb-2">{activeReminderPopup.title}</h3>
+                
+                {activeReminderPopup.description && (
+                  <p className="text-gray-700 mb-3">{activeReminderPopup.description}</p>
+                )}
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span>זמן: {new Date(activeReminderPopup.reminderDate).toLocaleString('he-IL')}</span>
+                  </div>
+                  
+                  {activeReminderPopup.candidate && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span>מועמד: {activeReminderPopup.candidate.firstName} {activeReminderPopup.candidate.lastName}</span>
+                    </div>
+                  )}
+                  
+                  {activeReminderPopup.job && (
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-gray-500" />
+                      <span>משרה: {activeReminderPopup.job.title}</span>
+                    </div>
+                  )}
+                  
+                  {activeReminderPopup.client && (
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-gray-500" />
+                      <span>חברה: {activeReminderPopup.client.companyName}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="snooze-minutes">דחה ב:</Label>
+                  <Input
+                    id="snooze-minutes"
+                    type="number"
+                    value={snoozeMinutes}
+                    onChange={(e) => setSnoozeMinutes(Number(e.target.value))}
+                    className="w-20"
+                    min="1"
+                    max="1440"
+                  />
+                  <span className="text-sm text-gray-600">דקות</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={markReminderAsRead}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              סמן כנקרא
+            </Button>
+            <Button 
+              onClick={handleSnoozeReminder}
+              disabled={snoozeReminder.isPending}
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
+            >
+              <RotateCcw className="h-4 w-4" />
+              דחה תזכורת
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
