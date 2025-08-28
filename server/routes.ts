@@ -1533,6 +1533,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get email settings
+  app.get('/api/system-settings/email', isAuthenticated, async (req: any, res) => {
+    try {
+      const smtpHost = await storage.getSystemSetting('CPANEL_SMTP_HOST');
+      const smtpPort = await storage.getSystemSetting('CPANEL_SMTP_PORT');
+      const smtpSecure = await storage.getSystemSetting('CPANEL_SMTP_SECURE');
+      const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
+      const emailPass = await storage.getSystemSetting('CPANEL_EMAIL_PASS');
+      const imapHost = await storage.getSystemSetting('CPANEL_IMAP_HOST');
+      const imapPort = await storage.getSystemSetting('CPANEL_IMAP_PORT');
+      const imapSecure = await storage.getSystemSetting('CPANEL_IMAP_SECURE');
+
+      res.json({
+        smtpHost: smtpHost?.value || '',
+        smtpPort: smtpPort?.value || '587',
+        smtpSecure: smtpSecure?.value || 'false',
+        emailUser: emailUser?.value || '',
+        emailPass: emailPass?.value || '',
+        imapHost: imapHost?.value || '',
+        imapPort: imapPort?.value || '993',
+        imapSecure: imapSecure?.value || 'true'
+      });
+    } catch (error) {
+      console.error("Error getting email settings:", error);
+      res.status(500).json({ message: "Failed to get email settings" });
+    }
+  });
+
   // Configure email settings (cPanel)
   app.post('/api/email/configure', isAuthenticated, async (req: any, res) => {
     try {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,31 @@ export default function EmailSettings() {
     imapPort: '993',
     imapSecure: true
   });
+
+  // טעינת הגדרות קיימות
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/system-settings/email');
+        if (response.ok) {
+          const settings = await response.json();
+          setEmailConfig({
+            smtpHost: settings.smtpHost || '',
+            smtpPort: settings.smtpPort || '587',
+            smtpSecure: settings.smtpSecure === 'true',
+            emailUser: settings.emailUser || '',
+            emailPass: settings.emailPass || '',
+            imapHost: settings.imapHost || '',
+            imapPort: settings.imapPort || '993',
+            imapSecure: settings.imapSecure === 'true'
+          });
+        }
+      } catch (error) {
+        console.error('Error loading email settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
