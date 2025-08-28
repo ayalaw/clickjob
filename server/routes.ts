@@ -1538,15 +1538,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass, imapHost, imapPort, imapSecure } = req.body;
       
-      // Store configuration in environment (in production, you'd store this in database)
-      process.env.CPANEL_SMTP_HOST = smtpHost;
-      process.env.CPANEL_SMTP_PORT = smtpPort;
-      process.env.CPANEL_SMTP_SECURE = smtpSecure.toString();
-      process.env.CPANEL_EMAIL_USER = emailUser;
-      process.env.CPANEL_EMAIL_PASS = emailPass;
-      process.env.CPANEL_IMAP_HOST = imapHost;
-      process.env.CPANEL_IMAP_PORT = imapPort;
-      process.env.CPANEL_IMAP_SECURE = imapSecure.toString();
+      // Store configuration in database
+      await storage.setSystemSetting('CPANEL_SMTP_HOST', smtpHost, 'cPanel SMTP server host');
+      await storage.setSystemSetting('CPANEL_SMTP_PORT', smtpPort, 'cPanel SMTP server port');
+      await storage.setSystemSetting('CPANEL_SMTP_SECURE', smtpSecure.toString(), 'cPanel SMTP secure connection');
+      await storage.setSystemSetting('CPANEL_EMAIL_USER', emailUser, 'cPanel email user account');
+      await storage.setSystemSetting('CPANEL_EMAIL_PASS', emailPass, 'cPanel email password');
+      await storage.setSystemSetting('CPANEL_IMAP_HOST', imapHost, 'cPanel IMAP server host');
+      await storage.setSystemSetting('CPANEL_IMAP_PORT', imapPort, 'cPanel IMAP server port');
+      await storage.setSystemSetting('CPANEL_IMAP_SECURE', imapSecure.toString(), 'cPanel IMAP secure connection');
       
       res.json({ success: true, message: "הגדרות מייל נשמרו בהצלחה" });
     } catch (error) {
@@ -1608,12 +1608,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { imapHost, imapPort, imapSecure, emailUser, emailPass } = req.body;
       
-      // Store incoming email configuration
-      process.env.CPANEL_IMAP_HOST = imapHost;
-      process.env.CPANEL_IMAP_PORT = imapPort;
-      process.env.CPANEL_IMAP_SECURE = imapSecure.toString();
-      process.env.CPANEL_IMAP_USER = emailUser;
-      process.env.CPANEL_IMAP_PASS = emailPass;
+      // Store incoming email configuration in database
+      await storage.setSystemSetting('CPANEL_IMAP_HOST', imapHost, 'cPanel IMAP server host');
+      await storage.setSystemSetting('CPANEL_IMAP_PORT', imapPort, 'cPanel IMAP server port');
+      await storage.setSystemSetting('CPANEL_IMAP_SECURE', imapSecure.toString(), 'cPanel IMAP secure connection');
+      await storage.setSystemSetting('CPANEL_IMAP_USER', emailUser, 'cPanel IMAP user account');
+      await storage.setSystemSetting('CPANEL_IMAP_PASS', emailPass, 'cPanel IMAP password');
       
       res.json({ success: true, message: "הגדרות מיילים נכנסים נשמרו בהצלחה" });
     } catch (error) {

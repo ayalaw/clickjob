@@ -116,22 +116,8 @@ export async function checkIncomingEmails(): Promise<void> {
   try {
     console.log('🔍 בודק מיילים נכנסים...');
     
-    // הגדר משתני סביבה של cPanel אם הם לא קיימים
-    if (!process.env.CPANEL_IMAP_HOST) {
-      process.env.CPANEL_IMAP_HOST = 'mail.h-group.org.il';
-      process.env.CPANEL_IMAP_PORT = '993';
-      process.env.CPANEL_IMAP_SECURE = 'true';
-      process.env.CPANEL_IMAP_USER = 'dolev@h-group.org.il';
-      process.env.CPANEL_IMAP_PASS = 'hpm_7HqToCSs[H7,';
-    }
-    
     // השתמש בהגדרות cPanel IMAP
-    if (process.env.CPANEL_IMAP_HOST && process.env.CPANEL_IMAP_USER) {
-      await checkCpanelEmails();
-    } 
-    else {
-      console.log('⚠️ לא נמצאו הגדרות מייל נכנס');
-    }
+    await checkCpanelEmails();
   } catch (error) {
     console.error('❌ שגיאה בבדיקת מיילים נכנסים:', error);
   }
@@ -139,17 +125,43 @@ export async function checkIncomingEmails(): Promise<void> {
 
 // בדיקת מיילים דרך cPanel IMAP
 async function checkCpanelEmails(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const imap = new (Imap as any)({
-      user: process.env.CPANEL_IMAP_USER!,
-      password: process.env.CPANEL_IMAP_PASS!,
-      host: process.env.CPANEL_IMAP_HOST!,
-      port: parseInt(process.env.CPANEL_IMAP_PORT || '993'),
-      tls: process.env.CPANEL_IMAP_SECURE === 'true',
-      tlsOptions: { rejectUnauthorized: false }
-    });
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Load IMAP settings from database
+      const { storage } = await import('./storage');
+      let imapHost = await storage.getSystemSetting('CPANEL_IMAP_HOST');
+      let imapPort = await storage.getSystemSetting('CPANEL_IMAP_PORT');
+      let imapSecure = await storage.getSystemSetting('CPANEL_IMAP_SECURE');
+      let imapUser = await storage.getSystemSetting('CPANEL_IMAP_USER');
+      let imapPass = await storage.getSystemSetting('CPANEL_IMAP_PASS');
 
-    imap.once('ready', () => {
+      // If not found in database, use existing values and save them
+      if (!imapHost || !imapUser || !imapPass) {
+        console.log('📧 שמירת הגדרות IMAP קיימות במסד הנתונים...');
+        await storage.setSystemSetting('CPANEL_IMAP_HOST', 'mail.h-group.org.il', 'cPanel IMAP server host');
+        await storage.setSystemSetting('CPANEL_IMAP_PORT', '993', 'cPanel IMAP server port');
+        await storage.setSystemSetting('CPANEL_IMAP_SECURE', 'true', 'cPanel IMAP secure connection');
+        await storage.setSystemSetting('CPANEL_IMAP_USER', 'dolev@h-group.org.il', 'cPanel IMAP user account');
+        await storage.setSystemSetting('CPANEL_IMAP_PASS', 'hpm_7HqToCSs[H7,', 'cPanel IMAP password');
+        
+        // Re-load settings
+        imapHost = await storage.getSystemSetting('CPANEL_IMAP_HOST');
+        imapPort = await storage.getSystemSetting('CPANEL_IMAP_PORT');
+        imapSecure = await storage.getSystemSetting('CPANEL_IMAP_SECURE');
+        imapUser = await storage.getSystemSetting('CPANEL_IMAP_USER');
+        imapPass = await storage.getSystemSetting('CPANEL_IMAP_PASS');
+      }
+
+      const imap = new (Imap as any)({
+        user: imapUser!.value,
+        password: imapPass!.value,
+        host: imapHost!.value,
+        port: parseInt(imapPort?.value || '993'),
+        tls: imapSecure?.value === 'true',
+        tlsOptions: { rejectUnauthorized: false }
+      });
+
+      imap.once('ready', () => {
       console.log('✅ מחובר לשרת IMAP');
       
       imap.openBox('INBOX', false, (err: any, box: any) => {
@@ -300,12 +312,16 @@ async function checkCpanelEmails(): Promise<void> {
       });
     });
 
-    imap.once('error', (err: any) => {
-      console.error('❌ שגיאת חיבור IMAP:', err.message);
-      reject(err);
-    });
+      imap.once('error', (err: any) => {
+        console.error('❌ שגיאת חיבור IMAP:', err.message);
+        reject(err);
+      });
 
-    imap.connect();
+      imap.connect();
+    } catch (error) {
+      console.error('Error loading IMAP settings:', error);
+      reject(error);
+    }
   });
 }
 
