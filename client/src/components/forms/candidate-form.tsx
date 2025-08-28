@@ -645,10 +645,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       )}
                     </div>
 
-                    {/* File Viewer - Same as candidate detail page */}
-                    <div className="h-full flex flex-col">
+                    {/* File Viewer - Same as candidate detail page with fixed height */}
+                    <div className="h-[600px] flex flex-col bg-white border rounded-lg overflow-hidden">
                       {/* File info */}
-                      <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
+                      <div className="flex justify-center p-3 bg-gray-50 border-b">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FileText className="w-4 h-4" />
                           קובץ קורות חיים - {uploadedFile.name}
@@ -656,7 +656,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                       
                       {/* CV Display - EXACTLY like candidate detail page */}
-                      <div className="flex-1 bg-white rounded border overflow-hidden">
+                      <div className="flex-1 bg-white overflow-hidden">
                         {uploadedFile.name.toLowerCase().includes('.pdf') ? (
                           <iframe
                             src={URL.createObjectURL(uploadedFile)}
@@ -670,7 +670,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             title="קורות חיים"
                           />
                         ) : uploadedFile.type.startsWith('image/') ? (
-                          <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-full h-full flex items-center justify-center p-4">
                             <img
                               src={URL.createObjectURL(uploadedFile)}
                               alt="קורות חיים"
