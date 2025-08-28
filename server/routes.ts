@@ -1889,12 +1889,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sentAt: new Date()
           });
           
+          // Add event for successful CV referral to employer
+          await storage.addCandidateEvent({
+            candidateId: candidateId,
+            eventType: 'sent_to_employer',
+            description: `קורות החיים נשלחו למעסיק - ${job.client?.name || job.title}`,
+            metadata: {
+              jobId: jobId,
+              jobTitle: job.title,
+              clientName: job.client?.name,
+              clientEmail: job.client?.email,
+              recommendation: recommendation,
+              sentBy: (req as AuthenticatedRequest).user?.claims?.sub,
+              timestamp: new Date().toISOString()
+            }
+          });
+          
         } catch (emailError) {
           console.error('Error sending referral email:', emailError);
           // Update email status to failed
           await storage.updateEmail(email.id, { 
             status: 'failed',
             errorMessage: emailError instanceof Error ? emailError.message : 'Unknown error'
+          });
+          
+          // Add event for failed CV referral attempt
+          await storage.addCandidateEvent({
+            candidateId: candidateId,
+            eventType: 'email_failed',
+            description: `שגיאה בשליחת קורות חיים למעסיק - ${job.client?.name || job.title}`,
+            metadata: {
+              jobId: jobId,
+              jobTitle: job.title,
+              clientName: job.client?.name,
+              clientEmail: job.client?.email,
+              error: emailError instanceof Error ? emailError.message : 'Unknown error',
+              timestamp: new Date().toISOString()
+            }
           });
         }
       }
