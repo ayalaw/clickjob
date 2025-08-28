@@ -286,9 +286,8 @@ export default function CandidateDetail() {
         timestamp: new Date().toISOString()
       }
     }).then(() => {
-      if (showEvents) {
-        queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}/events`] });
-      }
+      // Always refresh events list after adding a note
+      queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}/events`] });
       
       toast({
         title: "הערה נוספה",
