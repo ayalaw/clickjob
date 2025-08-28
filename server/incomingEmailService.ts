@@ -116,6 +116,8 @@ interface ParsedCandidate {
   lastName?: string;
   email?: string;
   phone?: string;
+  mobile?: string;
+  nationalId?: string;
   jobCode?: string;
   originalSubject?: string;
   originalBody?: string;
@@ -206,6 +208,11 @@ async function checkCpanelEmails(): Promise<void> {
           
           fetch.on('message', (msg: any, seqno: any) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
+            let messageUid: number;
+            
+            msg.once('attributes', (attrs: any) => {
+              messageUid = attrs.uid;
+            });
             
             msg.on('body', (stream: any, info: any) => {
               let buffer = '';
@@ -291,13 +298,17 @@ async function checkCpanelEmails(): Promise<void> {
                       
                       // סימון המייל כנקרא אחרי עיבוד מוצלח
                       try {
-                        imap.addFlags(msg.attrs.uid, ['\\Seen'], (err: any) => {
-                          if (err) {
-                            console.error('❌ שגיאה בסימון מייל כנקרא:', err.message);
-                          } else {
-                            console.log(`📧 מייל סומן כנקרא`);
-                          }
-                        });
+                        if (messageUid) {
+                          imap.addFlags(messageUid, ['\\Seen'], (err: any) => {
+                            if (err) {
+                              console.error('❌ שגיאה בסימון מייל כנקרא:', err.message);
+                            } else {
+                              console.log(`📧 מייל ${messageUid} סומן כנקרא`);
+                            }
+                          });
+                        } else {
+                          console.error('❌ לא נמצא UID למייל');
+                        }
                       } catch (markError) {
                         console.error('❌ שגיאה בסימון מייל:', markError);
                       }
@@ -683,9 +694,8 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
       try {
         const jobs = await storage.getJobs(100, 0);
         const matchingJob = jobs.jobs.find(job => 
-          job.id === candidateData.jobCode ||
-          job.title.includes(candidateData.jobCode!) ||
-          job.description?.includes(candidateData.jobCode!)
+          job.jobCode === candidateData.jobCode ||
+          (job.additionalCodes && job.additionalCodes.includes(candidateData.jobCode!))
         );
         
         if (matchingJob) {
