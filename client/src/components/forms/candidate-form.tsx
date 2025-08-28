@@ -138,9 +138,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     },
   });
 
-  // Load existing CV if candidate exists
+  // Load existing CV if candidate exists - BUT DON'T CLEAR if it's a new candidate
   useEffect(() => {
-    if (candidate?.cvPath && candidate.cvPath.trim()) {
+    if (candidate && candidate?.cvPath && candidate.cvPath.trim()) {
       let cvPath = candidate.cvPath.trim();
       
       // Build proper URL - handle both "uploads/file.pdf" and "file.pdf" formats
@@ -171,10 +171,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       
       setUploadedFiles([existingCvFile]);
       setSelectedFile(existingCvFile);
-    } else {
-      setUploadedFiles([]);
-      setSelectedFile(null);
     }
+    // DON'T clear files if no candidate - this allows new file uploads to work
   }, [candidate]);
 
   useEffect(() => {
@@ -237,6 +235,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     // Replace existing files
     setUploadedFiles([newFile]);
     setSelectedFile(newFile);
+    
+    console.log('File uploaded:', newFile);
+    console.log('Selected file set to:', newFile);
     
     toast({
       title: "קובץ נבחר בהצלחה",
@@ -413,7 +414,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
-                {!selectedFile ? (
+                {console.log('Rendering with selectedFile:', selectedFile)}
+                {(!selectedFile || !selectedFile.url) ? (
                   // Upload area when no file is uploaded
                   <div className="h-full">
                     <label className="cursor-pointer h-full w-full block">
