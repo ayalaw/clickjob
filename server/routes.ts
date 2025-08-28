@@ -717,6 +717,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/candidates/:id', isAuthenticated, upload.single('cv'), async (req, res) => {
     try {
+      // Get current candidate to check for status changes
+      const currentCandidate = await storage.getCandidate(req.params.id);
+      
       // Handle tags array conversion if it comes as a string
       const bodyData = { ...req.body };
       if (bodyData.tags && typeof bodyData.tags === 'string') {
@@ -747,6 +750,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         }
       });
+      
+      // Check if status was manually changed and add specific event
+      if (candidateData.status && currentCandidate?.status !== candidateData.status) {
+        const statusTranslations = {
+          'available': 'זמין',
+          'employed': 'מועסק',
+          'inactive': 'לא פעיל',
+          'blacklisted': 'ברשימה שחורה'
+        };
+        
+        await storage.addCandidateEvent({
+          candidateId: req.params.id,
+          eventType: 'status_change',
+          description: `סטטוס המועמד השתנה מ-${statusTranslations[currentCandidate?.status as keyof typeof statusTranslations] || currentCandidate?.status} ל-${statusTranslations[candidateData.status as keyof typeof statusTranslations] || candidateData.status}`,
+          metadata: {
+            previousStatus: currentCandidate?.status,
+            newStatus: candidateData.status,
+            changeType: 'manual',
+            updatedBy: req.user?.claims?.sub,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
       
       res.json(candidate);
     } catch (error) {
@@ -1170,6 +1196,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: new Date().toISOString()
           }
         });
+        
+        // Update candidate status automatically when applying to a job
+        await storage.updateCandidate(applicationData.candidateId, { status: 'employed' });
       }
       
       res.status(201).json(application);
@@ -1202,6 +1231,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: new Date().toISOString()
           }
         });
+        
+        // Update candidate status automatically based on application status
+        if (applicationData.status === 'hired') {
+          await storage.updateCandidate(application.candidateId, { status: 'employed' });
+        } else if (applicationData.status === 'interview_scheduled') {
+          await storage.updateCandidate(application.candidateId, { status: 'employed' });
+        } else if (applicationData.status === 'rejected') {
+          await storage.updateCandidate(application.candidateId, { status: 'available' });
+        }
       }
       
       res.json(application);
@@ -1404,6 +1442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
         
+        // Update candidate status automatically when sent to employer
+        await storage.updateCandidate(candidateId, { status: 'employed' });
+        
         res.json({ success: true });
       } else {
         await storage.createEmail({
@@ -1475,6 +1516,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: new Date().toISOString()
           }
         });
+        
+        // Update candidate status automatically when invited to interview
+        await storage.updateCandidate(candidateId, { status: 'employed' });
         
         res.json({ success: true });
       } else {
@@ -1550,6 +1594,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: new Date().toISOString()
             }
           });
+          
+          // Update candidate status automatically when sent in shortlist
+          await storage.updateCandidate(candidate.id, { status: 'employed' });
         }
         
         res.json({ success: true });
@@ -2027,6 +2074,9 @@ ${recommendation}
               timestamp: new Date().toISOString()
             }
           });
+          
+          // Update candidate status automatically when CV sent to employer
+          await storage.updateCandidate(candidateId, { status: 'employed' });
           
         } catch (emailError) {
           console.error('Error sending referral email:', emailError);
