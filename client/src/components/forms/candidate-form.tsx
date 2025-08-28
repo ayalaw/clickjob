@@ -624,113 +624,92 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     )}
                   </div>
                 ) : (
-                  // File display when uploaded
-                  <div className="space-y-4">
-                    {/* File Header */}
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <FileText className="w-6 h-6 text-green-600" />
-                        <div>
-                          <p className="font-medium text-green-800">{uploadedFile.name}</p>
-                          <p className="text-sm text-green-600">
-                            {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
+                  // File display when uploaded - EXACTLY like candidate detail
+                  <div className="h-full flex flex-col">
+                    {/* File info */}
+                    <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <FileText className="w-4 h-4" />
+                        קובץ קורות חיים - {uploadedFile.name}
                       </div>
-                      
-                      {isProcessingCV && (
-                        <div className="bg-blue-100 border border-blue-200 rounded p-3 text-sm text-blue-700">
-                          מעבד קורות חיים...
+                    </div>
+                    
+                    {/* CV Display */}
+                    <div className="flex-1 bg-white rounded border overflow-hidden">
+                      {uploadedFile.name.toLowerCase().includes('.pdf') ? (
+                        <iframe
+                          src={URL.createObjectURL(uploadedFile)}
+                          className="w-full h-full border-0"
+                          title="קורות חיים"
+                        />
+                      ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
+                        <iframe
+                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(URL.createObjectURL(uploadedFile))}`}
+                          className="w-full h-full border-0"
+                          title="קורות חיים"
+                        />
+                      ) : uploadedFile.type.startsWith('image/') ? (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <img
+                            src={URL.createObjectURL(uploadedFile)}
+                            alt="קורות חיים"
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
                         </div>
                       )}
                     </div>
-
-                    {/* EXACT COPY from candidate-detail.tsx */}
-                    <div className="h-full flex flex-col">
-                      {/* File info */}
-                      <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <FileText className="w-4 h-4" />
-                          קובץ קורות חיים - {uploadedFile.name}
-                        </div>
-                      </div>
-                      
-                      {/* CV Display */}
-                      <div className="flex-1 bg-white rounded border overflow-hidden">
-                        {uploadedFile.name.toLowerCase().includes('.pdf') ? (
-                          <iframe
-                            src={URL.createObjectURL(uploadedFile)}
-                            className="w-full h-full border-0"
-                            title="קורות חיים"
-                          />
-                        ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
-                          <iframe
-                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(URL.createObjectURL(uploadedFile))}`}
-                            className="w-full h-full border-0"
-                            title="קורות חיים"
-                          />
-                        ) : uploadedFile.type.startsWith('image/') ? (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <img
-                              src={URL.createObjectURL(uploadedFile)}
-                              alt="קורות חיים"
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Quick Summary of Extracted Data */}
-                    {extractedData && !extractedData.candidateCreated && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
-                          <Check className="w-4 h-4" />
-                          נתונים שחולצו מהקובץ
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2 text-sm">
-                          {extractedData.firstName && extractedData.lastName && (
-                            <div className="text-blue-700">
-                              <span className="font-medium">שם:</span> {extractedData.firstName} {extractedData.lastName}
-                            </div>
-                          )}
-                          {extractedData.email && (
-                            <div className="text-blue-700">
-                              <span className="font-medium">מייל:</span> {extractedData.email}
-                            </div>
-                          )}
-                          {extractedData.mobile && (
-                            <div className="text-blue-700">
-                              <span className="font-medium">נייד:</span> {extractedData.mobile}
-                            </div>
-                          )}
-                          {extractedData.profession && (
-                            <div className="text-blue-700">
-                              <span className="font-medium">מקצוע:</span> {extractedData.profession}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Option to upload different file */}
-                    <Button 
-                      variant="outline" 
-                      className="w-full mb-4"
-                      onClick={() => {
-                        setUploadedFile(null);
-                        setExtractedData(null);
-                        (document.querySelector('input[type="file"]') as HTMLInputElement).value = '';
-                      }}
-                    >
-                      העלה קובץ אחר
-                    </Button>
                   </div>
                 )}
+
+                
+                {/* Quick Summary of Extracted Data */}
+                {extractedData && !extractedData.candidateCreated && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                    <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      נתונים שחולצו מהקובץ
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      {extractedData.firstName && extractedData.lastName && (
+                        <div className="text-blue-700">
+                          <span className="font-medium">שם:</span> {extractedData.firstName} {extractedData.lastName}
+                        </div>
+                      )}
+                      {extractedData.email && (
+                        <div className="text-blue-700">
+                          <span className="font-medium">מייל:</span> {extractedData.email}
+                        </div>
+                      )}
+                      {extractedData.mobile && (
+                        <div className="text-blue-700">
+                          <span className="font-medium">נייד:</span> {extractedData.mobile}
+                        </div>
+                      )}
+                      {extractedData.profession && (
+                        <div className="text-blue-700">
+                          <span className="font-medium">מקצוע:</span> {extractedData.profession}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Option to upload different file */}
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={() => {
+                    setUploadedFile(null);
+                    setExtractedData(null);
+                    (document.querySelector('input[type="file"]') as HTMLInputElement).value = '';
+                  }}
+                >
+                  העלה קובץ אחר
+                </Button>
               </CardContent>
             </Card>
           </div>
