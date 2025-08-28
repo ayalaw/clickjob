@@ -445,21 +445,21 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display */}
+                    {/* CV Display - EXACT COPY FROM CANDIDATE DETAIL */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile.name.toLowerCase().includes('.pdf') ? (
+                      {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
                         <iframe
                           src={selectedFile.url}
                           className="w-full h-full border-0"
                           title="קורות חיים"
                         />
-                      ) : selectedFile.name.toLowerCase().includes('.doc') ? (
+                      ) : selectedFile?.name?.toLowerCase().includes('.doc') ? (
                         <iframe
                           src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + selectedFile.url)}`}
                           className="w-full h-full border-0"
                           title="קורות חיים"
                         />
-                      ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
+                      ) : selectedFile?.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
                         <img
                           src={selectedFile.url}
                           alt={selectedFile.name}
@@ -469,7 +469,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <p className="text-sm text-gray-600">{selectedFile.name}</p>
+                            <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
                             <p className="text-xs text-gray-500 mt-1">תצוגה מקדימה לא זמינה</p>
                           </div>
                         </div>
