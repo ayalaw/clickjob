@@ -445,17 +445,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - EXACT SAME LOGIC AS CANDIDATE DETAIL */}
+                    {/* CV Display - Simple working version */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
                       {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
                         <iframe
                           src={selectedFile.url}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
-                      ) : selectedFile?.name?.toLowerCase().includes('.doc') ? (
-                        <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url.startsWith('http') ? selectedFile.url : window.location.origin + selectedFile.url)}`}
                           className="w-full h-full border-0"
                           title="קורות חיים"
                         />
@@ -465,6 +459,26 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           alt={selectedFile.name}
                           className="w-full h-full object-contain"
                         />
+                      ) : selectedFile?.name?.toLowerCase().includes('.doc') ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                            <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
+                            <p className="text-xs text-gray-500 mb-4">קובץ Word נבחר בהצלחה</p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = selectedFile.url;
+                                link.download = selectedFile.name;
+                                link.click();
+                              }}
+                            >
+                              הורד קובץ
+                            </Button>
+                          </div>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
