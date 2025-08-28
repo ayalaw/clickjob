@@ -1589,12 +1589,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { smtpHost, smtpPort, smtpSecure, emailUser, emailPass } = req.body;
       
-      // Store outgoing email configuration
-      process.env.CPANEL_SMTP_HOST = smtpHost;
-      process.env.CPANEL_SMTP_PORT = smtpPort;
-      process.env.CPANEL_SMTP_SECURE = smtpSecure.toString();
-      process.env.CPANEL_EMAIL_USER = emailUser;
-      process.env.CPANEL_EMAIL_PASS = emailPass;
+      // Store outgoing email configuration in database
+      await storage.setSystemSetting('CPANEL_SMTP_HOST', smtpHost, 'cPanel SMTP server host');
+      await storage.setSystemSetting('CPANEL_SMTP_PORT', smtpPort, 'cPanel SMTP server port');
+      await storage.setSystemSetting('CPANEL_SMTP_SECURE', smtpSecure.toString(), 'cPanel SMTP secure connection');
+      await storage.setSystemSetting('CPANEL_EMAIL_USER', emailUser, 'cPanel email user account');
+      await storage.setSystemSetting('CPANEL_EMAIL_PASS', emailPass, 'cPanel email password');
       
       res.json({ success: true, message: "הגדרות מיילים יוצאים נשמרו בהצלחה" });
     } catch (error) {

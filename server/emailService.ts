@@ -1,44 +1,64 @@
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
-
-// Check for cPanel or Gmail configuration
-const isCpanel = process.env.CPANEL_SMTP_HOST && process.env.CPANEL_EMAIL_USER && process.env.CPANEL_EMAIL_PASS;
-const isGmail = process.env.GMAIL_USER && process.env.GMAIL_PASS;
-
-if (!isCpanel && !isGmail) {
-  console.warn("No email credentials set. Email functionality will be disabled.");
-}
+import { storage } from './storage';
 
 // Create transporter based on configuration
 let transporter: nodemailer.Transporter;
+let emailConfigLoaded = false;
 
-if (isCpanel) {
-  // cPanel SMTP configuration
-  transporter = nodemailer.createTransport({
-    host: process.env.CPANEL_SMTP_HOST, // e.g., mail.yourdomain.com
-    port: parseInt(process.env.CPANEL_SMTP_PORT || '587'),
-    secure: process.env.CPANEL_SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-      user: process.env.CPANEL_EMAIL_USER, // your full email address
-      pass: process.env.CPANEL_EMAIL_PASS, // your email password
-    },
-    tls: {
-      // Don't fail on invalid certificates
-      rejectUnauthorized: false
+// Load email configuration from database
+async function loadEmailConfig() {
+  try {
+    const smtpHost = await storage.getSystemSetting('CPANEL_SMTP_HOST');
+    const smtpPort = await storage.getSystemSetting('CPANEL_SMTP_PORT');
+    const smtpSecure = await storage.getSystemSetting('CPANEL_SMTP_SECURE');
+    const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
+    const emailPass = await storage.getSystemSetting('CPANEL_EMAIL_PASS');
+
+    if (smtpHost && emailUser && emailPass) {
+      // cPanel SMTP configuration
+      transporter = nodemailer.createTransport({
+        host: smtpHost.value,
+        port: parseInt(smtpPort?.value || '587'),
+        secure: smtpSecure?.value === 'true',
+        auth: {
+          user: emailUser.value,
+          pass: emailPass.value,
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+      console.log("📧 Email configured with cPanel SMTP from database");
+      emailConfigLoaded = true;
+      return;
     }
-  });
-  console.log("📧 Email configured with cPanel SMTP");
-} else if (isGmail) {
-  // Gmail transporter (existing)
-  transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS,
-    },
-  });
-  console.log("📧 Email configured with Gmail");
+
+    // Fallback to Gmail if cPanel not configured
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_PASS;
+    
+    if (gmailUser && gmailPass) {
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+      });
+      console.log("📧 Email configured with Gmail");
+      emailConfigLoaded = true;
+      return;
+    }
+
+    console.warn("No email credentials set. Email functionality will be disabled.");
+  } catch (error) {
+    console.error("Error loading email configuration:", error);
+  }
 }
+
+// Initialize email configuration
+loadEmailConfig();
 
 // Gmail API setup for reading incoming emails
 const oauth2Client = new google.auth.OAuth2(
@@ -71,13 +91,22 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<{ success: boolean; error?: string }> {
-  if (!isCpanel && !isGmail) {
+  // Ensure email configuration is loaded
+  if (!emailConfigLoaded) {
+    await loadEmailConfig();
+  }
+
+  if (!transporter) {
     return { success: false, error: "Email credentials not configured" };
   }
 
   try {
+    // Get the email user from database settings
+    const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
+    const defaultFrom = emailUser?.value || process.env.GMAIL_USER;
+
     const mailOptions = {
-      from: params.from || process.env.GMAIL_USER,
+      from: params.from || defaultFrom,
       to: params.to,
       cc: params.cc,
       subject: params.subject,
@@ -89,7 +118,7 @@ export async function sendEmail(params: EmailParams): Promise<{ success: boolean
     await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (error) {
-    console.error('Gmail email error:', error);
+    console.error('Email sending error:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown email error'
