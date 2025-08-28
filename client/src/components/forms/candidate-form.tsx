@@ -876,7 +876,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           </DialogHeader>
           <DialogFooter className="flex-row-reverse gap-2">
             <Button 
-              onClick={() => window.location.href = `/candidate/${duplicateDialog.existingCandidateId}`}
+              onClick={() => window.location.href = `/candidates/${duplicateDialog.existingCandidateId}`}
               className="bg-blue-600 hover:bg-blue-700"
             >
               מעבר לכרטיס המועמד
