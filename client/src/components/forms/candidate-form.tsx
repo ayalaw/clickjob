@@ -626,11 +626,33 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           title="קורות חיים"
                         />
                       ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
-                        <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(URL.createObjectURL(uploadedFile))}`}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+                          <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
+                            <div className="mb-6">
+                              <FileText className="w-24 h-24 text-blue-600 mx-auto mb-4" />
+                              <h2 className="text-2xl font-bold text-blue-800 mb-2">קובץ Word הועלה</h2>
+                              <p className="text-blue-600 text-lg">{uploadedFile.name}</p>
+                              <p className="text-sm text-gray-600 mt-2">
+                                גודל: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                            
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                              <div className="flex items-center justify-center mb-2">
+                                <Check className="w-6 h-6 text-green-600 mr-2" />
+                                <span className="text-green-800 font-medium text-lg">קובץ הועלה בהצלחה!</span>
+                              </div>
+                              <p className="text-green-700 text-sm">
+                                הקובץ מוכן לשמירה ויוצג בפורמט מלא בעמוד המועמד
+                              </p>
+                            </div>
+
+                            <div className="text-blue-600 text-sm">
+                              <p className="mb-2">💾 הקובץ נשמר זמנית בזיכרון</p>
+                              <p>📄 תצוגה מלאה תהיה זמינה לאחר השמירה</p>
+                            </div>
+                          </div>
+                        </div>
                       ) : uploadedFile.type.startsWith('image/') ? (
                         <div className="w-full h-full flex items-center justify-center">
                           <img
@@ -641,7 +663,14 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         </div>
                       ) : (
                         <div className="flex items-center justify-center h-full">
-                          <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
+                          <div className="text-center bg-gray-50 rounded-lg p-8">
+                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-600 mb-2">{uploadedFile.name}</h3>
+                            <p className="text-sm text-gray-500">קובץ הועלה בהצלחה</p>
+                            <p className="text-xs text-gray-400 mt-2">
+                              גודל: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
