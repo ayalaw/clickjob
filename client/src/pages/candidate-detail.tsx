@@ -51,6 +51,9 @@ export default function CandidateDetail() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [referToJobDialogOpen, setReferToJobDialogOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
   const [recommendation, setRecommendation] = useState("");
   const [jobSearchTerm, setJobSearchTerm] = useState("");
@@ -376,6 +379,38 @@ export default function CandidateDetail() {
     }
   };
 
+  const handleStatusChange = async () => {
+    if (!newStatus || !candidate || newStatus === candidate.status) return;
+    
+    if (isUpdatingStatus) return; // Prevent double clicks
+    setIsUpdatingStatus(true);
+
+    try {
+      await updateMutation.mutateAsync({ status: newStatus });
+      
+      toast({
+        title: "סטטוס עודכן",
+        description: "סטטוס המועמד עודכן בהצלחה",
+      });
+      
+      setNewStatus("");
+      setStatusDialogOpen(false);
+      
+      // Refresh events to show the new status change event
+      if (showEvents) {
+        queryClient.invalidateQueries({ queryKey: [`/api/candidates/${id}/events`] });
+      }
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לעדכן את הסטטוס",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const updateMutation = useMutation({
     mutationFn: async (updatedData: Record<string, string>) => {
       return apiRequest('PUT', `/api/candidates/${id}`, updatedData);
@@ -631,6 +666,61 @@ export default function CandidateDetail() {
                 <History className="w-4 h-4" />
                 אירועים אחרונים
               </Button>
+              
+              <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 text-blue-600 border-blue-200"
+                  >
+                    📊 שנה סטטוס
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle>שנה סטטוס מועמד</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">סטטוס נוכחי: {
+                        candidate.status === 'available' ? 'זמין' :
+                        candidate.status === 'employed' ? 'מועסק' :
+                        candidate.status === 'inactive' ? 'לא פעיל' :
+                        candidate.status === 'blacklisted' ? 'ברשימה שחורה' :
+                        candidate.status
+                      }</label>
+                      <Select value={newStatus} onValueChange={setNewStatus}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="בחר סטטוס חדש" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">זמין</SelectItem>
+                          <SelectItem value="employed">מועסק</SelectItem>
+                          <SelectItem value="inactive">לא פעיל</SelectItem>
+                          <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setStatusDialogOpen(false);
+                          setNewStatus('');
+                        }}
+                      >
+                        ביטול
+                      </Button>
+                      <Button 
+                        onClick={handleStatusChange}
+                        disabled={isUpdatingStatus || !newStatus || newStatus === candidate.status}
+                      >
+                        {isUpdatingStatus ? "מעדכן..." : "💾 עדכן סטטוס"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
               
               <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
                 <DialogTrigger asChild>
