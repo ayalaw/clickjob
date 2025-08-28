@@ -447,52 +447,61 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - Working version with proper file type detection */}
+                    {/* CV Display - Show file always for debugging */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
-                        <iframe
-                          src={selectedFile.url}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
-                      ) : selectedFile?.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
-                        <img
-                          src={selectedFile.url}
-                          alt={selectedFile.name}
-                          className="w-full h-full object-contain"
-                        />
-                      ) : selectedFile?.name?.toLowerCase().includes('.doc') || 
-                           selectedFile?.type?.includes('word') || 
-                           selectedFile?.type?.includes('document') ||
-                           selectedFile?.type?.includes('officedocument') ? (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                            <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
-                            <p className="text-xs text-gray-500 mb-4">קובץ Word נבחר בהצלחה</p>
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                          <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
+                          <p className="text-xs text-gray-500 mb-2">סוג: {selectedFile?.type}</p>
+                          <p className="text-xs text-gray-500 mb-4">קובץ נבחר בהצלחה!</p>
+                          {selectedFile?.file && (
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = selectedFile.url;
-                                link.download = selectedFile.name;
-                                link.click();
+                              onClick={async () => {
+                                try {
+                                  // Try to extract data from the Word file
+                                  const formData = new FormData();
+                                  formData.append('file', selectedFile.file);
+                                  
+                                  const response = await fetch('/api/extract-cv-data', {
+                                    method: 'POST',
+                                    body: formData
+                                  });
+                                  
+                                  if (response.ok) {
+                                    const data = await response.json();
+                                    console.log('Extracted data:', data);
+                                    
+                                    // Update form fields with extracted data
+                                    if (data.firstName) form.setValue('firstName', data.firstName);
+                                    if (data.lastName) form.setValue('lastName', data.lastName);
+                                    if (data.email) form.setValue('email', data.email);
+                                    if (data.phone) form.setValue('mobile', data.phone);
+                                    if (data.nationalId) form.setValue('nationalId', data.nationalId);
+                                    
+                                    alert('נתונים חולצו בהצלחה מקורות החיים!');
+                                  } else {
+                                    throw new Error('Failed to extract data');
+                                  }
+                                } catch (error) {
+                                  console.error('Error extracting data:', error);
+                                  alert('שגיאה בחילוץ נתונים. מוריד את הקובץ במקום.');
+                                  
+                                  // Fallback to download
+                                  const link = document.createElement('a');
+                                  link.href = selectedFile.url;
+                                  link.download = selectedFile.name;
+                                  link.click();
+                                }
                               }}
                             >
-                              הורד קובץ
+                              חלץ נתונים מהקובץ
                             </Button>
-                          </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
-                            <p className="text-xs text-gray-500 mt-1">תצוגה מקדימה לא זמינה</p>
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
