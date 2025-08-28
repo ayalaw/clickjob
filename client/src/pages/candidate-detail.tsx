@@ -115,11 +115,12 @@ export default function CandidateDetail() {
     if (isAuthenticated) {
       setJobsLoading(true);
       apiRequest('GET', '/api/jobs')
-        .then((response: any) => {
-          console.log('Jobs API response:', response);
-          if (response && response.jobs && Array.isArray(response.jobs)) {
-            setJobsList(response.jobs);
-            console.log('Set jobs list:', response.jobs);
+        .then(async (response: Response) => {
+          const data = await response.json();
+          console.log('Jobs API response:', data);
+          if (data && data.jobs && Array.isArray(data.jobs)) {
+            setJobsList(data.jobs);
+            console.log('Set jobs list:', data.jobs);
           } else {
             console.log('No jobs found in response');
             setJobsList([]);
