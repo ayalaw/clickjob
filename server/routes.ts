@@ -1583,6 +1583,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send test email
+  app.post('/api/test-email', async (req: any, res) => {
+    try {
+      const { to, subject, text } = req.body;
+      
+      await sendEmail({
+        to,
+        subject: subject || 'בדיקת מייל ממערכת הגיוס',
+        text: text || 'זהו מייל ניסיון לבדיקת הגדרות המערכת.',
+        from: 'dolev@h-group.org.il'
+      });
+      
+      res.json({ success: true, message: 'מייל נשלח בהצלחה' });
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      res.status(500).json({ success: false, message: 'שגיאה בשליחת המייל', error: error.message });
+    }
+  });
+
   // Test email connection
   app.post('/api/email/test', isAuthenticated, async (req: any, res) => {
     try {
