@@ -256,32 +256,17 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         // The actual data is inside extractedData
         const data = result.extractedData || result;
         
-        // Check if candidate already exists
-        if (data.email || data.mobile) {
-          try {
-            const checkResponse = await fetch('/api/candidates/check-duplicate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: data.email,
-                mobile: data.mobile
-              })
-            });
-            
-            if (checkResponse.ok) {
-              const checkResult = await checkResponse.json();
-              if (checkResult.exists) {
-                toast({
-                  title: "מועמד כבר קיים במערכת!",
-                  description: `המועמד ${checkResult.candidate.firstName} ${checkResult.candidate.lastName} כבר רשום במערכת`,
-                  variant: "destructive",
-                });
-                return; // Don't fill the form if candidate exists
-              }
-            }
-          } catch (error) {
-            console.error('Error checking duplicate:', error);
-          }
+        // Check if there's an error indicating candidate already exists
+        if (result.error && (
+          result.error.includes('duplicate key value violates unique constraint') ||
+          result.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')
+        )) {
+          toast({
+            title: "מועמד כבר קיים במערכת!",
+            description: `המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`,
+            variant: "destructive",
+          });
+          return; // Don't fill the form if candidate exists
         }
         
         // Update form fields with extracted data
