@@ -445,7 +445,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - EXACT COPY FROM CANDIDATE DETAIL */}
+                    {/* CV Display - EXACT SAME LOGIC AS CANDIDATE DETAIL */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
                       {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
                         <iframe
@@ -455,7 +455,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         />
                       ) : selectedFile?.name?.toLowerCase().includes('.doc') ? (
                         <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + selectedFile.url)}`}
+                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url.startsWith('http') ? selectedFile.url : window.location.origin + selectedFile.url)}`}
                           className="w-full h-full border-0"
                           title="קורות חיים"
                         />
