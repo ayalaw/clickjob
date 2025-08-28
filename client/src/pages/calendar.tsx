@@ -277,100 +277,150 @@ export default function CalendarPage() {
       </div>
 
       {/* Weekly Calendar View */}
-      <div className="grid grid-cols-7 gap-1 border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
         {/* Day Headers */}
-        {weekDays.map((day, index) => (
-          <div 
-            key={day.toISOString()} 
-            className={`p-4 text-center border-b border-gray-200 ${
-              isToday(day) ? 'bg-blue-50 text-blue-600 font-bold' : 'bg-gray-50'
-            }`}
-          >
-            <div className="text-sm text-gray-600">{dayNames[day.getDay()]}</div>
-            <div className={`text-xl ${isToday(day) ? 'text-blue-600' : ''}`}>
-              {day.getDate()}
-            </div>
+        <div className="grid grid-cols-8 gap-0">
+          <div className="p-4 text-center border-b border-gray-200 bg-gray-50 text-sm font-medium">
+            שעה
           </div>
-        ))}
+          {weekDays.map((day) => (
+            <div 
+              key={day.toISOString()} 
+              className={`p-4 text-center border-b border-gray-200 border-l ${
+                isToday(day) ? 'bg-blue-50 text-blue-600 font-bold' : 'bg-gray-50'
+              }`}
+            >
+              <div className="text-sm text-gray-600">{dayNames[day.getDay()]}</div>
+              <div className={`text-xl ${isToday(day) ? 'text-blue-600' : ''}`}>
+                {day.getDate()}
+              </div>
+            </div>
+          ))}
+        </div>
 
-        {/* Day Content */}
-        {weekDays.map((day) => {
-          const dayEvents = getEventsForDay(day);
+        {/* Hour Rows */}
+        {Array.from({ length: 11 }, (_, i) => {
+          const hour = i + 8; // Hours from 8 to 18
+          const hourString = `${hour.toString().padStart(2, '0')}:00`;
           
           return (
-            <div 
-              key={`content-${day.toISOString()}`} 
-              className="min-h-[200px] p-2 border-l border-gray-200 last:border-l-0"
-            >
-              <div className="space-y-1">
-                {dayEvents.map((event) => (
-                  <div
-                    key={`${event.type}-${event.id}`}
-                    className={`p-2 rounded text-xs ${
-                      event.type === 'reminder' 
-                        ? 'bg-blue-100 text-blue-800 border-l-2 border-blue-500' 
-                        : 'bg-purple-100 text-purple-800 border-l-2 border-purple-500'
-                    }`}
+            <div key={hour} className="grid grid-cols-8 gap-0 min-h-[60px]">
+              {/* Hour Label */}
+              <div className="p-2 text-center border-b border-gray-200 bg-gray-50 text-sm font-medium flex items-center justify-center">
+                {hourString}
+              </div>
+              
+              {/* Day Columns */}
+              {weekDays.map((day) => {
+                const dayEvents = getEventsForDay(day);
+                const hourEvents = dayEvents.filter(event => {
+                  const eventDate = new Date(event.type === 'reminder' ? event.reminderDate : event.eventDate);
+                  return eventDate.getHours() === hour;
+                });
+                
+                return (
+                  <div 
+                    key={`${day.toISOString()}-${hour}`} 
+                    className="p-1 border-b border-l border-gray-200 min-h-[60px]"
                   >
-                    <div className="font-medium truncate">
-                      {formatTime(event.type === 'reminder' ? event.reminderDate : event.eventDate)} - {event.title}
-                    </div>
-                    {event.candidate && (
-                      <div className="text-xs opacity-75 truncate">
-                        {event.candidate.firstName} {event.candidate.lastName}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1 mt-1">
-                      {event.type === 'reminder' && (
-                        <>
-                          {!event.isCompleted ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-12 p-0 text-xs bg-green-100 text-green-700 hover:bg-green-200"
-                              onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: true })}
-                            >
-                              בוצע
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-12 p-0 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                              onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: false })}
-                            >
-                              ממתין
-                            </Button>
+                    <div className="space-y-1">
+                      {hourEvents.map((event) => (
+                        <div
+                          key={`${event.type}-${event.id}`}
+                          className={`p-2 rounded text-xs ${
+                            event.type === 'reminder' 
+                              ? 'bg-blue-100 text-blue-800 border-l-2 border-blue-500' 
+                              : 'bg-purple-100 text-purple-800 border-l-2 border-purple-500'
+                          }`}
+                        >
+                          <div className="font-medium mb-1">
+                            {event.title}
+                          </div>
+                          
+                          {event.candidate && (
+                            <div className="text-xs opacity-75 mb-1">
+                              👤 {event.candidate.firstName} {event.candidate.lastName}
+                            </div>
                           )}
-                        </>
-                      )}
-                      {event.type === 'interview' && (
-                        <>
-                          {(event as InterviewEventWithDetails).status === 'scheduled' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-12 p-0 text-xs bg-green-100 text-green-700 hover:bg-green-200"
-                              onClick={() => updateInterviewEventStatus.mutate({ id: event.id, status: 'completed' })}
-                            >
-                              בוצע
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-12 p-0 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                              onClick={() => updateInterviewEventStatus.mutate({ id: event.id, status: 'scheduled' })}
-                            >
-                              ממתין
-                            </Button>
+                          
+                          {event.job && (
+                            <div className="text-xs opacity-75 mb-1">
+                              💼 {event.job.title}
+                            </div>
                           )}
-                        </>
-                      )}
+                          
+                          {event.client && (
+                            <div className="text-xs opacity-75 mb-1">
+                              🏢 {event.client.companyName}
+                            </div>
+                          )}
+                          
+                          {event.type === 'reminder' && event.description && (
+                            <div className="text-xs opacity-75 mb-1">
+                              📝 {event.description}
+                            </div>
+                          )}
+                          
+                          {event.type === 'interview' && (event as InterviewEventWithDetails).description && (
+                            <div className="text-xs opacity-75 mb-1">
+                              📝 {(event as InterviewEventWithDetails).description}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-1 mt-1">
+                            {event.type === 'reminder' && (
+                              <>
+                                {!event.isCompleted ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-12 p-0 text-xs bg-green-100 text-green-700 hover:bg-green-200"
+                                    onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: true })}
+                                  >
+                                    בוצע
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-12 p-0 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                    onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: false })}
+                                  >
+                                    ממתין
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                            {event.type === 'interview' && (
+                              <>
+                                {(event as InterviewEventWithDetails).status === 'scheduled' ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-12 p-0 text-xs bg-green-100 text-green-700 hover:bg-green-200"
+                                    onClick={() => updateInterviewEventStatus.mutate({ id: event.id, status: 'completed' })}
+                                  >
+                                    בוצע
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-12 p-0 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                    onClick={() => updateInterviewEventStatus.mutate({ id: event.id, status: 'scheduled' })}
+                                  >
+                                    ממתין
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           );
         })}
