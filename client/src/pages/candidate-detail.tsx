@@ -41,7 +41,7 @@ export default function CandidateDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [showEvents, setShowEvents] = useState(false);
+  const [showEvents, setShowEvents] = useState(true); // Show events by default
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
   const [selectedMessageType, setSelectedMessageType] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
