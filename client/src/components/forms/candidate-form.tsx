@@ -218,7 +218,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -239,10 +239,51 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     console.log('File uploaded:', newFile);
     console.log('Selected file set to:', newFile);
     
-    toast({
-      title: "קובץ נבחר בהצלחה",
-      description: "קובץ קורות החיים מוכן לצפייה במקור",
-    });
+    // Extract data automatically
+    try {
+      const formData = new FormData();
+      formData.append('cv', file);
+      
+      const response = await fetch('/api/extract-cv-data', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Extracted data:', data);
+        
+        // Update form fields with extracted data
+        if (data.firstName) form.setValue('firstName', data.firstName);
+        if (data.lastName) form.setValue('lastName', data.lastName);
+        if (data.email) form.setValue('email', data.email);
+        if (data.mobile) form.setValue('mobile', data.mobile);
+        if (data.phone) form.setValue('phone', data.phone);
+        if (data.nationalId) form.setValue('nationalId', data.nationalId);
+        if (data.city) form.setValue('city', data.city);
+        if (data.street) form.setValue('street', data.street);
+        if (data.houseNumber) form.setValue('houseNumber', data.houseNumber);
+        if (data.zipCode) form.setValue('zipCode', data.zipCode);
+        if (data.profession) form.setValue('profession', data.profession);
+        
+        toast({
+          title: "נתונים חולצו בהצלחה!",
+          description: "פרטי המועמד נוספו לטופס מקורות החיים",
+        });
+      } else {
+        console.error('Failed to extract data');
+        toast({
+          title: "קובץ נבחר בהצלחה",
+          description: "קובץ קורות החיים מוכן לצפייה במקור",
+        });
+      }
+    } catch (error) {
+      console.error('Error extracting data:', error);
+      toast({
+        title: "קובץ נבחר בהצלחה",
+        description: "קובץ קורות החיים מוכן לצפייה במקור",
+      });
+    }
   };
 
   const removeFile = (fileId: string) => {
@@ -447,61 +488,52 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - Show file always for debugging */}
+                    {/* CV Display - Show actual file content */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                          <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
-                          <p className="text-xs text-gray-500 mb-2">סוג: {selectedFile?.type}</p>
-                          <p className="text-xs text-gray-500 mb-4">קובץ נבחר בהצלחה!</p>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={async () => {
-                                try {
-                                  // Try to extract data from the Word file
-                                  const formData = new FormData();
-                                  if (selectedFile.file) {
-                                    formData.append('cv', selectedFile.file);
-                                  }
-                                  
-                                  const response = await fetch('/api/extract-cv-data', {
-                                    method: 'POST',
-                                    body: formData
-                                  });
-                                  
-                                  if (response.ok) {
-                                    const data = await response.json();
-                                    console.log('Extracted data:', data);
-                                    
-                                    // Update form fields with extracted data
-                                    if (data.firstName) form.setValue('firstName', data.firstName);
-                                    if (data.lastName) form.setValue('lastName', data.lastName);
-                                    if (data.email) form.setValue('email', data.email);
-                                    if (data.phone) form.setValue('mobile', data.phone);
-                                    if (data.nationalId) form.setValue('nationalId', data.nationalId);
-                                    
-                                    alert('נתונים חולצו בהצלחה מקורות החיים!');
-                                  } else {
-                                    throw new Error('Failed to extract data');
-                                  }
-                                } catch (error) {
-                                  console.error('Error extracting data:', error);
-                                  alert('שגיאה בחילוץ נתונים. מוריד את הקובץ במקום.');
-                                  
-                                  // Fallback to download
-                                  const link = document.createElement('a');
-                                  link.href = selectedFile.url;
-                                  link.download = selectedFile.name;
-                                  link.click();
-                                }
+                      {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
+                        <iframe
+                          src={selectedFile.url}
+                          className="w-full h-full border-0"
+                          title="קורות חיים"
+                        />
+                      ) : selectedFile?.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
+                        <img
+                          src={selectedFile.url}
+                          alt={selectedFile.name}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : selectedFile?.name?.toLowerCase().includes('.doc') || 
+                           selectedFile?.type?.includes('word') || 
+                           selectedFile?.type?.includes('document') ||
+                           selectedFile?.type?.includes('officedocument') ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                            <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
+                            <p className="text-xs text-gray-500 mb-4">קובץ Word - נתונים חולצו אוטומטית</p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = selectedFile.url;
+                                link.download = selectedFile.name;
+                                link.click();
                               }}
                             >
-                              חלץ נתונים מהקובץ
+                              הורד קובץ
                             </Button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
+                            <p className="text-xs text-gray-500 mt-1">תצוגה מקדימה לא זמינה</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
