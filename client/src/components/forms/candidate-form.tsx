@@ -461,7 +461,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           alt={selectedFile.name}
                           className="w-full h-full object-contain"
                         />
-                      ) : selectedFile?.name?.toLowerCase().includes('.doc') ? (
+                      ) : selectedFile?.name?.toLowerCase().includes('.doc') || selectedFile?.type?.includes('word') || selectedFile?.type?.includes('document') ? (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
