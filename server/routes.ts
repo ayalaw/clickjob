@@ -492,6 +492,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check for duplicate candidates
+  app.post('/api/candidates/check-duplicate', isAuthenticated, async (req, res) => {
+    try {
+      const { email, mobile } = req.body;
+      
+      if (!email && !mobile) {
+        return res.json({ exists: false });
+      }
+      
+      const candidates = await storage.getCandidates();
+      const duplicate = candidates.find(candidate => 
+        (email && candidate.email === email) || 
+        (mobile && candidate.mobile === mobile)
+      );
+      
+      if (duplicate) {
+        res.json({ 
+          exists: true, 
+          candidate: {
+            firstName: duplicate.firstName,
+            lastName: duplicate.lastName,
+            email: duplicate.email,
+            mobile: duplicate.mobile
+          }
+        });
+      } else {
+        res.json({ exists: false });
+      }
+    } catch (error) {
+      console.error("Error checking duplicate candidate:", error);
+      res.status(500).json({ message: "Failed to check duplicate" });
+    }
+  });
+
   // Candidate routes
   app.get('/api/candidates', isAuthenticated, async (req, res) => {
     try {
