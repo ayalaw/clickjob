@@ -2009,7 +2009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Send email to employer using the professional template
-      const emailSubject = `המלצה על מועמד: ${candidate.firstName} ${candidate.lastName} - ${job.title}`;
+      const emailSubject = `מועמד לתפקיד: ${job.title}`;
       const currentDate = new Date().toLocaleDateString('he-IL');
       const userFullName = (req as AuthenticatedRequest).user?.displayName || 'רכז/ת הגיוס';
       
