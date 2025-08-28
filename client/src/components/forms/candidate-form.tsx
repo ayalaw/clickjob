@@ -648,50 +648,31 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       )}
                     </div>
 
-                    {/* File Viewer - Display original file */}
-                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-                        <h4 className="font-medium text-gray-800">תצוגת קורות החיים</h4>
-                        <div className="text-xs text-gray-600">
-                          קובץ מועלה ומוכן לשמירה
+                    {/* File Viewer - Same as candidate detail page */}
+                    <div className="h-full flex flex-col">
+                      {/* File info */}
+                      <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FileText className="w-4 h-4" />
+                          קובץ קורות חיים - {uploadedFile.name}
                         </div>
                       </div>
                       
-                      <div className="h-[800px] bg-white overflow-auto">
-                        {uploadedFile.type === 'application/pdf' ? (
-                          // PDF Display - Show original file using embed/iframe
-                          <div className="w-full h-full">
-                            <embed
-                              src={URL.createObjectURL(uploadedFile)}
-                              type="application/pdf"
-                              width="100%"
-                              height="100%"
-                              className="border-0"
-                            />
-                          </div>
-                        ) : uploadedFile.type.includes('document') || uploadedFile.name.endsWith('.doc') || uploadedFile.name.endsWith('.docx') ? (
-                          // DOC/DOCX - Show file info and preview message
-                          <div className="w-full h-full bg-white overflow-auto">
-                            <div className="p-6 text-center">
-                              <div className="flex items-center justify-center gap-3 mb-4">
-                                <FileText className="w-16 h-16 text-blue-600" />
-                                <div className="text-right">
-                                  <h3 className="font-bold text-blue-800 text-lg">{uploadedFile.name}</h3>
-                                  <p className="text-sm text-blue-600">
-                                    מסמך Word - {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                                <p className="text-blue-800 font-medium mb-2">קובץ Word מועלה בהצלחה</p>
-                                <p className="text-sm text-blue-600">
-                                  הקובץ נשמר ויהיה זמין לצפייה בעמוד המועמד לאחר השמירה
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+                      {/* CV Display - EXACTLY like candidate detail page */}
+                      <div className="flex-1 bg-white rounded border overflow-hidden">
+                        {uploadedFile.name.toLowerCase().includes('.pdf') ? (
+                          <iframe
+                            src={URL.createObjectURL(uploadedFile)}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
+                          <iframe
+                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(URL.createObjectURL(uploadedFile))}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
                         ) : uploadedFile.type.startsWith('image/') ? (
-                          // Image files - display directly
                           <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={URL.createObjectURL(uploadedFile)}
@@ -700,14 +681,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             />
                           </div>
                         ) : (
-                          // Fallback for unsupported file types
-                          <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                            <div className="text-center">
-                              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                              <p className="text-gray-600 text-lg font-medium mb-2">לא ניתן להציג קובץ זה</p>
-                              <p className="text-gray-500 text-sm mb-4">{uploadedFile.name}</p>
-                              <p className="text-sm text-gray-600">הקובץ לא נתמך לתצוגה מקדימה</p>
-                            </div>
+                          <div className="flex items-center justify-center h-full">
+                            <p className="text-gray-500">תצוגה מקדימה לא זמינה</p>
                           </div>
                         )}
                       </div>
