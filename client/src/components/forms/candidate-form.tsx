@@ -261,11 +261,49 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           result.error.includes('duplicate key value violates unique constraint') ||
           result.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')
         )) {
-          toast({
-            title: "מועמד כבר קיים במערכת!",
-            description: `המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`,
-            variant: "destructive",
-          });
+          // Find the existing candidate to get their ID
+          try {
+            const candidatesResponse = await fetch('/api/candidates');
+            if (candidatesResponse.ok) {
+              const candidatesData = await candidatesResponse.json();
+              const existingCandidate = candidatesData.candidates?.find((c: any) => 
+                (data.email && c.email === data.email) || 
+                (data.mobile && c.mobile === data.mobile)
+              );
+              
+              if (existingCandidate) {
+                toast({
+                  title: "מועמד קיים/דומה",
+                  description: (
+                    <div className="flex flex-col gap-2">
+                      <span>{`המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`}</span>
+                      <button 
+                        onClick={() => window.location.href = `/candidate/${existingCandidate.id}`}
+                        className="bg-white text-red-600 px-3 py-1 rounded text-sm hover:bg-red-50"
+                      >
+                        מעבר לכרטיס המועמד
+                      </button>
+                    </div>
+                  ),
+                  variant: "destructive",
+                  duration: 8000, // Longer duration for the button
+                });
+              } else {
+                toast({
+                  title: "מועמד קיים/דומה",
+                  description: `המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`,
+                  variant: "destructive",
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error finding existing candidate:', error);
+            toast({
+              title: "מועמד קיים/דומה",
+              description: `המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`,
+              variant: "destructive",
+            });
+          }
           return; // Don't fill the form if candidate exists
         }
         
