@@ -1101,6 +1101,23 @@ export default function CandidateDetail() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">סטטוס:</span>
+                      <Select
+                        value={fieldValues.status || ''}
+                        onValueChange={(value) => updateFieldValue('status', value)}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="בחר סטטוס" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">זמין</SelectItem>
+                          <SelectItem value="employed">מועסק</SelectItem>
+                          <SelectItem value="inactive">לא פעיל</SelectItem>
+                          <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                     {/* Notes Section */}
                     <div className="border-t pt-4 mt-4">

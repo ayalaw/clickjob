@@ -852,10 +852,22 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         <SelectValue placeholder="בחר סטטוס" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="available">זמין</SelectItem>
-                        <SelectItem value="employed">מועסק</SelectItem>
-                        <SelectItem value="inactive">לא פעיל</SelectItem>
-                        <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
+                        <SelectItem value="new">חדש במערכת</SelectItem>
+                        <SelectItem value="pending_initial_screening">ממתין לסינון ראשוני</SelectItem>
+                        <SelectItem value="in_initial_screening">בסינון ראשוני</SelectItem>
+                        <SelectItem value="passed_initial_screening">עבר סינון ראשוני</SelectItem>
+                        <SelectItem value="rejected_initial_screening">נפסל בסינון ראשוני</SelectItem>
+                        <SelectItem value="sent_to_employer">נשלח למעסיק</SelectItem>
+                        <SelectItem value="whatsapp_sent">נשלחה הודעת ווצאפ</SelectItem>
+                        <SelectItem value="phone_contacted">נוצר קשר טלפוני</SelectItem>
+                        <SelectItem value="waiting_employer_response">מועמד ממתין לתשובת מעסיק</SelectItem>
+                        <SelectItem value="invited_to_interview">זומן לראיון אצל מעסיק</SelectItem>
+                        <SelectItem value="attended_interview">הגיע לראיון אצל מעסיק</SelectItem>
+                        <SelectItem value="missed_interview">לא הגיע לראיון</SelectItem>
+                        <SelectItem value="passed_interview">עבר ראיון אצל מעסיק</SelectItem>
+                        <SelectItem value="rejected_by_employer">נפסל ע"י מעסיק</SelectItem>
+                        <SelectItem value="hired">התקבל לעבודה</SelectItem>
+                        <SelectItem value="employment_ended">סיים העסקה</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
