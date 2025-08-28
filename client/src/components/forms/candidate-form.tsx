@@ -116,7 +116,7 @@ interface CandidateFormProps {
 export default function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<(File & { serverPath?: string }) | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [isProcessingCV, setIsProcessingCV] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
@@ -231,7 +231,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       if (uploadResult.ok) {
         const result = await uploadResult.json();
         // Set the server path for immediate display
-        setUploadedFile({ ...file, serverPath: result.cvPath });
+        setUploadedFile(Object.assign(file, { serverPath: result.cvPath }));
       }
     } catch (error) {
       console.log("Upload for preview failed, will upload on save");
@@ -248,23 +248,29 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     try {
       let cvPath: string | undefined;
 
-      // Upload file if exists
+      // Use existing server path if available, otherwise upload
       if (uploadedFile) {
-        const formData = new FormData();
-        formData.append("cv", uploadedFile);
+        if ((uploadedFile as any).serverPath) {
+          // File already uploaded to server
+          cvPath = (uploadedFile as any).serverPath;
+        } else {
+          // Upload file now
+          const formData = new FormData();
+          formData.append("cv", uploadedFile);
 
-        const uploadResult = await fetch("/api/candidates/upload-cv", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
+          const uploadResult = await fetch("/api/candidates/upload-cv", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
 
-        if (!uploadResult.ok) {
-          throw new Error("Failed to upload CV");
+          if (!uploadResult.ok) {
+            throw new Error("Failed to upload CV");
+          }
+
+          const result = await uploadResult.json();
+          cvPath = result.cvPath;
         }
-
-        const result = await uploadResult.json();
-        cvPath = result.cvPath;
       }
 
       const candidateData = {
