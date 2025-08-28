@@ -34,24 +34,9 @@ async function loadEmailConfig() {
       return;
     }
 
-    // Fallback to Gmail if cPanel not configured
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailPass = process.env.GMAIL_PASS;
-    
-    if (gmailUser && gmailPass) {
-      transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: gmailUser,
-          pass: gmailPass,
-        },
-      });
-      console.log("📧 Email configured with Gmail");
-      emailConfigLoaded = true;
-      return;
-    }
-
-    console.warn("No email credentials set. Email functionality will be disabled.");
+    // Only use cPanel - no Gmail fallback
+    console.warn("❌ הגדרות cPanel לא נמצאו במסד הנתונים. יש להגדיר אותן בדף הגדרות המערכת.");
+    emailConfigLoaded = false;
   } catch (error) {
     console.error("Error loading email configuration:", error);
   }
