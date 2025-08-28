@@ -43,7 +43,8 @@ import {
   Save,
   Clock,
   History,
-  MessageCircle
+  MessageCircle,
+  Trash2
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -58,52 +59,14 @@ interface CandidateFormProps {
   onSuccess: () => void;
 }
 
-// Component to display text file content
-function TextFileViewer({ file }: { file: File }) {
-  const [content, setContent] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      setContent(text);
-      setLoading(false);
-    };
-    
-    reader.onerror = () => {
-      setError('שגיאה בקריאת הקובץ');
-      setLoading(false);
-    };
-    
-    reader.readAsText(file, 'UTF-8');
-  }, [file]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-500">טוען קובץ...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-red-500">{error}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full p-4 overflow-y-auto bg-white border rounded">
-      <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
-        {content}
-      </pre>
-    </div>
-  );
+// File upload interface - same as advanced form
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  file?: File;
 }
 
 const formSchema = z.object({
@@ -148,13 +111,14 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
-  const [uploadedFile, setUploadedFile] = useState<(File & { serverPath?: string }) | null>(null);
+  
+  // File handling - similar to advanced form
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [isProcessingCV, setIsProcessingCV] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState<string>("");
-  const [jobOpinion, setJobOpinion] = useState<string>("");
   
-  // Same states as candidate detail
+  // Same states as candidate detail for advanced features
   const [showEvents, setShowEvents] = useState(true);
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
   const [selectedMessageType, setSelectedMessageType] = useState("");
@@ -186,20 +150,59 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       street: candidate?.street || "",
       houseNumber: candidate?.houseNumber || "",
       zipCode: candidate?.zipCode || "",
-      gender: candidate?.gender || undefined,
-      maritalStatus: candidate?.maritalStatus || undefined,
+      gender: candidate?.gender,
+      maritalStatus: candidate?.maritalStatus,
       drivingLicense: candidate?.drivingLicense || false,
       address: candidate?.address || "",
       profession: candidate?.profession || "",
       experience: candidate?.experience || "",
       expectedSalary: candidate?.expectedSalary || "",
       status: candidate?.status || "available",
-      rating: candidate?.rating || undefined,
+      rating: candidate?.rating,
       notes: candidate?.notes || "",
       tags: candidate?.tags || "",
       recruitmentSource: candidate?.recruitmentSource || "",
     },
   });
+
+  // Load existing CV if candidate exists
+  useEffect(() => {
+    if (candidate?.cvPath && candidate.cvPath.trim()) {
+      let cvPath = candidate.cvPath.trim();
+      
+      // Build proper URL - handle both "uploads/file.pdf" and "file.pdf" formats
+      let finalUrl;
+      if (cvPath.startsWith('uploads/')) {
+        finalUrl = `/${cvPath}`;
+      } else if (cvPath.startsWith('/uploads/')) {
+        finalUrl = cvPath;
+      } else {
+        finalUrl = `/uploads/${cvPath}`;
+      }
+      
+      // Extract filename for display
+      const fileName = cvPath.split('/').pop() || 'קורות חיים';
+      
+      const existingCvFile: UploadedFile = {
+        id: 'existing-cv',
+        name: fileName,
+        size: 0,
+        type: fileName.toLowerCase().includes('.pdf') ? 'application/pdf' : 
+               fileName.toLowerCase().includes('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+               fileName.toLowerCase().includes('.doc') ? 'application/msword' : 
+               fileName.toLowerCase().includes('.jpg') || fileName.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
+               fileName.toLowerCase().includes('.png') ? 'image/png' :
+               fileName.toLowerCase().includes('.gif') ? 'image/gif' : 'application/octet-stream',
+        url: finalUrl,
+      };
+      
+      setUploadedFiles([existingCvFile]);
+      setSelectedFile(existingCvFile);
+    } else {
+      setUploadedFiles([]);
+      setSelectedFile(null);
+    }
+  }, [candidate]);
 
   useEffect(() => {
     if (candidate) {
@@ -235,6 +238,47 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     setFieldValues((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  // File helper functions
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      const newFile: UploadedFile = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file),
+        file,
+      };
+      setUploadedFiles(prev => [...prev, newFile]);
+      if (!selectedFile) {
+        setSelectedFile(newFile);
+      }
+    });
+    
+    toast({
+      title: "קובץ נבחר בהצלחה",
+      description: "קובץ קורות החיים מוכן לצפייה",
+    });
+  };
+
+  const removeFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    if (selectedFile?.id === fileId) {
+      setSelectedFile(uploadedFiles.find(f => f.id !== fileId) || null);
+    }
+  };
+
   const createCandidate = useMutation({
     mutationFn: async (data: FormData & { cvPath?: string }) => {
       const result = await apiRequest("POST", "/api/candidates", data);
@@ -261,7 +305,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     mutationFn: async (data: FormData & { cvPath?: string }) => {
       const result = await apiRequest("PUT", `/api/candidates/${candidate!.id}`, data);
       return await result.json();
-      return result;
     },
     onSuccess: (result) => {
       toast({
@@ -280,69 +323,30 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     },
   });
 
-  const handleFileUpload = async (file: File) => {
-    setUploadedFile(file);
-    setIsProcessingCV(false);
-    
-    toast({
-      title: "קובץ נבחר בהצלחה",
-      description: "קובץ קורות החיים מוכן לצפייה",
-    });
-
-    // Upload file immediately to server for display
-    try {
-      const formData = new FormData();
-      formData.append("cv", file);
-
-      const uploadResult = await fetch("/api/candidates/upload-cv", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      if (uploadResult.ok) {
-        const result = await uploadResult.json();
-        // Set the server path for immediate display
-        setUploadedFile(Object.assign(file, { serverPath: result.cvPath }));
-        
-        toast({
-          title: "קובץ הועלה לשרת",
-          description: "התצוגה המלאה כעת זמינה",
-        });
-      }
-    } catch (error) {
-      console.log("Upload for preview failed, will upload on save");
-      // File will still display locally for PDFs and images
-    }
-  };
-
   const onSubmit = async (data: FormData) => {
     try {
       let cvPath: string | undefined;
 
-      // Use existing server path if available, otherwise upload
-      if (uploadedFile) {
-        if ((uploadedFile as any).serverPath) {
-          // File already uploaded to server
-          cvPath = (uploadedFile as any).serverPath;
-        } else {
-          // Upload file now
-          const formData = new FormData();
-          formData.append("cv", uploadedFile);
+      // Upload CV file if there's one selected
+      if (selectedFile?.file) {
+        const formData = new FormData();
+        formData.append("cv", selectedFile.file);
 
-          const uploadResult = await fetch("/api/candidates/upload-cv", {
-            method: "POST",
-            body: formData,
-            credentials: "include",
-          });
+        const uploadResult = await fetch("/api/candidates/upload-cv", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
 
-          if (!uploadResult.ok) {
-            throw new Error("Failed to upload CV");
-          }
-
-          const result = await uploadResult.json();
-          cvPath = result.cvPath;
+        if (!uploadResult.ok) {
+          throw new Error("Failed to upload CV");
         }
+
+        const result = await uploadResult.json();
+        cvPath = result.cvPath;
+      } else if (candidate?.cvPath) {
+        // Keep existing CV if no new file uploaded
+        cvPath = candidate.cvPath;
       }
 
       const candidateData = {
@@ -405,17 +409,13 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       apiRequest('GET', '/api/jobs')
         .then(async (response: Response) => {
           const data = await response.json();
-          console.log('Jobs API response:', data);
           if (data && data.jobs && Array.isArray(data.jobs)) {
             setJobsList(data.jobs);
-            console.log('Set jobs list:', data.jobs);
           } else {
-            console.log('Unexpected jobs data structure:', data);
             setJobsList([]);
           }
         })
         .catch((error) => {
-          console.error('Error fetching jobs:', error);
           setJobsError(error);
           setJobsList([]);
         })
@@ -1103,186 +1103,141 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           </Card>
         )}
 
-        {/* Main Layout - 68% CV, 32% Details */}
-        <div className="flex gap-6 h-[calc(100vh-12rem)]">
-          {/* CV Display Card - 68% */}
-          <div className="flex-[2] min-w-0">
-            <Card className="h-full">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  {uploadedFile ? "קורות חיים" : "העלאת קורות חיים"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
-                {!uploadedFile ? (
-                  // Upload area when no file is uploaded
-                  <FileUpload 
-                    onFileSelect={(file: File | null) => file && handleFileUpload(file)} 
-                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
-                    maxSize={10 * 1024 * 1024}
-                  />
-                ) : (
-                  // EXACT COPY from candidate-detail.tsx
-                  <div className="h-full flex flex-col">
-                    {/* File info */}
-                    <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FileText className="w-4 h-4" />
-                        קובץ קורות חיים - {uploadedFile.name}
-                      </div>
-                    </div>
-                    
-                    {/* CV Display */}
-                    <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {(uploadedFile as any).serverPath ? (
-                        // Display from server after upload
-                        uploadedFile.name.toLowerCase().includes('.pdf') ? (
-                          <iframe
-                            src={`/uploads/${(uploadedFile as any).serverPath?.replace('uploads/', '')}`}
-                            className="w-full h-full border-0"
-                            title="קורות חיים"
-                          />
-                        ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
-                          <iframe
-                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + (uploadedFile as any).serverPath?.replace('uploads/', ''))}`}
-                            className="w-full h-full border-0"
-                            title="קורות חיים"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <img
-                              src={`/uploads/${(uploadedFile as any).serverPath?.replace('uploads/', '')}`}
-                              alt="קורות חיים"
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          </div>
-                        )
-                      ) : (
-                        // Display from local file before upload
-                        uploadedFile.name.toLowerCase().endsWith('.pdf') ? (
-                          <iframe
-                            src={URL.createObjectURL(uploadedFile)}
-                            className="w-full h-full border-0"
-                            title="קורות חיים"
-                          />
-                        ) : uploadedFile.type.startsWith('image/') ? (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <img
-                              src={URL.createObjectURL(uploadedFile)}
-                              alt="קורות חיים"
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 max-w-md">
-                              <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
-                              <h3 className="text-xl font-bold text-blue-800 mb-2">{uploadedFile.name}</h3>
-                              <p className="text-sm text-blue-600 mb-4">
-                                גודל: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                              
-                              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                                <Check className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                                <p className="text-green-800 font-medium">קובץ נשמר בהצלחה!</p>
-                                <p className="text-sm text-green-600 mt-1">
-                                  התצוגה המלאה תהיה זמינה בעמוד המועמד
-                                </p>
-                              </div>
-                              
-                              <p className="text-xs text-blue-500">
-                                💾 הקובץ מוכן לשמירה עם פרטי המועמד
-                              </p>
+        {/* Main Layout - EXACT SAME AS ADVANCED FORM */}
+        <div className="flex h-[calc(100vh-120px)]">
+          {/* Left Column - Files (35%) */}
+          <div className="w-[35%] p-6 bg-white border-l">
+            <div className="h-full flex flex-col">
+              {/* Upload Area */}
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="text-lg">קבצים</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 mb-2">גרור קבצים או</p>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <Button variant="outline" size="sm" type="button">
+                        בחר קבצים
+                      </Button>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">
+                      PDF, DOC, DOCX, JPG, PNG (עד 10MB)
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Files List */}
+              {uploadedFiles.length > 0 && (
+                <Card className="mb-4">
+                  <CardHeader>
+                    <CardTitle className="text-sm">קבצים שהועלו</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className={`flex items-center justify-between p-2 rounded border cursor-pointer hover:bg-gray-50 ${
+                            selectedFile?.id === file.id ? 'bg-blue-50 border-blue-300' : ''
+                          }`}
+                          onClick={() => setSelectedFile(file)}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                             </div>
                           </div>
-                        )
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFile(file);
+                              }}
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFile(file.id);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* File Preview */}
+              {selectedFile && (
+                <Card className="flex-1 min-h-0">
+                  <CardHeader>
+                    <CardTitle className="text-sm">תצוגה מקדימה</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[calc(100%-60px)] p-2">
+                    <div className="h-full w-full bg-gray-50 rounded overflow-hidden">
+                      {selectedFile.type.startsWith('image/') ? (
+                        <img
+                          src={selectedFile.url}
+                          alt={selectedFile.name}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : selectedFile.type === 'application/pdf' ? (
+                        <iframe
+                          src={selectedFile.url}
+                          className="w-full h-full border-0"
+                          title={selectedFile.name}
+                        />
+                      ) : selectedFile.name.toLowerCase().includes('.doc') ? (
+                        <iframe
+                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`}
+                          className="w-full h-full border-0"
+                          title={selectedFile.name}
+                        />
+                      ) : (
+                        <div className="h-full flex items-center justify-center">
+                          <div className="text-center">
+                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className="text-sm text-gray-600">{selectedFile.name}</p>
+                            <p className="text-xs text-gray-500 mt-1">תצוגה מקדימה לא זמינה</p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
-
-                {/* Quick Summary of Extracted Data */}
-                {extractedData && !extractedData.candidateCreated && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                    <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
-                      <Check className="w-4 h-4" />
-                      נתונים שחולצו מהקובץ
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2 text-sm">
-                      {extractedData.firstName && extractedData.lastName && (
-                        <div className="text-blue-700">
-                          <span className="font-medium">שם:</span> {extractedData.firstName} {extractedData.lastName}
-                        </div>
-                      )}
-                      {extractedData.email && (
-                        <div className="text-blue-700">
-                          <span className="font-medium">מייל:</span> {extractedData.email}
-                        </div>
-                      )}
-                      {extractedData.mobile && (
-                        <div className="text-blue-700">
-                          <span className="font-medium">נייד:</span> {extractedData.mobile}
-                        </div>
-                      )}
-                      {extractedData.profession && (
-                        <div className="text-blue-700">
-                          <span className="font-medium">מקצוע:</span> {extractedData.profession}
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => {
-                        // Auto-fill form with extracted data
-                        if (extractedData.firstName) form.setValue("firstName", extractedData.firstName);
-                        if (extractedData.lastName) form.setValue("lastName", extractedData.lastName);
-                        if (extractedData.email) form.setValue("email", extractedData.email);
-                        if (extractedData.mobile) form.setValue("mobile", extractedData.mobile);
-                        if (extractedData.profession) form.setValue("profession", extractedData.profession);
-                        
-                        setExtractedData(null);
-                        
-                        toast({
-                          title: "נתונים הועברו לטופס",
-                          description: "המידע מהקובץ הועבר לשדות הטופס",
-                        });
-                      }}
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      מלא נתונים בטופס
-                    </Button>
-                  </div>
-                )}
-
-                {/* Remove uploaded file button */}
-                {uploadedFile && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full mt-4"
-                    onClick={() => {
-                      setUploadedFile(null);
-                      setExtractedData(null);
-                      (document.querySelector('input[type="file"]') as HTMLInputElement).value = '';
-                    }}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    הסר קובץ
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
 
-          {/* Candidate Details Card - 32% */}
-          <div className="flex-1 min-w-0">
+          {/* Right Column - Form (65%) */}
+          <div className="flex-1 p-6 bg-gray-50">
             <div className="h-full overflow-y-auto">
               {/* Single Card with all candidate details */}
               <Card className="h-full">
                 <CardHeader className="pb-3">
-                  <div className="flex justify-end">
+                  <div className="flex justify-between items-center">
+                    <CardTitle>פרטי המועמד</CardTitle>
                     <Button 
                       onClick={candidate ? saveAllChanges : form.handleSubmit(onSubmit)} 
                       disabled={candidate ? updateMutation.isPending : (createCandidate.isPending || updateCandidate.isPending)}
@@ -1293,142 +1248,161 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   {candidate ? (
                     // Inline editing mode for existing candidate
                     <>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">שם פרטי:</span>
-                        <Input
-                          value={fieldValues.firstName || ''}
-                          onChange={(e) => updateFieldValue('firstName', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס שם פרטי"
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">שם פרטי:</label>
+                          <Input
+                            value={fieldValues.firstName || ''}
+                            onChange={(e) => updateFieldValue('firstName', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס שם פרטי"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">שם משפחה:</label>
+                          <Input
+                            value={fieldValues.lastName || ''}
+                            onChange={(e) => updateFieldValue('lastName', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס שם משפחה"
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">שם משפחה:</span>
-                        <Input
-                          value={fieldValues.lastName || ''}
-                          onChange={(e) => updateFieldValue('lastName', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס שם משפחה"
-                        />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">דוא״ל:</label>
+                          <Input
+                            value={fieldValues.email || ''}
+                            onChange={(e) => updateFieldValue('email', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס דוא״ל"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">טלפון נייד:</label>
+                          <Input
+                            value={fieldValues.mobile || ''}
+                            onChange={(e) => updateFieldValue('mobile', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס טלפון נייד"
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">דוא״ל:</span>
-                        <Input
-                          value={fieldValues.email || ''}
-                          onChange={(e) => updateFieldValue('email', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס דוא״ל"
-                        />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">טלפון בית:</label>
+                          <Input
+                            value={fieldValues.phone || ''}
+                            onChange={(e) => updateFieldValue('phone', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס טלפון בית"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">טלפון נוסף:</label>
+                          <Input
+                            value={fieldValues.phone2 || ''}
+                            onChange={(e) => updateFieldValue('phone2', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס טלפון נוסף"
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">טלפון נייד:</span>
-                        <Input
-                          value={fieldValues.mobile || ''}
-                          onChange={(e) => updateFieldValue('mobile', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס טלפון נייד"
-                        />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">תעודת זהות:</label>
+                          <Input
+                            value={fieldValues.nationalId || ''}
+                            onChange={(e) => updateFieldValue('nationalId', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס תעודת זהות"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">עיר:</label>
+                          <Input
+                            value={fieldValues.city || ''}
+                            onChange={(e) => updateFieldValue('city', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס עיר"
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">טלפון 1:</span>
-                        <Input
-                          value={fieldValues.phone || ''}
-                          onChange={(e) => updateFieldValue('phone', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס טלפון"
-                        />
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">רחוב:</label>
+                          <Input
+                            value={fieldValues.street || ''}
+                            onChange={(e) => updateFieldValue('street', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס רחוב"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">מספר בית:</label>
+                          <Input
+                            value={fieldValues.houseNumber || ''}
+                            onChange={(e) => updateFieldValue('houseNumber', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס מספר בית"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">מיקוד:</label>
+                          <Input
+                            value={fieldValues.zipCode || ''}
+                            onChange={(e) => updateFieldValue('zipCode', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס מיקוד"
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">טלפון 2:</span>
-                        <Input
-                          value={fieldValues.phone2 || ''}
-                          onChange={(e) => updateFieldValue('phone2', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס טלפון 2"
-                        />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">מקצוע:</label>
+                          <Input
+                            value={fieldValues.profession || ''}
+                            onChange={(e) => updateFieldValue('profession', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס מקצוע"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">ניסיון:</label>
+                          <Input
+                            value={fieldValues.experience || ''}
+                            onChange={(e) => updateFieldValue('experience', e.target.value)}
+                            className="mt-1"
+                            placeholder="הכנס ניסיון"
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">תעודת זהות:</span>
-                        <Input
-                          value={fieldValues.nationalId || ''}
-                          onChange={(e) => updateFieldValue('nationalId', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס תעודת זהות"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">עיר:</span>
-                        <Input
-                          value={fieldValues.city || ''}
-                          onChange={(e) => updateFieldValue('city', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס עיר"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">רחוב:</span>
-                        <Input
-                          value={fieldValues.street || ''}
-                          onChange={(e) => updateFieldValue('street', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס רחוב"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">מספר בית:</span>
-                        <Input
-                          value={fieldValues.houseNumber || ''}
-                          onChange={(e) => updateFieldValue('houseNumber', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס מספר בית"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">מיקוד:</span>
-                        <Input
-                          value={fieldValues.zipCode || ''}
-                          onChange={(e) => updateFieldValue('zipCode', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס מיקוד"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">מקצוע:</span>
-                        <Input
-                          value={fieldValues.profession || ''}
-                          onChange={(e) => updateFieldValue('profession', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס מקצוע"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">ניסיון:</span>
-                        <Input
-                          value={fieldValues.experience || ''}
-                          onChange={(e) => updateFieldValue('experience', e.target.value)}
-                          className="w-48 text-base"
-                          placeholder="הכנס ניסיון"
-                        />
-                      </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">שכר צפוי:</span>
+                      
+                      <div>
+                        <label className="text-sm font-medium">שכר צפוי:</label>
                         <Input
                           value={fieldValues.expectedSalary || ''}
                           onChange={(e) => updateFieldValue('expectedSalary', e.target.value)}
-                          className="w-48 text-base"
+                          className="mt-1"
                           placeholder="הכנס שכר צפוי"
                         />
                       </div>
-                      <div className="flex flex-row-reverse justify-between items-center">
-                        <span className="text-base font-medium">הערות:</span>
+                      
+                      <div>
+                        <label className="text-sm font-medium">הערות:</label>
                         <Textarea
                           value={fieldValues.notes || ''}
                           onChange={(e) => updateFieldValue('notes', e.target.value)}
-                          className="w-48 text-base"
+                          className="mt-1"
                           placeholder="הכנס הערות"
                           rows={3}
                         />
@@ -1438,7 +1412,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     // Regular form for new candidate
                     <Form {...form}>
                       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
                             name="firstName"
@@ -1472,7 +1446,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                               </FormItem>
                             )}
                           />
+                        </div>
 
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
                             name="email"
@@ -1510,7 +1486,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                               </FormItem>
                             )}
                           />
+                        </div>
 
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
                             name="phone"
@@ -1544,7 +1522,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                               </FormItem>
                             )}
                           />
+                        </div>
 
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
                             name="city"
@@ -1578,34 +1558,34 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                               </FormItem>
                             )}
                           />
-
-                          <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>סטטוס</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="בחר סטטוס" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="available">זמין</SelectItem>
-                                    <SelectItem value="employed">מועסק</SelectItem>
-                                    <SelectItem value="inactive">לא פעיל</SelectItem>
-                                    <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
                         </div>
+
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>סטטוס</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="בחר סטטוס" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="available">זמין</SelectItem>
+                                  <SelectItem value="employed">מועסק</SelectItem>
+                                  <SelectItem value="inactive">לא פעיל</SelectItem>
+                                  <SelectItem value="blacklisted">ברשימה שחורה</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
                         <Button 
                           type="submit" 
@@ -1629,26 +1609,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
             </div>
           </div>
         </div>
-
-        {/* Reset and Clear buttons - only for new candidates */}
-        {!candidate && (
-          <div className="flex justify-center gap-4 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="px-8 py-3 text-lg"
-              onClick={() => {
-                form.reset();
-                setUploadedFile(null);
-                setExtractedData(null);
-              }}
-              data-testid="button-reset-form"
-            >
-              <X className="w-5 h-5 mr-2" />
-              נקה טופס
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
