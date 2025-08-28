@@ -243,7 +243,6 @@ async function checkCpanelEmails(): Promise<void> {
                     return;
                   }
                   
-                  processedEmails.add(emailId);
                   console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
                   
                   // בדיקה אם זה מייל מועמדות לעבודה
@@ -295,6 +294,10 @@ async function checkCpanelEmails(): Promise<void> {
                     if (hasValidCandidate) {
                       await createCandidateFromEmail(candidate);
                       console.log(`✅ נוצר מועמד חדש: ${candidate.firstName || 'מועמד'} ${candidate.lastName || 'חדש'}`);
+                      
+                      // סימון המייל כ"עובד" רק אחרי הצלחה מלאה
+                      processedEmails.add(emailId);
+                      console.log(`📝 מייל סומן כעובד במחסן הזיכרון`);
                       
                       // סימון המייל כנקרא אחרי עיבוד מוצלח
                       try {
