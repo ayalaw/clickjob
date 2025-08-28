@@ -414,7 +414,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
-                {console.log('Rendering with selectedFile:', selectedFile)}
+                {console.log('DEBUG: selectedFile exists?', !!selectedFile, 'name:', selectedFile?.name)}
                 {!selectedFile ? (
                   // Upload area when no file is uploaded
                   <div className="h-full">
@@ -463,7 +463,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                                 try {
                                   // Try to extract data from the Word file
                                   const formData = new FormData();
-                                  formData.append('file', selectedFile.file);
+                                  if (selectedFile.file) {
+                                    formData.append('file', selectedFile.file);
+                                  }
                                   
                                   const response = await fetch('/api/extract-cv-data', {
                                     method: 'POST',
@@ -517,7 +519,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 <CardHeader className="pb-3">
                   <div className="flex justify-end">
                     <Button 
-                      onClick={candidate ? saveAllChanges : form.handleSubmit(onSubmit)} 
+                      onClick={candidate ? saveAllChanges : () => form.handleSubmit(onSubmit)()} 
                       disabled={candidate ? updateMutation.isPending : (createCandidate.isPending || updateCandidate.isPending)}
                       className="flex items-center gap-2"
                     >
