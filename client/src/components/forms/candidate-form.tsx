@@ -405,7 +405,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         {/* Main Layout - 68% CV, 32% Details - EXACT COPY FROM CANDIDATE DETAIL */}
         <div className="flex gap-6 h-[calc(100vh-12rem)]">
           {/* CV Display Card - 68% */}
-          <div className="flex-[2] min-w-0">
+          <div className="w-[68%] min-w-0">
             <Card className="h-full">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
@@ -415,7 +415,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               </CardHeader>
               <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
                 {console.log('Rendering with selectedFile:', selectedFile)}
-                {(!selectedFile || !selectedFile.url) ? (
+                {!selectedFile ? (
                   // Upload area when no file is uploaded
                   <div className="h-full">
                     <label className="cursor-pointer h-full w-full block">
@@ -501,7 +501,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           </div>
 
           {/* Candidate Details Card - 32% - EXACT COPY FROM CANDIDATE DETAIL */}
-          <div className="flex-1 min-w-0">
+          <div className="w-[32%] min-w-0">
             <div className="h-full overflow-y-auto">
               {/* Single Card with all candidate details */}
               <Card className="h-full">
