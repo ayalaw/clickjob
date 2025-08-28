@@ -601,29 +601,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
                 {!uploadedFile ? (
                   // Upload area when no file is uploaded
-                  <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
-                    <Upload className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">להעלאת קובץ לחץ כאן</p>
-                    <p className="text-xs text-gray-500 mb-4">או</p>
-                    <FileUpload 
-                      onFileSelect={(file: File | null) => file && handleFileUpload(file)} 
-                      accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
-                      maxSize={10 * 1024 * 1024}
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="mt-4 w-full"
-                      onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-                    >
-                      בחירת קובץ
-                    </Button>
-                    
-                    {candidate?.cvPath && (
-                      <div className="mt-4 p-3 bg-gray-100 rounded text-sm text-gray-700">
-                        קורות חיים קיימים
-                      </div>
-                    )}
-                  </div>
+                  <FileUpload 
+                    onFileSelect={(file: File | null) => file && handleFileUpload(file)} 
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+                    maxSize={10 * 1024 * 1024}
+                  />
                 ) : (
                   // EXACT COPY from candidate-detail.tsx
                   <div className="h-full flex flex-col">
