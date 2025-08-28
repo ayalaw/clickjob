@@ -216,7 +216,13 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
+    setIsProcessingCV(false);
     
+    toast({
+      title: "קובץ נבחר בהצלחה",
+      description: "קובץ קורות החיים מוכן לצפייה",
+    });
+
     // Upload file immediately to server for display
     try {
       const formData = new FormData();
@@ -232,16 +238,16 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         const result = await uploadResult.json();
         // Set the server path for immediate display
         setUploadedFile(Object.assign(file, { serverPath: result.cvPath }));
+        
+        toast({
+          title: "קובץ הועלה לשרת",
+          description: "התצוגה המלאה כעת זמינה",
+        });
       }
     } catch (error) {
       console.log("Upload for preview failed, will upload on save");
+      // File will still display locally for PDFs and images
     }
-    
-    setIsProcessingCV(false);
-    toast({
-      title: "קובץ הועלה בהצלחה",
-      description: "קובץ קורות החיים מוכן לצפייה",
-    });
   };
 
   const onSubmit = async (data: FormData) => {
@@ -685,11 +691,24 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           </div>
                         ) : (
                           <div className="flex items-center justify-center h-full">
-                            <div className="text-center bg-gray-50 rounded-lg p-8">
-                              <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                              <h3 className="text-lg font-medium text-blue-600 mb-2">{uploadedFile.name}</h3>
-                              <p className="text-sm text-blue-500">מעלה לשרת לתצוגה...</p>
-                              <div className="mt-4 animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                            <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 max-w-md">
+                              <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
+                              <h3 className="text-xl font-bold text-blue-800 mb-2">{uploadedFile.name}</h3>
+                              <p className="text-sm text-blue-600 mb-4">
+                                גודל: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                              
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                <Check className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                                <p className="text-green-800 font-medium">קובץ נשמר בהצלחה!</p>
+                                <p className="text-sm text-green-600 mt-1">
+                                  התצוגה המלאה תהיה זמינה בעמוד המועמד
+                                </p>
+                              </div>
+                              
+                              <p className="text-xs text-blue-500">
+                                💾 הקובץ מוכן לשמירה עם פרטי המועמד
+                              </p>
                             </div>
                           </div>
                         )
