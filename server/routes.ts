@@ -536,16 +536,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { eventType, description, metadata } = req.body;
       
-      await storage.addCandidateEvent({
+      console.log("🔄 מוסיף אירוע למועמד:", {
         candidateId: req.params.id,
         eventType,
         description,
         metadata
       });
       
+      const result = await storage.addCandidateEvent({
+        candidateId: req.params.id,
+        eventType,
+        description,
+        metadata
+      });
+      
+      console.log("✅ אירוע נוסף בהצלחה:", result);
+      
       res.json({ success: true, message: "Event added successfully" });
     } catch (error) {
-      console.error("Error adding candidate event:", error);
+      console.error("❌ שגיאה בהוספת אירוע למועמד:", error);
       res.status(500).json({ message: "Failed to add candidate event" });
     }
   });
