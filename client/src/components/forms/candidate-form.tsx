@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -105,6 +105,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   // File handling
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    open: boolean;
+    candidateData: any;
+    existingCandidateId: string;
+  }>({ open: false, candidateData: null, existingCandidateId: '' });
   
   // Field values for inline editing
   const [fieldValues, setFieldValues] = useState<any>({});
@@ -252,8 +257,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       if (response.ok) {
         const result = await response.json();
         console.log('Extracted data:', result);
-        console.log('Result error:', result.error);
-        console.log('ExtractedData error:', result.extractedData?.error);
         
         // The actual data is inside extractedData
         const data = result.extractedData || result;
@@ -277,21 +280,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               );
               
               if (existingCandidate) {
-                toast({
-                  title: "מועמד קיים/דומה",
-                  description: (
-                    <div className="flex flex-col gap-2">
-                      <span>{`המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`}</span>
-                      <button 
-                        onClick={() => window.location.href = `/candidate/${existingCandidate.id}`}
-                        className="bg-white text-red-600 px-3 py-1 rounded text-sm hover:bg-red-50"
-                      >
-                        מעבר לכרטיס המועמד
-                      </button>
-                    </div>
-                  ),
-                  variant: "destructive",
-                  duration: 8000, // Longer duration for the button
+                setDuplicateDialog({
+                  open: true,
+                  candidateData: data,
+                  existingCandidateId: existingCandidate.id
                 });
               } else {
                 toast({
@@ -607,7 +599,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 <CardHeader className="pb-3">
                   <div className="flex justify-end">
                     <Button 
-                      onClick={candidate ? saveAllChanges : () => form.handleSubmit(onSubmit)()} 
+                      onClick={candidate ? saveAllChanges : form.handleSubmit(onSubmit)} 
                       disabled={candidate ? updateMutation.isPending : (createCandidate.isPending || updateCandidate.isPending)}
                       className="flex items-center gap-2"
                     >
@@ -872,6 +864,32 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           </div>
         </div>
       </div>
+      
+      {/* Duplicate Candidate Dialog */}
+      <Dialog open={duplicateDialog.open} onOpenChange={(open) => setDuplicateDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">מועמד קיים/דומה</DialogTitle>
+            <DialogDescription className="text-right">
+              המועמד {duplicateDialog.candidateData?.firstName} {duplicateDialog.candidateData?.lastName} כבר רשום במערכת
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button 
+              onClick={() => window.location.href = `/candidate/${duplicateDialog.existingCandidateId}`}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              מעבר לכרטיס המועמד
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setDuplicateDialog(prev => ({ ...prev, open: false }))}
+            >
+              סגור
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
