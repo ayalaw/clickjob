@@ -216,9 +216,28 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
-    setIsProcessingCV(false); // Don't process - just display the file
     
-    // Just set the file for display - no data extraction
+    // Upload file immediately to server for display
+    try {
+      const formData = new FormData();
+      formData.append("cv", file);
+
+      const uploadResult = await fetch("/api/candidates/upload-cv", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (uploadResult.ok) {
+        const result = await uploadResult.json();
+        // Set the server path for immediate display
+        setUploadedFile({ ...file, serverPath: result.cvPath });
+      }
+    } catch (error) {
+      console.log("Upload for preview failed, will upload on save");
+    }
+    
+    setIsProcessingCV(false);
     toast({
       title: "קובץ הועלה בהצלחה",
       description: "קובץ קורות החיים מוכן לצפייה",
@@ -619,59 +638,55 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     
                     {/* CV Display */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {uploadedFile.type === 'application/pdf' || uploadedFile.name.toLowerCase().endsWith('.pdf') ? (
-                        <iframe
-                          src={URL.createObjectURL(uploadedFile)}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
-                      ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-                          <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
-                            <div className="mb-6">
-                              <FileText className="w-24 h-24 text-blue-600 mx-auto mb-4" />
-                              <h2 className="text-2xl font-bold text-blue-800 mb-2">קובץ Word הועלה</h2>
-                              <p className="text-blue-600 text-lg">{uploadedFile.name}</p>
-                              <p className="text-sm text-gray-600 mt-2">
-                                גודל: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
-                            
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                              <div className="flex items-center justify-center mb-2">
-                                <Check className="w-6 h-6 text-green-600 mr-2" />
-                                <span className="text-green-800 font-medium text-lg">קובץ הועלה בהצלחה!</span>
-                              </div>
-                              <p className="text-green-700 text-sm">
-                                הקובץ מוכן לשמירה ויוצג בפורמט מלא בעמוד המועמד
-                              </p>
-                            </div>
-
-                            <div className="text-blue-600 text-sm">
-                              <p className="mb-2">💾 הקובץ נשמר זמנית בזיכרון</p>
-                              <p>📄 תצוגה מלאה תהיה זמינה לאחר השמירה</p>
-                            </div>
-                          </div>
-                        </div>
-                      ) : uploadedFile.type.startsWith('image/') ? (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <img
-                            src={URL.createObjectURL(uploadedFile)}
-                            alt="קורות חיים"
-                            className="max-w-full max-h-full object-contain"
+                      {(uploadedFile as any).serverPath ? (
+                        // Display from server after upload
+                        uploadedFile.name.toLowerCase().includes('.pdf') ? (
+                          <iframe
+                            src={`/uploads/${(uploadedFile as any).serverPath?.replace('uploads/', '')}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
                           />
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center bg-gray-50 rounded-lg p-8">
-                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-600 mb-2">{uploadedFile.name}</h3>
-                            <p className="text-sm text-gray-500">קובץ הועלה בהצלחה</p>
-                            <p className="text-xs text-gray-400 mt-2">
-                              גודל: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
+                        ) : uploadedFile.name.toLowerCase().includes('.doc') ? (
+                          <iframe
+                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + (uploadedFile as any).serverPath?.replace('uploads/', ''))}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <img
+                              src={`/uploads/${(uploadedFile as any).serverPath?.replace('uploads/', '')}`}
+                              alt="קורות חיים"
+                              className="max-w-full max-h-full object-contain"
+                            />
                           </div>
-                        </div>
+                        )
+                      ) : (
+                        // Display from local file before upload
+                        uploadedFile.name.toLowerCase().endsWith('.pdf') ? (
+                          <iframe
+                            src={URL.createObjectURL(uploadedFile)}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : uploadedFile.type.startsWith('image/') ? (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <img
+                              src={URL.createObjectURL(uploadedFile)}
+                              alt="קורות חיים"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center bg-gray-50 rounded-lg p-8">
+                              <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                              <h3 className="text-lg font-medium text-blue-600 mb-2">{uploadedFile.name}</h3>
+                              <p className="text-sm text-blue-500">מעלה לשרת לתצוגה...</p>
+                              <div className="mt-4 animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                            </div>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
