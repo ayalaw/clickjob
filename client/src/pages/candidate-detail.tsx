@@ -46,6 +46,8 @@ export default function CandidateDetail() {
   const [selectedMessageType, setSelectedMessageType] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
   const [editableTemplate, setEditableTemplate] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [isSendingReferral, setIsSendingReferral] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [referToJobDialogOpen, setReferToJobDialogOpen] = useState(false);
@@ -278,6 +280,9 @@ export default function CandidateDetail() {
       return;
     }
 
+    if (isAddingNote) return; // Prevent double clicks
+    setIsAddingNote(true);
+
     apiRequest('POST', `/api/candidates/${id}/events`, {
       eventType: 'note_added',
       description: `הערה נוספה: ${newNote}`,
@@ -302,6 +307,8 @@ export default function CandidateDetail() {
         description: "לא ניתן לשמור את ההערה",
         variant: "destructive",
       });
+    }).finally(() => {
+      setIsAddingNote(false);
     });
   };
 
@@ -314,6 +321,9 @@ export default function CandidateDetail() {
       });
       return;
     }
+
+    if (isSendingReferral) return; // Prevent double clicks
+    setIsSendingReferral(true);
 
     try {
       // Process each selected job
@@ -361,6 +371,8 @@ export default function CandidateDetail() {
         description: "לא ניתן לשלוח את ההפניה למעסיק",
         variant: "destructive",
       });
+    } finally {
+      setIsSendingReferral(false);
     }
   };
 
@@ -648,8 +660,11 @@ export default function CandidateDetail() {
                       >
                         ביטול
                       </Button>
-                      <Button onClick={handleAddNote}>
-                        💾 שמור הערה
+                      <Button 
+                        onClick={handleAddNote}
+                        disabled={isAddingNote}
+                      >
+                        {isAddingNote ? "שומר..." : "💾 שמור הערה"}
                       </Button>
                     </div>
                   </div>
@@ -750,8 +765,9 @@ export default function CandidateDetail() {
                       <Button 
                         onClick={handleJobReferral}
                         className="bg-green-600 hover:bg-green-700"
+                        disabled={isSendingReferral}
                       >
-                        📧 שלח למעסיק
+                        {isSendingReferral ? "שולח..." : "📧 שלח למעסיק"}
                       </Button>
                     </div>
                   </div>
