@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ReminderForm } from "@/components/reminder-form";
-import { Calendar, Clock, User, Briefcase, Building, Check, Trash2, Edit, Video, Phone, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, User, Briefcase, Building, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReminderWithDetails, InterviewEventWithDetails } from "@shared/schema";
 
 export default function CalendarPage() {
@@ -321,28 +321,52 @@ export default function CalendarPage() {
                       </div>
                     )}
                     <div className="flex items-center gap-1 mt-1">
-                      {event.type === 'reminder' && !event.isCompleted && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0"
-                          onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: true })}
-                        >
-                          <Check className="h-3 w-3" />
-                        </Button>
+                      {event.type === 'reminder' && (
+                        <>
+                          {!event.isCompleted ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-12 p-0 text-xs bg-green-100 text-green-700 hover:bg-green-200"
+                              onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: true })}
+                            >
+                              בוצע
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-12 p-0 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                              onClick={() => toggleCompleted.mutate({ id: event.id, isCompleted: false })}
+                            >
+                              ממתין
+                            </Button>
+                          )}
+                        </>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 text-red-600"
-                        onClick={() => 
-                          event.type === 'reminder' 
-                            ? deleteReminder.mutate(event.id) 
-                            : deleteInterviewEvent.mutate(event.id)
-                        }
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {event.type === 'interview' && (
+                        <>
+                          {(event as InterviewEventWithDetails).status === 'scheduled' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-12 p-0 text-xs bg-green-100 text-green-700 hover:bg-green-200"
+                              onClick={() => updateInterviewEventStatus.mutate({ id: event.id, status: 'completed' })}
+                            >
+                              בוצע
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-12 p-0 text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                              onClick={() => updateInterviewEventStatus.mutate({ id: event.id, status: 'scheduled' })}
+                            >
+                              ממתין
+                            </Button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
