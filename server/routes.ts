@@ -531,6 +531,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add candidate event (notes, actions, etc.)
+  app.post('/api/candidates/:id/events', isAuthenticated, async (req, res) => {
+    try {
+      const { eventType, description, metadata } = req.body;
+      
+      await storage.addCandidateEvent({
+        candidateId: req.params.id,
+        eventType,
+        description,
+        metadata
+      });
+      
+      res.json({ success: true, message: "Event added successfully" });
+    } catch (error) {
+      console.error("Error adding candidate event:", error);
+      res.status(500).json({ message: "Failed to add candidate event" });
+    }
+  });
+
   app.post('/api/candidates', isAuthenticated, upload.single('cv'), async (req, res) => {
     try {
       // Handle tags array conversion if it comes as a string
