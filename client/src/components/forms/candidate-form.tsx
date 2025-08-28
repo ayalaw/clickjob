@@ -447,7 +447,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - Simple working version */}
+                    {/* CV Display - Working version with proper file type detection */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
                       {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
                         <iframe
@@ -461,7 +461,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           alt={selectedFile.name}
                           className="w-full h-full object-contain"
                         />
-                      ) : selectedFile?.name?.toLowerCase().includes('.doc') || selectedFile?.type?.includes('word') || selectedFile?.type?.includes('document') ? (
+                      ) : selectedFile?.name?.toLowerCase().includes('.doc') || 
+                           selectedFile?.type?.includes('word') || 
+                           selectedFile?.type?.includes('document') ||
+                           selectedFile?.type?.includes('officedocument') ? (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
