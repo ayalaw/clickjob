@@ -232,7 +232,7 @@ export default function CalendarPage() {
 
   const markReminderAsRead = () => {
     if (activeReminderPopup) {
-      setCheckedReminders(prev => new Set([...prev, activeReminderPopup.id]));
+      setCheckedReminders(prev => new Set([...Array.from(prev), activeReminderPopup.id]));
       setActiveReminderPopup(null);
     }
   };
@@ -241,6 +241,42 @@ export default function CalendarPage() {
     if (activeReminderPopup) {
       snoozeReminder.mutate({ id: activeReminderPopup.id, minutes: snoozeMinutes });
     }
+  };
+
+  const getEventReason = (event: ReminderWithDetails | InterviewEventWithDetails) => {
+    if (event.type === 'interview') {
+      const interviewEvent = event as InterviewEventWithDetails;
+      switch (interviewEvent.eventType) {
+        case 'phone': return 'ראיון טלפוני';
+        case 'video': return 'ראיון וידאו';
+        case 'in-person': return 'ראיון פרונטלי';
+        default: return 'ראיון';
+      }
+    }
+    
+    // For reminders, try to detect reason from title or description
+    const title = event.title.toLowerCase();
+    const description = event.description?.toLowerCase() || '';
+    
+    if (title.includes('ראיון') || description.includes('ראיון')) {
+      if (title.includes('טלפון') || description.includes('טלפון')) return 'ראיון טלפוני';
+      if (title.includes('וידאו') || description.includes('וידאו')) return 'ראיון וידאו';
+      return 'נקבע ראיון';
+    }
+    
+    if (title.includes('חזור') || title.includes('טלפון') || description.includes('חזור') || description.includes('טלפון')) {
+      return 'לחזור טלפונית';
+    }
+    
+    if (title.includes('מעקב') || description.includes('מעקב')) {
+      return 'מעקב מועמד';
+    }
+    
+    return event.title; // Default to title if no pattern found
+  };
+
+  const handleCandidateClick = (candidateId: string) => {
+    window.open(`/candidates/${candidateId}`, '_blank');
   };
 
   // Generate the 7 days of current week
@@ -406,13 +442,24 @@ export default function CalendarPage() {
                               : 'bg-purple-100 text-purple-800 border-l-2 border-purple-500'
                           }`}
                         >
+                          {event.candidate && (
+                            <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded mb-2 font-bold text-center border">
+                              🎯 {getEventReason(event)}
+                            </div>
+                          )}
+                          
                           <div className="font-medium mb-1">
                             {event.title}
                           </div>
                           
                           {event.candidate && (
-                            <div className="text-xs opacity-75 mb-1">
-                              👤 {event.candidate.firstName} {event.candidate.lastName}
+                            <div className="text-xs mb-1">
+                              👤 <button 
+                                onClick={() => handleCandidateClick(event.candidate!.id)}
+                                className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer"
+                              >
+                                {event.candidate.firstName} {event.candidate.lastName}
+                              </button>
                             </div>
                           )}
                           
@@ -511,6 +558,12 @@ export default function CalendarPage() {
           
           {activeReminderPopup && (
             <div className="space-y-4">
+              {activeReminderPopup.candidate && (
+                <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-bold text-center border-2 border-yellow-300">
+                  🎯 {getEventReason(activeReminderPopup)}
+                </div>
+              )}
+              
               <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                 <h3 className="font-semibold text-lg mb-2">{activeReminderPopup.title}</h3>
                 
@@ -527,7 +580,13 @@ export default function CalendarPage() {
                   {activeReminderPopup.candidate && (
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-500" />
-                      <span>מועמד: {activeReminderPopup.candidate.firstName} {activeReminderPopup.candidate.lastName}</span>
+                      <span>מועמד: </span>
+                      <button 
+                        onClick={() => handleCandidateClick(activeReminderPopup.candidate!.id)}
+                        className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer"
+                      >
+                        {activeReminderPopup.candidate.firstName} {activeReminderPopup.candidate.lastName}
+                      </button>
                     </div>
                   )}
                   
