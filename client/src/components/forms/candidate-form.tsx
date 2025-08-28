@@ -591,13 +591,13 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
           {/* CV Upload & Display Section - Right Side - BIGGER */}
           <div className="lg:col-span-2 lg:order-2">
-            <Card className="sticky top-6">
+            <Card className="sticky top-6 h-[calc(100vh-8rem)]">
               <CardHeader>
                 <CardTitle className="text-center text-gray-700">
                   {uploadedFile ? "קורות החיים שהועלה" : "העלאת קורות חיים"}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
                 {!uploadedFile ? (
                   // Upload area when no file is uploaded
                   <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
@@ -645,18 +645,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       )}
                     </div>
 
-                    {/* File Viewer - Same as candidate detail page with fixed height */}
-                    <div className="h-[600px] flex flex-col bg-white border rounded-lg overflow-hidden">
+                    {/* EXACT COPY from candidate-detail.tsx */}
+                    <div className="h-full flex flex-col">
                       {/* File info */}
-                      <div className="flex justify-center p-3 bg-gray-50 border-b">
+                      <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FileText className="w-4 h-4" />
                           קובץ קורות חיים - {uploadedFile.name}
                         </div>
                       </div>
                       
-                      {/* CV Display - EXACTLY like candidate detail page */}
-                      <div className="flex-1 bg-white overflow-hidden">
+                      {/* CV Display */}
+                      <div className="flex-1 bg-white rounded border overflow-hidden">
                         {uploadedFile.name.toLowerCase().includes('.pdf') ? (
                           <iframe
                             src={URL.createObjectURL(uploadedFile)}
@@ -670,7 +670,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                             title="קורות חיים"
                           />
                         ) : uploadedFile.type.startsWith('image/') ? (
-                          <div className="w-full h-full flex items-center justify-center p-4">
+                          <div className="w-full h-full flex items-center justify-center">
                             <img
                               src={URL.createObjectURL(uploadedFile)}
                               alt="קורות חיים"
