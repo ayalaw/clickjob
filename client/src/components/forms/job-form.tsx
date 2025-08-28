@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useState } from "react";
+import { X } from "lucide-react";
 
 interface JobFormProps {
   job?: JobWithClient | null;
@@ -19,6 +21,7 @@ interface JobFormProps {
 
 export default function JobForm({ job, onSuccess }: JobFormProps) {
   const { toast } = useToast();
+  const [additionalCodesInput, setAdditionalCodesInput] = useState("");
 
   const { data: clientsData } = useQuery<{ clients: Client[]; total: number }>({
     queryKey: ["/api/clients"],
@@ -39,6 +42,7 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
       deadline: job?.deadline ? new Date(job.deadline).toISOString().split('T')[0] : undefined,
       clientId: job?.clientId || "",
       positions: job?.positions || 1,
+      additionalCodes: job?.additionalCodes || [],
     },
   });
 
@@ -251,6 +255,73 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
                           data-testid="input-positions"
                           className="text-right"
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="additionalCodes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">קודים נוספים (אופציונלי):</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              value={additionalCodesInput}
+                              onChange={(e) => setAdditionalCodesInput(e.target.value)}
+                              placeholder="הקלד קוד נוסף"
+                              className="text-right"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && additionalCodesInput.trim()) {
+                                  e.preventDefault();
+                                  const currentCodes = field.value || [];
+                                  if (!currentCodes.includes(additionalCodesInput.trim())) {
+                                    field.onChange([...currentCodes, additionalCodesInput.trim()]);
+                                    setAdditionalCodesInput("");
+                                  }
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (additionalCodesInput.trim()) {
+                                  const currentCodes = field.value || [];
+                                  if (!currentCodes.includes(additionalCodesInput.trim())) {
+                                    field.onChange([...currentCodes, additionalCodesInput.trim()]);
+                                    setAdditionalCodesInput("");
+                                  }
+                                }
+                              }}
+                            >
+                              הוסף
+                            </Button>
+                          </div>
+                          {field.value && field.value.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {field.value.map((code: string, index: number) => (
+                                <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                                  <span>{code}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newCodes = field.value.filter((_: string, i: number) => i !== index);
+                                      field.onChange(newCodes);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

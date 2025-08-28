@@ -127,6 +127,7 @@ export const clients = pgTable("clients", {
 export const jobs = pgTable("jobs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobCode: varchar("job_code", { length: 7 }).unique(), // קוד משרה בן 7 ספרות
+  additionalCodes: text("additional_codes").array(), // קודים נוספים (אופציונלי)
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   requirements: text("requirements"),

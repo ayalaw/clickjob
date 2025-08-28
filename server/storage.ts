@@ -390,15 +390,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createJob(job: InsertJob): Promise<Job> {
-    // יצירת קוד משרה אוטומטי בן 7 ספרות
-    let jobCode: string;
+    // יצירת קוד משרה אוטומטי בן 7 ספרות (מספרים בלבד)
+    let jobCode: string = "";
     let isUnique = false;
     
     while (!isUnique) {
-      // יצירת קוד בן 7 ספרות (אותיות גדולות ומספרים)
-      jobCode = Array.from({ length: 7 }, () => 
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]
-      ).join('');
+      // יצירת קוד בן 7 מספרים בלבד (1000000-9999999)
+      jobCode = Math.floor(Math.random() * 9000000 + 1000000).toString();
       
       // בדיקה שהקוד לא קיים
       const existing = await db.select().from(jobs).where(eq(jobs.jobCode, jobCode)).limit(1);
