@@ -2627,7 +2627,11 @@ ${recommendation}
 
       // Assign role if provided
       if (roleId && roleId !== 'no-role') {
-        await storage.assignRole(newUser.id, roleId);
+        await storage.assignUserRole({
+          userId: newUser.id,
+          roleId: roleId,
+          assignedBy: sessionUserId
+        });
       }
 
       // Send welcome email with login credentials
