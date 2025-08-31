@@ -501,37 +501,13 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
   const jobCodeMatch = fullText.match(EMAIL_PATTERNS.jobCode);
   const jobCode = jobCodeMatch ? (jobCodeMatch[1] || jobCodeMatch[2]) : undefined;
   
-  // חילוץ אימייל מהשולח (fallback אם לא נמצא בקורות חיים)
-  const emailMatch = from.match(/<([^>]+)>/) || from.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-  const emailFromSender = emailMatch ? emailMatch[1] || emailMatch[0] : from;
-  
-  // חילוץ שם מהשולח (fallback אם לא נמצא בקורות חיים)
-  const nameFromSender = from.replace(/<[^>]+>/, '').replace(/['"]/g, '').trim();
-  const nameParts = nameFromSender.split(' ').filter(part => part.length > 0);
-  
-  // ניסיון לחלץ שם מהנושא (אם יש בעברית)
-  const subjectNames = subject.match(/([א-ת]+[\s-][א-ת]+)/g);
-  const nameFromSubject = subjectNames ? subjectNames[0] : '';
-  
-  // קביעת שם ראשון ואחרון
-  let firstName = undefined;
-  let lastName = undefined;
-  
-  if (nameFromSubject) {
-    const subjectParts = nameFromSubject.split(/[\s-]/);
-    firstName = subjectParts[0];
-    lastName = subjectParts[1] || '';
-  } else if (nameParts.length >= 2) {
-    firstName = nameParts[0];
-    lastName = nameParts.slice(1).join(' ');
-  } else if (nameParts.length === 1) {
-    firstName = nameParts[0];
-  }
+  // לא נחלץ פרטים מהמייל - רק מקורות החיים!
+  // כל הפרטים ייחלצו מהקובץ המצורף בלבד
   
   return {
-    firstName,
-    lastName, 
-    email: emailFromSender,
+    firstName: undefined, // רק מקורות החיים
+    lastName: undefined, // רק מקורות החיים  
+    email: undefined, // רק מקורות החיים - לא מהשולח!
     phone: undefined, // רק מקורות החיים
     jobCode,
     originalSubject: subject,
