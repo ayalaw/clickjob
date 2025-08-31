@@ -118,7 +118,7 @@ export default function JobInterviews() {
       updates: {
         status: 'interview',
         reviewerFeedback,
-        reviewedAt: new Date(),
+        reviewedAt: new Date().toISOString(),
         sentToClient: true,
       }
     });
@@ -137,7 +137,7 @@ export default function JobInterviews() {
       updates: {
         status: 'rejected',
         reviewerFeedback,
-        reviewedAt: new Date(),
+        reviewedAt: new Date().toISOString(),
       }
     });
     
@@ -155,7 +155,7 @@ export default function JobInterviews() {
       updates: {
         status: 'submitted',
         reviewerFeedback,
-        reviewedAt: new Date(),
+        reviewedAt: new Date().toISOString(),
       }
     });
     
