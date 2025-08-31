@@ -10,6 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +58,8 @@ export default function JobInterviews() {
   const [interviewDialog, setInterviewDialog] = useState(false);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
+  const [warningAlert, setWarningAlert] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
 
   const whatsappMessages = [
     "שלום, זה מחברת גיוס H-Group. ניסיתי להתקשר אליך לגבי משרה שתואמת לך. אנא צור איתי קשר בחזרה",
@@ -57,6 +68,47 @@ export default function JobInterviews() {
     "שלום, מחברת גיוס H-Group. אשמח לשוחח איתך על משרה שמתאימה לפרופיל שלך",
     "היי, זה מחברת גיוס H-Group. נשמח לשמוע אם אתה עדיין מחפש משרה חדשה"
   ];
+
+  // Check for previous candidate events for this job in the last 45 days
+  const checkPreviousEvents = async (candidateId: string, jobId: string) => {
+    try {
+      const response = await fetch(`/api/candidates/${candidateId}/events`);
+      if (!response.ok) return;
+      
+      const events = await response.json();
+      const now = new Date();
+      const fortyFiveDaysAgo = new Date(now.getTime() - (45 * 24 * 60 * 60 * 1000));
+      
+      // Look for relevant events in the last 45 days for this specific job
+      const recentEvents = events.filter((event: any) => {
+        const eventDate = new Date(event.createdAt);
+        const isRecent = eventDate >= fortyFiveDaysAgo;
+        const isSameJob = event.metadata?.jobId === jobId || event.metadata?.jobTitle;
+        const isRelevantEvent = ['sent_to_employer', 'rejected_by_employer', 'rejected'].includes(event.eventType);
+        
+        return isRecent && isSameJob && isRelevantEvent;
+      });
+      
+      if (recentEvents.length > 0) {
+        const latestEvent = recentEvents[0];
+        const eventDate = new Date(latestEvent.createdAt);
+        const daysAgo = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let eventDescription = '';
+        if (latestEvent.eventType === 'sent_to_employer') {
+          eventDescription = 'נשלח למעסיק';
+        } else if (latestEvent.eventType === 'rejected_by_employer' || latestEvent.eventType === 'rejected') {
+          eventDescription = 'נפסל';
+        }
+        
+        const warningText = `⚠️ התראה: מועמד זה ${eventDescription} למשרה זו לפני ${daysAgo} ימים`;
+        setWarningMessage(warningText);
+        setWarningAlert(true);
+      }
+    } catch (error) {
+      console.error('Error checking previous events:', error);
+    }
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -87,27 +139,16 @@ export default function JobInterviews() {
     enabled: isAuthenticated && !!jobId,
   });
 
-  // Filter applications and hide ones that were rejected or sent to employer in the last 45 days
-  const filteredApplications = (applicationsData?.applications.filter(app => {
-    if (app.jobId !== jobId) return false;
-    
-    // Check if candidate was rejected or sent to employer in the last 45 days
-    const candidate = app.candidate;
-    if (candidate.status === 'sent_to_employer' || candidate.status === 'rejected_by_employer') {
-      const updatedAt = candidate.updatedAt ? new Date(candidate.updatedAt) : null;
-      if (updatedAt) {
-        const daysSinceChange = Math.floor((Date.now() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysSinceChange < 45) {
-          return false; // Hide for 45 days
-        }
-      }
-    }
-    
-    return true;
-  }) || []);
-
-  const applications = filteredApplications;
+  // Show all applications for this job
+  const applications = applicationsData?.applications.filter(app => app.jobId === jobId) || [];
   const currentApplication = applications[currentIndex];
+
+  // Check previous events when current application changes
+  useEffect(() => {
+    if (currentApplication && jobId && currentApplication.candidateId) {
+      checkPreviousEvents(currentApplication.candidateId, jobId);
+    }
+  }, [currentApplication?.candidateId, jobId]);
 
   // Mutations for application actions
   const updateApplicationMutation = useMutation({
@@ -352,9 +393,13 @@ export default function JobInterviews() {
     if (direction === 'prev' && currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setReviewerFeedback("");
+      setWarningAlert(false); // Reset warning when navigating
+      setWarningMessage("");
     } else if (direction === 'next' && currentIndex < applications.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setReviewerFeedback("");
+      setWarningAlert(false); // Reset warning when navigating
+      setWarningMessage("");
     }
   };
 
@@ -836,6 +881,28 @@ export default function JobInterviews() {
           </div>
         </div>
       </div>
+
+      {/* Warning Alert for Previous Events */}
+      <AlertDialog open={warningAlert} onOpenChange={setWarningAlert}>
+        <AlertDialogContent className="w-[90%] max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-orange-600">
+              ⚠️ התראה חשובה
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-lg">
+              {warningMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex justify-center">
+            <AlertDialogAction 
+              onClick={() => setWarningAlert(false)}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              הבנתי
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
