@@ -315,12 +315,18 @@ async function checkCpanelEmails(): Promise<void> {
                       }
                     }
                     
-                    // בדיקה אם יש לנו מועמד תקין (אימייל מקורות החיים או לפחות מידע בסיסי)
-                    const hasValidCandidate = candidate.email || candidate.firstName || candidate.mobile;
+                    // בדיקה אם יש לנו מועמד תקין (פרטים אמיתיים שלא ריקים)
+                    const hasValidEmail = candidate.email && candidate.email.trim() !== '';
+                    const hasValidName = (candidate.firstName && candidate.firstName.trim() !== '') || 
+                                        (candidate.lastName && candidate.lastName.trim() !== '');
+                    const hasValidMobile = candidate.mobile && candidate.mobile.trim() !== '';
+                    
+                    const hasValidCandidate = hasValidEmail || hasValidName || hasValidMobile;
                     
                     if (hasValidCandidate) {
                       await createCandidateFromEmail(candidate);
-                      console.log(`✅ נוצר מועמד חדש: ${candidate.firstName || 'מועמד'} ${candidate.lastName || 'חדש'}`);
+                      const displayName = [candidate.firstName, candidate.lastName].filter(n => n && n.trim()).join(' ') || 'מועמד חדש';
+                      console.log(`✅ נוצר מועמד חדש: ${displayName}`);
                       
                       // סימון המייל כ"עובד" רק אחרי הצלחה מלאה
                       processedEmails.add(emailId);
@@ -328,7 +334,7 @@ async function checkCpanelEmails(): Promise<void> {
                       
                       // המייל כבר סומן כנקרא אוטומטית בתחילת העיבוד
                     } else {
-                      console.log(`⚠️ לא נמצאו פרטי מועמד תקינים בקורות החיים`);
+                      console.log(`⚠️ לא נמצאו פרטי מועמד תקינים בקורות החיים - שדות ריקים או חסרים`);
                     }
                   } else {
                     console.log(`📧 מייל לא זוהה כמועמדות - נושא: "${parsed.subject}"`);
@@ -595,13 +601,14 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
           const text = execSync(`pdftotext "${filePath}" -`, { encoding: 'utf8' });
           extractedData = parseCV(text);
         } catch (pdfError) {
-          console.log('⚠️ pdftotext לא זמין, משתמש בנתונים בסיסיים');
+          console.log('⚠️ pdftotext לא זמין, משאיר שדות ריקים');
           extractedData = { 
-            firstName: 'מועמד', 
-            lastName: 'מPDF', 
+            firstName: '', 
+            lastName: '', 
+            email: '',
             phone: '', 
-            city: 'לא צוין', 
-            profession: 'ממתין לעיבוד קורות חיים'
+            city: '', 
+            profession: ''
           };
         }
       } catch (error) {
@@ -628,8 +635,8 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
       phone: extractedData.phone,
       nationalId: extractedData.nationalId, // ת.ז. מקורות החיים
       cvPath: filename, // רק שם הקובץ, לא הנתיב המלא
-      city: extractedData.city || 'לא צוין',
-      profession: extractedData.profession || 'ממתין לעיבוד קורות חיים'
+      city: extractedData.city || '',
+      profession: extractedData.profession || ''
     };
     
   } catch (error) {
@@ -681,16 +688,16 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
       
       console.log(`📝 נרשם אירוע פנייה חוזרת למועמד`);
     } else {
-      // יצירת מועמד חדש עם שדות חובה
+      // יצירת מועמד חדש עם הפרטים שנמצאו בלבד
       const newCandidate = await storage.createCandidate({
-        firstName: candidateData.firstName || 'מועמד',
-        lastName: candidateData.lastName || 'ממייל',
+        firstName: candidateData.firstName || '',
+        lastName: candidateData.lastName || '',
         email: candidateData.email || `candidate-${Date.now()}@temp.local`,
-        mobile: candidateData.mobile || candidateData.phone,
-        phone: candidateData.phone,
-        nationalId: candidateData.nationalId,
-        city: candidateData.city || 'לא צוין',
-        profession: candidateData.profession || 'ממתין לעיבוד קורות חיים',
+        mobile: candidateData.mobile || candidateData.phone || '',
+        phone: candidateData.phone || '',
+        nationalId: candidateData.nationalId || '',
+        city: candidateData.city || '',
+        profession: candidateData.profession || '',
         cvPath: candidateData.cvPath,
         notes: `מועמד שנוסף אוטומטית מהמייל. נושא המייל: "${candidateData.originalSubject}"`,
         recruitmentSource: 'מייל נכנס - קורות חיים',
@@ -710,7 +717,8 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
         }
       });
       
-      console.log(`✅ נוצר מועמד חדש: ${candidateData.firstName || 'מועמד'} ${candidateData.lastName || 'חדש'}`);
+      const displayName = [candidateData.firstName, candidateData.lastName].filter(n => n && n.trim()).join(' ') || 'מועמד חדש';
+      console.log(`✅ נוצר מועמד חדש: ${displayName}`);
     }
     
     // אם יש קוד משרה - חיפוש המשרה ויצירת מועמדות למשרה
