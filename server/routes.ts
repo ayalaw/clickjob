@@ -1387,15 +1387,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updates = req.body;
       
-      // Convert Date objects to ISO strings for timestamp fields
-      if (updates.reviewedAt && typeof updates.reviewedAt === 'object') {
-        updates.reviewedAt = new Date(updates.reviewedAt).toISOString();
+      // Convert ISO strings to Date objects for timestamp fields
+      if (updates.reviewedAt && typeof updates.reviewedAt === 'string') {
+        updates.reviewedAt = new Date(updates.reviewedAt);
       }
-      if (updates.interviewDate && typeof updates.interviewDate === 'object') {
-        updates.interviewDate = new Date(updates.interviewDate).toISOString();
-      }
-      if (updates.appliedAt && typeof updates.appliedAt === 'object') {
-        updates.appliedAt = new Date(updates.appliedAt).toISOString();
+      if (updates.interviewDate && typeof updates.interviewDate === 'string') {
+        updates.interviewDate = new Date(updates.interviewDate);
       }
       
       const application = await storage.updateJobApplication(req.params.id, updates);
