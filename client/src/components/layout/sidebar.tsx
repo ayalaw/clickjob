@@ -9,7 +9,7 @@ const navigation = [
   { name: "יומן", href: "/calendar", icon: Calendar },
   { name: "מאגר לקוחות", href: "/clients", icon: Building2 },
   { name: "מאגר משרות", href: "/jobs", icon: Briefcase },
-  { name: "סינון ראיונות", href: "/interviews", icon: UserCheck },
+  { name: "ראיונות", href: "/interviews", icon: UserCheck },
   { name: "מערכת מיילים", href: "/emails", icon: Mail },
   { name: "הגדרות מייל", href: "/email-settings", icon: Settings },
   { name: "דוחות ואנליטיקה", href: "/reports", icon: BarChart3 },
