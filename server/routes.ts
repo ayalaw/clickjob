@@ -2656,10 +2656,18 @@ ${recommendation}
 
       // Return user without password
       const { password, ...userWithoutPassword } = newUser as any;
-      res.status(201).json({
+      const response = {
         ...userWithoutPassword,
         emailSent,
+      };
+      
+      console.log('📤 Sending response to client:', {
+        userId: response.id,
+        email: response.email,
+        emailSent: response.emailSent
       });
+      
+      res.status(201).json(response);
     } catch (error) {
       console.error('Error creating user:', error);
       res.status(500).json({ message: 'Internal server error' });
