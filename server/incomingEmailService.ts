@@ -743,13 +743,13 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
 // פונקציה להפעלה תקופתית
 
 export function startEmailMonitoring(): void {
-  console.log('🚀 הפעלת מעקב מיילים נכנסים...');
+  console.log('🛑 מעקב מיילים נכנסים מושבת זמנית (למניעת כפילויות)');
   
-  // בדיקה כל דקה (במקום כל 20 שניות)
-  setInterval(async () => {
-    await checkIncomingEmails();
-  }, 60 * 1000);
+  // בדיקה כל דקה - מושבת זמנית
+  // setInterval(async () => {
+  //   await checkIncomingEmails();
+  // }, 60 * 1000);
   
-  // בדיקה ראשונית
-  checkIncomingEmails();
+  // בדיקה ראשונית - מושבת זמנית
+  // checkIncomingEmails();
 }
