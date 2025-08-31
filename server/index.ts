@@ -67,5 +67,13 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start automatic email monitoring after server starts
+    import('./email-test').then(({ testMailConnection }) => {
+      setTimeout(() => {
+        console.log('🚀 בודק הגדרות מייל...');
+        testMailConnection();
+      }, 3000); // Wait 3 seconds after server start
+    });
   });
 })();
