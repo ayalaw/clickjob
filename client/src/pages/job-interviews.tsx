@@ -505,7 +505,7 @@ export default function JobInterviews() {
               <CardContent>
                 {currentApplication.candidate.cvPath ? (
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b flex items-center justify-between">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b flex items-center justify-between">
                       <p className="text-sm text-blue-700 dark:text-blue-300">
                         קורות חיים - {currentApplication.candidate.firstName} {currentApplication.candidate.lastName}
                       </p>
@@ -535,37 +535,36 @@ export default function JobInterviews() {
                         </Button>
                       </div>
                     </div>
-                    <div className="p-6 text-center" style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}>
-                      <div className="flex flex-col items-center justify-center h-full space-y-4">
-                        <FileText className="h-24 w-24 text-blue-500" />
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                          קובץ קורות החיים זמין לצפייה
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-center max-w-md">
-                          לצפייה בקורות החיים לחץ על "פתח בחלון חדש" או הורד את הקובץ למחשב
-                        </p>
-                        <div className="flex gap-3 mt-6">
+                    <div className="w-full bg-white dark:bg-gray-800">
+                      <object
+                        data={`/api/candidates/${currentApplication.candidate.id}/cv`}
+                        type="application/pdf"
+                        className="w-full border-0"
+                        style={{ height: 'calc(100vh - 250px)', minHeight: '700px' }}
+                      >
+                        <embed
+                          src={`/api/candidates/${currentApplication.candidate.id}/cv`}
+                          type="application/pdf"
+                          className="w-full border-0"
+                          style={{ height: 'calc(100vh - 250px)', minHeight: '700px' }}
+                        />
+                        <div className="p-6 text-center flex flex-col items-center justify-center h-full space-y-4">
+                          <FileText className="h-16 w-16 text-blue-500" />
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            הדפדפן לא תומך בתצוגה ישירה
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-300">
+                            לחץ על "פתח בחלון חדש" לצפייה בקורות החיים
+                          </p>
                           <Button
                             onClick={() => window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank')}
                             className="bg-blue-600 hover:bg-blue-700"
                           >
                             <FileText className="h-4 w-4 mr-2" />
-                            צפה בקורות החיים
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = `/api/candidates/${currentApplication.candidate.id}/cv`;
-                              link.download = `CV-${currentApplication.candidate.firstName}-${currentApplication.candidate.lastName}.pdf`;
-                              link.click();
-                            }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            הורד קובץ
+                            פתח בחלון חדש
                           </Button>
                         </div>
-                      </div>
+                      </object>
                     </div>
                   </div>
                 ) : (
