@@ -21,7 +21,6 @@ const navigation = [
   { name: "סינון ראיונות", href: "/interviews", icon: UserCheck },
   { name: "מערכת מיילים", href: "/emails", icon: Mail },
   { name: "הגדרות מייל", href: "/email-settings", icon: Settings },
-  { name: "ניהול משתמשים", href: "/user-management", icon: Shield },
   { name: "דוחות ואנליטיקה", href: "/reports", icon: BarChart3 },
   { name: "הגדרות מערכת", href: "/settings", icon: Settings },
 ];
@@ -43,35 +42,27 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8 space-x-reverse">
-            {navigation
-              .filter((item) => {
-                // Show user management only if user has permission
-                if (item.href === '/user-management') {
-                  return canManageUsers;
-                }
-                return true;
-              })
-              .map((item) => {
-                const Icon = item.icon;
-                const isActive = location === item.href;
-                
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive 
-                        ? "text-primary bg-blue-50 dark:bg-blue-900/20" 
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    )}
-                    data-testid={`link-nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`}
-                  >
-                    <Icon className="h-4 w-4 ml-2" />
-                    {item.name}
-                  </Link>
-                );
-              })}
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const isActive = location === item.href;
+              
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    isActive 
+                      ? "text-primary bg-blue-50 dark:bg-blue-900/20" 
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                  data-testid={`link-nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`}
+                >
+                  <Icon className="h-4 w-4 ml-2" />
+                  {item.name}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Mobile menu button */}

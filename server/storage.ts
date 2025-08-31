@@ -1486,7 +1486,7 @@ export class DatabaseStorage implements IStorage {
 
     // Get permissions for each role
     for (const userRole of userWithRoles.userRoles) {
-      const rolePermissions = await db
+      const rolePerms = await db
         .select({
           permission: {
             id: permissions.id,
@@ -1500,7 +1500,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
         .where(eq(rolePermissions.roleId, userRole.roleId));
 
-      userRole.role.rolePermissions = rolePermissions.map(rp => ({
+      userRole.role.rolePermissions = rolePerms.map(rp => ({
         permission: rp.permission
       }));
     }

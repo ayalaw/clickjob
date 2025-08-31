@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Settings as SettingsIcon, Plus, Edit, Trash2 } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Settings as SettingsIcon, Plus, Edit, Trash2, Shield, Users } from "lucide-react";
+import { Link } from "wouter";
 
 interface MessageTemplate {
   id: string;
@@ -19,6 +21,7 @@ interface MessageTemplate {
 
 export default function Settings() {
   const { toast } = useToast();
+  const { canManageUsers } = usePermissions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [templateName, setTemplateName] = useState("");
@@ -132,7 +135,32 @@ export default function Settings() {
           <SettingsIcon className="w-6 h-6" />
           <h1 className="text-2xl font-bold">הגדרות מערכת</h1>
         </div>
-        <p className="text-gray-600">נהל תבניות הודעות למועמדים</p>
+        <p className="text-gray-600">נהל הגדרות המערכת ותבניות הודעות</p>
+      </div>
+
+      {/* System Settings Cards */}
+      <div className="grid gap-6 mb-6">
+        {canManageUsers && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Shield className="w-5 h-5" />
+                ניהול משתמשים והרשאות
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                נהל משתמשי המערכת, תפקידים והרשאות גישה
+              </p>
+              <Link href="/user-management">
+                <Button className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  פתח ניהול משתמשים
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Card>
