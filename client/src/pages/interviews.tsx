@@ -181,7 +181,9 @@ export default function Interviews() {
                           <TableRow key={job.id} className="hover:bg-muted/50">
                             <TableCell>
                               <div>
-                                <div className="font-medium">{job.title}</div>
+                                <Link href={`/jobs/${job.id}/edit`} className="hover:text-blue-600">
+                                  <div className="font-medium cursor-pointer hover:underline">{job.title}</div>
+                                </Link>
                                 <div className="text-sm text-gray-500">
                                   {job.description?.substring(0, 60)}...
                                 </div>
