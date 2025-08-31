@@ -61,7 +61,7 @@ export default function JobInterviews() {
 
   // Fetch job applications for this specific job
   const { data: applicationsData, isLoading: applicationsLoading } = useQuery<{ applications: JobApplicationWithDetails[] }>({
-    queryKey: ["/api/job-applications", "for-review", jobId],
+    queryKey: ["/api/job-applications"],
     enabled: isAuthenticated && !!jobId,
   });
 
@@ -71,14 +71,7 @@ export default function JobInterviews() {
   // Mutations for application actions
   const updateApplicationMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<JobApplication> }) => {
-      const response = await apiRequest(`/api/job-applications/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updates),
-      });
-      return response;
+      await apiRequest("PATCH", `/api/job-applications/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-applications"] });
@@ -157,7 +150,7 @@ export default function JobInterviews() {
     updateApplicationMutation.mutate({
       id: currentApplication.id,
       updates: {
-        status: 'pending_review',
+        status: 'submitted',
         reviewerFeedback,
         reviewedAt: new Date(),
       }
@@ -525,7 +518,7 @@ export default function JobInterviews() {
                 )}
 
                 {/* Candidate Details from CV */}
-                {(currentApplication.candidate.experience || currentApplication.candidate.education || currentApplication.candidate.skills) && (
+                {currentApplication.candidate.experience && (
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <h4 className="font-medium text-gray-900 dark:text-white mb-3">
                       פרטים שחולצו מהקורות חיים
@@ -536,22 +529,6 @@ export default function JobInterviews() {
                           <span className="font-medium">ניסיון תעסוקתי:</span>
                           <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
                             {currentApplication.candidate.experience}
-                          </p>
-                        </div>
-                      )}
-                      {currentApplication.candidate.education && (
-                        <div>
-                          <span className="font-medium">השכלה:</span>
-                          <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
-                            {currentApplication.candidate.education}
-                          </p>
-                        </div>
-                      )}
-                      {currentApplication.candidate.skills && (
-                        <div>
-                          <span className="font-medium">כישורים:</span>
-                          <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
-                            {currentApplication.candidate.skills}
                           </p>
                         </div>
                       )}
