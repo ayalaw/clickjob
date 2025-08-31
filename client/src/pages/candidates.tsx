@@ -60,7 +60,7 @@ export default function Candidates() {
       case 'hired': return 'התקבל';
       case 'rejected': return 'נדחה';
       case 'not_relevant': return 'לא רלוונטי';
-      case 'rejected_by_employer': return 'נפסל ע״י מעסיק';
+      case 'rejected_by_employer': return 'נפסל בראיון';
       case 'invited_to_interview': return 'זומן לראיון';
       case 'whatsapp_sent': return 'נשלחה הודעת ווצאפ';
       case 'phone_contact_made': return 'נוצר קשר טלפוני';

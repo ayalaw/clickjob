@@ -61,7 +61,7 @@ export default function SystemSettings() {
     { id: 'attended_interview', name: 'הגיע לראיון אצל מעסיק', color: 'bg-blue-100 text-blue-800' },
     { id: 'missed_interview', name: 'לא הגיע לראיון', color: 'bg-red-100 text-red-800' },
     { id: 'passed_interview', name: 'עבר ראיון אצל מעסיק', color: 'bg-green-100 text-green-800' },
-    { id: 'rejected_by_employer', name: 'נפסל ע"י מעסיק', color: 'bg-red-100 text-red-800' },
+    { id: 'rejected_by_employer', name: 'נפסל בראיון', color: 'bg-red-100 text-red-800' },
     { id: 'hired', name: 'התקבל לעבודה', color: 'bg-emerald-100 text-emerald-800' },
     { id: 'employment_ended', name: 'סיים העסקה', color: 'bg-gray-100 text-gray-800' }
   ]);

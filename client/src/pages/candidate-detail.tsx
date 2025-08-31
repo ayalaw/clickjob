@@ -132,7 +132,7 @@ export default function CandidateDetail() {
       case 'attended_interview': return 'הגיע לראיון';
       case 'missed_interview': return 'לא הגיע לראיון';
       case 'passed_interview': return 'עבר ראיון';
-      case 'rejected_by_employer': return 'נפסל ע״י מעסיק';
+      case 'rejected_by_employer': return 'נפסל בראיון';
       case 'hired': return 'התקבל לעבודה';
       case 'employment_ended': return 'סיים העסקה';
       case 'submitted': return 'הוגש';
