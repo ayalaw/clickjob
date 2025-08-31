@@ -663,7 +663,15 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
     let candidateId: string;
     
     if (existingCandidate) {
-      console.log(`🔄 מועמד כבר קיים: ${existingCandidate.firstName} ${existingCandidate.lastName}`);
+      // התראה חזקה על מועמד כפול
+      console.log(`⚠️⚠️⚠️ מועמד כפול זוהה! ⚠️⚠️⚠️`);
+      console.log(`📱 מספר טלפון זהה: ${candidateData.mobile || candidateData.phone}`);
+      console.log(`🆔 מועמד קיים: ${existingCandidate.firstName} ${existingCandidate.lastName}`);
+      console.log(`📧 אימייל קיים: ${existingCandidate.email}`);
+      console.log(`📱 טלפון קיים: ${existingCandidate.mobile}`);
+      console.log(`🆔 ת.ז קיימת: ${existingCandidate.nationalId}`);
+      console.log(`⚠️⚠️⚠️ מועמד לא נוצר מחדש - עודכנו הפרטים ⚠️⚠️⚠️`);
+      
       candidateId = existingCandidate.id;
       
       // עדכון פרטי המועמד הקיים (כולל קורות חיים חדשים)

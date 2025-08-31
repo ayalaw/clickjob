@@ -552,26 +552,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check for duplicate candidates
   app.post('/api/candidates/check-duplicate', isAuthenticated, async (req, res) => {
     try {
-      const { email, mobile } = req.body;
+      const { email, mobile, nationalId } = req.body;
       
-      if (!email && !mobile) {
+      if (!email && !mobile && !nationalId) {
         return res.json({ exists: false });
       }
       
-      const candidates = await storage.getCandidates();
-      const duplicate = candidates.candidates.find((candidate: any) => 
-        (email && candidate.email === email) || 
-        (mobile && candidate.mobile === mobile)
-      );
+      // Use the improved findCandidateByContactInfo function
+      const duplicate = await storage.findCandidateByContactInfo(mobile, email, nationalId);
       
       if (duplicate) {
+        console.log(`⚠️⚠️⚠️ זוהה מועמד כפול בבדיקה! ⚠️⚠️⚠️`);
+        console.log(`🆔 מועמד: ${duplicate.firstName} ${duplicate.lastName}`);
+        console.log(`📱 טלפון: ${duplicate.mobile}, 📧 אימייל: ${duplicate.email}, 🆔 ת.ז: ${duplicate.nationalId}`);
+        
         res.json({ 
           exists: true, 
           candidate: {
+            id: duplicate.id,
             firstName: duplicate.firstName,
             lastName: duplicate.lastName,
             email: duplicate.email,
-            mobile: duplicate.mobile
+            mobile: duplicate.mobile,
+            nationalId: duplicate.nationalId
           }
         });
       } else {

@@ -111,8 +111,50 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     existingCandidateId: string;
   }>({ open: false, candidateData: null, existingCandidateId: '' });
   
+  // State for duplicate warnings
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    phone?: string;
+    email?: string;
+    nationalId?: string;
+    existing?: any;
+  }>({});
+  
   // Field values for inline editing
   const [fieldValues, setFieldValues] = useState<any>({});
+  
+  // Function to check for duplicates
+  const checkDuplicates = async (mobile?: string, email?: string, nationalId?: string) => {
+    if (!mobile && !email && !nationalId) {
+      setDuplicateWarning({});
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/candidates/check-duplicate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mobile, email, nationalId }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.exists) {
+          setDuplicateWarning({
+            phone: mobile && result.candidate.mobile === mobile ? mobile : undefined,
+            email: email && result.candidate.email === email ? email : undefined,
+            nationalId: nationalId && result.candidate.nationalId === nationalId ? nationalId : undefined,
+            existing: result.candidate
+          });
+        } else {
+          setDuplicateWarning({});
+        }
+      }
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+    }
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -179,6 +221,22 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
     }
     // DON'T clear files if no candidate - this allows new file uploads to work
   }, [candidate]);
+
+  // Watch for changes in duplicate-sensitive fields
+  const watchedMobile = form.watch("mobile");
+  const watchedEmail = form.watch("email");
+  const watchedNationalId = form.watch("nationalId");
+
+  useEffect(() => {
+    // Only check for duplicates if we're not editing an existing candidate
+    if (!candidate) {
+      const timeoutId = setTimeout(() => {
+        checkDuplicates(watchedMobile, watchedEmail, watchedNationalId);
+      }, 500); // Debounce by 500ms
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [watchedMobile, watchedEmail, watchedNationalId, candidate]);
 
   useEffect(() => {
     if (candidate) {
@@ -659,20 +717,30 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       placeholder="הכנס דוא״ל"
                     />
                   </div>
-                  <div className="flex flex-row-reverse justify-between items-center">
-                    <span className="text-base font-medium">טלפון נייד:</span>
-                    <Input
-                      value={candidate ? fieldValues.mobile || '' : form.watch('mobile') || ''}
-                      onChange={(e) => {
-                        if (candidate) {
-                          updateFieldValue('mobile', e.target.value);
-                        } else {
-                          form.setValue('mobile', e.target.value);
-                        }
-                      }}
-                      className="w-48 text-base"
-                      placeholder="הכנס טלפון נייד"
-                    />
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">טלפון נייד:</span>
+                      <Input
+                        value={candidate ? fieldValues.mobile || '' : form.watch('mobile') || ''}
+                        onChange={(e) => {
+                          if (candidate) {
+                            updateFieldValue('mobile', e.target.value);
+                          } else {
+                            form.setValue('mobile', e.target.value);
+                          }
+                        }}
+                        className={`w-48 text-base ${duplicateWarning.phone ? 'border-red-500 bg-red-50' : ''}`}
+                        placeholder="הכנס טלפון נייד"
+                      />
+                    </div>
+                    {duplicateWarning.phone && duplicateWarning.existing && (
+                      <div className="text-red-600 text-sm font-bold bg-red-100 p-3 rounded border-2 border-red-400 shadow-lg">
+                        ⚠️⚠️⚠️ מספר טלפון זה כבר קיים במערכת! ⚠️⚠️⚠️<br />
+                        <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
+                        אימייל: {duplicateWarning.existing.email}<br />
+                        <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">טלפון 1:</span>
