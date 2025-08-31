@@ -181,7 +181,7 @@ export default function Interviews() {
                           <TableRow key={job.id} className="hover:bg-muted/50">
                             <TableCell>
                               <div>
-                                <Link href={`/jobs/${job.id}/edit`} className="hover:text-blue-600">
+                                <Link href={`/jobs`} className="hover:text-blue-600">
                                   <div className="font-medium cursor-pointer hover:underline">{job.title}</div>
                                 </Link>
                                 <div className="text-sm text-gray-500">
@@ -191,7 +191,7 @@ export default function Interviews() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <Link href={`/clients/${job.client.id}/edit`} className="hover:text-blue-600">
+                                <Link href={`/clients`} className="hover:text-blue-600">
                                   <div className="font-medium flex items-center gap-1 cursor-pointer hover:underline">
                                     <Building2 className="h-3 w-3" />
                                     {job.client.companyName}
