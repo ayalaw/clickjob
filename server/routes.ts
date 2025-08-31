@@ -2366,8 +2366,12 @@ ${recommendation}
       return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
     }
     try {
-      const roles = await storage.getRoles();
-      res.json(roles);
+      const allRoles = await storage.getRoles();
+      // Filter only the basic 3 roles: user, admin, super_admin
+      const basicRoles = allRoles.filter(role => 
+        role.type === 'user' || role.type === 'admin' || role.type === 'super_admin'
+      );
+      res.json(basicRoles);
     } catch (error) {
       console.error("Error fetching roles:", error);
       res.status(500).json({ message: "Failed to fetch roles" });
@@ -2472,10 +2476,18 @@ ${recommendation}
   });
 
   // Assign role to user (Admin and Super Admin only)
-  app.post('/api/users/:userId/roles', isAuthenticated, requireRole('admin'), async (req, res) => {
+  app.post('/api/users/:userId/roles', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const userId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
     try {
       const { roleId } = req.body;
-      const userId = req.params.userId;
+      const targetUserId = req.params.userId;
       
       if (!roleId) {
         return res.status(400).json({ message: "Role ID is required" });
@@ -2484,16 +2496,16 @@ ${recommendation}
       // Only Super Admin can assign super_admin or admin roles
       const role = await storage.getRole(roleId);
       if (role && (role.type === 'super_admin' || role.type === 'admin')) {
-        const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+        const isSuperAdmin = await storage.hasRole(userId, 'super_admin');
         if (!isSuperAdmin) {
           return res.status(403).json({ message: "Only Super Admin can assign admin or super admin roles" });
         }
       }
 
       const userRole = await storage.assignUserRole({
-        userId,
+        userId: targetUserId,
         roleId,
-        assignedBy: req.userPermissions?.userId || 'system'
+        assignedBy: userId
       });
       
       res.status(201).json(userRole);
@@ -2504,14 +2516,22 @@ ${recommendation}
   });
 
   // Remove role from user (Admin and Super Admin only)
-  app.delete('/api/users/:userId/roles/:roleId', isAuthenticated, requireRole('admin'), async (req, res) => {
+  app.delete('/api/users/:userId/roles/:roleId', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const sessionUserId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(sessionUserId, 'admin') || await storage.hasRole(sessionUserId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
     try {
       const { userId, roleId } = req.params;
       
       // Only Super Admin can remove super_admin or admin roles
       const role = await storage.getRole(roleId);
       if (role && (role.type === 'super_admin' || role.type === 'admin')) {
-        const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+        const isSuperAdmin = await storage.hasRole(sessionUserId, 'super_admin');
         if (!isSuperAdmin) {
           return res.status(403).json({ message: "Only Super Admin can remove admin or super admin roles" });
         }
@@ -2612,6 +2632,8 @@ ${recommendation}
 
       // Send welcome email with login credentials
       const loginUrl = `${req.protocol}://${req.get('host')}`;
+      console.log(`📧 Attempting to send welcome email to: ${newUser.email}`);
+      
       const emailSent = await sendWelcomeEmail({
         to: newUser.email!,
         firstName: newUser.firstName || undefined,
@@ -2622,7 +2644,9 @@ ${recommendation}
       });
 
       if (!emailSent) {
-        console.warn('Failed to send welcome email to new user');
+        console.error('❌ Failed to send welcome email to new user:', newUser.email);
+      } else {
+        console.log('✅ Welcome email sent successfully to:', newUser.email);
       }
 
       // Return user without password
