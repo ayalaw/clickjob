@@ -9,15 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { 
   UserCheck, 
   Building2, 
@@ -27,11 +18,14 @@ import {
   FileText, 
   CheckCircle, 
   XCircle, 
-  Send,
-  Eye,
+  Clock,
+  User,
+  ChevronLeft,
+  ChevronRight,
   Download,
   ArrowRight,
-  Briefcase
+  Briefcase,
+  MessageSquare
 } from "lucide-react";
 import type { JobApplicationWithDetails, JobApplication, JobWithClient } from "@shared/schema";
 
@@ -41,9 +35,8 @@ export default function JobInterviews() {
   const [, params] = useRoute("/interviews/:jobId");
   const jobId = params?.jobId;
   
-  const [selectedApplication, setSelectedApplication] = useState<JobApplicationWithDetails | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewerFeedback, setReviewerFeedback] = useState("");
-  const [selectedRejectionReason, setSelectedRejectionReason] = useState("");
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -73,20 +66,33 @@ export default function JobInterviews() {
   });
 
   const applications = applicationsData?.applications.filter(app => app.jobId === jobId) || [];
+  const currentApplication = applications[currentIndex];
 
   // Mutations for application actions
   const updateApplicationMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<JobApplication> }) => {
-      await apiRequest(`/api/job-applications/${id}`, {
+      const response = await apiRequest(`/api/job-applications/${id}`, {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(updates),
       });
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-applications"] });
       setReviewerFeedback("");
-      setSelectedRejectionReason("");
-      setSelectedApplication(null);
+      
+      // Move to next candidate if available
+      if (currentIndex < applications.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        toast({
+          title: "סיימת לבדוק את כל המועמדים! 🎉",
+          description: "כל המועמדויות למשרה זו נבדקו",
+        });
+      }
     },
     onError: (error: any) => {
       if (isUnauthorizedError(error)) {
@@ -108,86 +114,68 @@ export default function JobInterviews() {
     },
   });
 
-  const handleApprove = (application: JobApplicationWithDetails) => {
+  const handleApprove = () => {
+    if (!currentApplication) return;
+    
     updateApplicationMutation.mutate({
-      id: application.id,
+      id: currentApplication.id,
       updates: {
         status: 'interview',
         reviewerFeedback,
         reviewedAt: new Date(),
-        sentToClient: !!reviewerFeedback.trim(),
+        sentToClient: true,
       }
     });
     
     toast({
       title: "מועמד אושר! ✅",
-      description: "המועמד הועבר לשלב הבא",
+      description: "המועמד הועבר לשלב הבא ונשלח ללקוח",
     });
   };
 
-  const handleReject = (application: JobApplicationWithDetails) => {
-    if (!selectedRejectionReason) {
-      toast({
-        title: "שגיאה",
-        description: "יש לבחור סיבת פסילה",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleReject = () => {
+    if (!currentApplication) return;
     
     updateApplicationMutation.mutate({
-      id: application.id,
+      id: currentApplication.id,
       updates: {
         status: 'rejected',
-        rejectionReason: selectedRejectionReason as any,
         reviewerFeedback,
         reviewedAt: new Date(),
       }
     });
     
     toast({
-      title: "מועמד נפסל",
-      description: "הסטטוס נשמר במערכת",
+      title: "מועמד נפסל ❌",
+      description: "המועמד הועבר לסטטוס נפסל",
     });
   };
 
-  const handleSendFeedback = (application: JobApplicationWithDetails) => {
-    if (!reviewerFeedback.trim()) {
-      toast({
-        title: "שגיאה",
-        description: "יש להזין חוות דעת",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleNeedsMoreReview = () => {
+    if (!currentApplication) return;
     
     updateApplicationMutation.mutate({
-      id: application.id,
+      id: currentApplication.id,
       updates: {
+        status: 'pending_review',
         reviewerFeedback,
-        sentToClient: true,
         reviewedAt: new Date(),
       }
     });
     
     toast({
-      title: "חוות דעת נשלחה! 📧",
-      description: "הועברה ללקוח בהצלחה",
+      title: "נדרש ראיון נוסף 🔄",
+      description: "המועמד סומן לבדיקה נוספת",
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return <Badge variant="secondary">הוגש</Badge>;
-      case 'interview':
-        return <Badge className="bg-green-100 text-green-800">בראיון</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">נפסל</Badge>;
-      case 'hired':
-        return <Badge className="bg-blue-100 text-blue-800">התקבל</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const navigateToCandidate = (direction: 'prev' | 'next') => {
+    if (direction === 'prev' && currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setReviewerFeedback("");
+    } else if (direction === 'next' && currentIndex < applications.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setReviewerFeedback("");
     }
   };
 
@@ -221,271 +209,360 @@ export default function JobInterviews() {
     );
   }
 
+  if (applications.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <UserCheck className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            אין מועמדויות למשרה זו
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            לא נמצאו מועמדויות הממתינות לסקירה עבור המשרה הזו
+          </p>
+          <Link href="/interviews">
+            <Button>חזור לרשימת משרות</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentApplication) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            מועמד לא נמצא
+          </h2>
+          <Link href="/interviews">
+            <Button>חזור לרשימת משרות</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div dir="rtl" className="space-y-6">
-        
-        {/* Breadcrumb */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+    <div dir="rtl" className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header with candidate info */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
             <Link href="/interviews" className="hover:text-blue-600">
               ראיונות
             </Link>
             <ArrowRight className="h-3 w-3" />
             <span className="font-medium">{jobData?.title}</span>
-            {jobData?.jobCode && (
-              <Badge variant="outline" className="text-xs">
-                {jobData.jobCode}
-              </Badge>
-            )}
+          </div>
+
+          {/* Candidate Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <User className="h-10 w-10 p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 rounded-full" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {currentApplication.candidate.firstName} {currentApplication.candidate.lastName}
+                  </h1>
+                  <div className="flex items-center gap-4 mt-1">
+                    {currentApplication.candidate.phone && (
+                      <a
+                        href={`tel:${currentApplication.candidate.phone}`}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                        data-testid="link-phone"
+                      >
+                        <Phone className="h-4 w-4" />
+                        {currentApplication.candidate.phone}
+                      </a>
+                    )}
+                    {currentApplication.candidate.email && (
+                      <a
+                        href={`mailto:${currentApplication.candidate.email}`}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                        data-testid="link-email"
+                      >
+                        <Mail className="h-4 w-4" />
+                        {currentApplication.candidate.email}
+                      </a>
+                    )}
+                    {currentApplication.candidate.phone && (
+                      <a
+                        href={`https://wa.me/972${currentApplication.candidate.phone.replace(/^0/, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-sm text-green-600 hover:text-green-800"
+                        data-testid="link-whatsapp"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        וואטסאפ
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                מועמד {currentIndex + 1} מתוך {applications.length}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateToCandidate('prev')}
+                  disabled={currentIndex === 0}
+                  data-testid="button-prev-candidate"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  הקודם
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateToCandidate('next')}
+                  disabled={currentIndex === applications.length - 1}
+                  data-testid="button-next-candidate"
+                >
+                  הבא
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <main className="flex-1 p-6 space-y-6">
-          {/* Job Info Card */}
-          {jobData && (
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-2 gap-6">
+          {/* Right Column - Job Details */}
+          <div className="space-y-6">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <Briefcase className="h-5 w-5" />
                   פרטי המשרה
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-3 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">{jobData.title}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{jobData.client?.companyName || 'לא צוין'}</p>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                    <MapPin className="h-3 w-3" />
-                    {jobData.location}
-                  </div>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm">איש קשר:</h5>
-                  <p className="text-sm">{jobData.client?.contactName || 'לא צוין'}</p>
-                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                    <Mail className="h-3 w-3" />
-                    {jobData.client?.email || 'לא צוין'}
-                  </div>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm">סטטיסטיקות:</h5>
-                  <div className="text-sm space-y-1">
-                    <div>סה"כ מועמדויות: <span className="font-bold">{applications.length}</span></div>
-                    <div>ממתינים לסקירה: <span className="font-bold text-yellow-600">
-                      {applications.filter(app => app.status === 'submitted').length}
-                    </span></div>
-                    <div>בראיון: <span className="font-bold text-green-600">
-                      {applications.filter(app => app.status === 'interview').length}
-                    </span></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Action Panel for Selected Application */}
-          {selectedApplication && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>פעולות עבור: {selectedApplication.candidate.firstName} {selectedApplication.candidate.lastName}</span>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedApplication(null)}>
-                    סגור
-                  </Button>
-                </CardTitle>
-              </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {jobData?.title}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Building2 className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">
+                      {jobData?.client?.companyName || 'לא צוין'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-600 dark:text-gray-300">
+                      {jobData?.location}
+                    </span>
+                  </div>
+                </div>
+
+                {jobData?.description && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      חוות דעת (עד 1000 תווים):
-                    </label>
-                    <Textarea
-                      value={reviewerFeedback}
-                      onChange={(e) => setReviewerFeedback(e.target.value)}
-                      placeholder="הזן חוות דעת על המועמד..."
-                      maxLength={1000}
-                      className="min-h-24"
-                      data-testid="textarea-reviewer-feedback"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {reviewerFeedback.length}/1000 תווים
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">תיאור התפקיד</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                      {jobData.description}
                     </p>
                   </div>
-                  
+                )}
+
+                {jobData?.requirements && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      סיבת פסילה (לפסילה):
-                    </label>
-                    <Select value={selectedRejectionReason} onValueChange={setSelectedRejectionReason}>
-                      <SelectTrigger data-testid="select-rejection-reason">
-                        <SelectValue placeholder="בחר סיבת פסילה..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="lack_of_experience">חוסר ניסיון</SelectItem>
-                        <SelectItem value="geographic_mismatch">אי התאמה גיאוגרפית</SelectItem>
-                        <SelectItem value="salary_demands">דרישות שכר</SelectItem>
-                        <SelectItem value="qualifications_mismatch">אי התאמת כישורים</SelectItem>
-                        <SelectItem value="other">אחר</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">דרישות התפקיד</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                      {jobData.requirements}
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-1">סוג משרה</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {jobData?.jobType || 'לא צוין'}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-1">משכורת</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {jobData?.salaryRange || 'לא צוין'}
+                    </p>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3">
+                {jobData?.client && (
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">איש קשר</h4>
+                    <div className="space-y-1">
+                      <p className="text-sm">{jobData.client.contactName || 'לא צוין'}</p>
+                      {jobData.client.email && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                          <Mail className="h-3 w-3" />
+                          {jobData.client.email}
+                        </div>
+                      )}
+                      {jobData.client.phone && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                          <Phone className="h-3 w-3" />
+                          {jobData.client.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Action Area */}
+            <Card>
+              <CardHeader>
+                <CardTitle>הערכת המועמד</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Quick Status Buttons */}
+                <div className="grid grid-cols-3 gap-3">
                   <Button
-                    onClick={() => handleSendFeedback(selectedApplication)}
-                    disabled={updateApplicationMutation.isPending || !reviewerFeedback.trim()}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    data-testid="button-send-feedback"
-                  >
-                    <Send className="h-4 w-4 ml-1" />
-                    שלח חוות דעת למעסיק
-                  </Button>
-                  
-                  <Button
-                    onClick={() => handleApprove(selectedApplication)}
+                    onClick={handleApprove}
                     disabled={updateApplicationMutation.isPending}
-                    className="bg-green-600 hover:bg-green-700"
-                    data-testid="button-approve-candidate"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    data-testid="button-approve"
                   >
-                    <CheckCircle className="h-4 w-4 ml-1" />
-                    אשר לראיון
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    ✅ מתאים
                   </Button>
-                  
                   <Button
-                    onClick={() => handleReject(selectedApplication)}
-                    disabled={updateApplicationMutation.isPending || !selectedRejectionReason}
+                    onClick={handleReject}
+                    disabled={updateApplicationMutation.isPending}
                     variant="destructive"
-                    data-testid="button-reject-candidate"
+                    data-testid="button-reject"
                   >
-                    <XCircle className="h-4 w-4 ml-1" />
-                    פסול מועמד
+                    <XCircle className="h-4 w-4 mr-2" />
+                    ❌ לא מתאים
                   </Button>
+                  <Button
+                    onClick={handleNeedsMoreReview}
+                    disabled={updateApplicationMutation.isPending}
+                    variant="outline"
+                    data-testid="button-more-review"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    🔄 נדרש ראיון נוסף
+                  </Button>
+                </div>
+
+                {/* Internal Notes */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    הערות פנימיות (אופציונלי)
+                  </label>
+                  <Textarea
+                    value={reviewerFeedback}
+                    onChange={(e) => setReviewerFeedback(e.target.value)}
+                    placeholder="הזן חוות דעת או הערות על המועמד..."
+                    className="min-h-20"
+                    data-testid="textarea-reviewer-feedback"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    הערות אלו ישמרו במערכת לעיון עתידי
+                  </p>
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
 
-          {/* Applications Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                מועמדויות למשרה
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {applications.length === 0 ? (
-                <div className="text-center py-12">
-                  <UserCheck className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    אין מועמדויות למשרה זו
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    לא נמצאו מועמדויות עבור משרה זו כרגע
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>מועמד</TableHead>
-                        <TableHead>פרטי קשר</TableHead>
-                        <TableHead>ניסיון</TableHead>
-                        <TableHead>סטטוס</TableHead>
-                        <TableHead>תאריך הגשה</TableHead>
-                        <TableHead>פעולות</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {applications.map((application) => (
-                        <TableRow key={application.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">
-                                {application.candidate.firstName} {application.candidate.lastName}
-                              </div>
-                              {application.candidate.profession && (
-                                <div className="text-sm text-gray-500">
-                                  {application.candidate.profession}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {application.candidate.email}
-                              </div>
-                              <div className="text-sm flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {application.candidate.mobile}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              {application.candidate.experience && (
-                                <div className="text-sm">
-                                  {application.candidate.experience} שנות ניסיון
-                                </div>
-                              )}
-                              <div className="text-sm text-gray-500 flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {application.candidate.city}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(application.status)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {new Date(application.appliedAt).toLocaleDateString('he-IL')}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedApplication(application);
-                                  setReviewerFeedback(application.reviewerFeedback || "");
-                                  setSelectedRejectionReason(application.rejectionReason || "");
-                                }}
-                                data-testid={`button-review-${application.id}`}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              {application.candidate.cvPath && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Show CV in modal or navigate to candidate detail
-                                    window.location.href = `/candidates/${application.candidate.id}`;
-                                  }}
-                                  data-testid={`button-cv-${application.id}`}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
+          {/* Left Column - CV Preview */}
+          <div>
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    קורות החיים
+                  </span>
+                  {currentApplication.candidate.cvPath && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (currentApplication.candidate.cvPath) {
+                          window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank');
+                        }
+                      }}
+                      data-testid="button-download-cv"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      הורד קובץ
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentApplication.candidate.cvPath ? (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
+                    <iframe
+                      src={`/api/candidates/${currentApplication.candidate.id}/cv`}
+                      className="w-full h-96"
+                      title="תצוגה מקדימה של קורות החיים"
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-600 dark:text-gray-300">
+                      לא הועלה קובץ קורות חיים
+                    </p>
+                  </div>
+                )}
+
+                {/* Candidate Details from CV */}
+                {(currentApplication.candidate.experience || currentApplication.candidate.education || currentApplication.candidate.skills) && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                      פרטים שחולצו מהקורות חיים
+                    </h4>
+                    <div className="space-y-3 text-sm">
+                      {currentApplication.candidate.experience && (
+                        <div>
+                          <span className="font-medium">ניסיון תעסוקתי:</span>
+                          <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                            {currentApplication.candidate.experience}
+                          </p>
+                        </div>
+                      )}
+                      {currentApplication.candidate.education && (
+                        <div>
+                          <span className="font-medium">השכלה:</span>
+                          <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                            {currentApplication.candidate.education}
+                          </p>
+                        </div>
+                      )}
+                      {currentApplication.candidate.skills && (
+                        <div>
+                          <span className="font-medium">כישורים:</span>
+                          <p className="text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                            {currentApplication.candidate.skills}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
