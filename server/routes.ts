@@ -2608,6 +2608,10 @@ ${recommendation}
         return res.status(400).json({ message: 'Email is required' });
       }
 
+      if (!roleId || roleId === 'no-role') {
+        return res.status(400).json({ message: 'Role is required' });
+      }
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -2625,14 +2629,12 @@ ${recommendation}
         password: tempPassword,
       });
 
-      // Assign role if provided
-      if (roleId && roleId !== 'no-role') {
-        await storage.assignUserRole({
-          userId: newUser.id,
-          roleId: roleId,
-          assignedBy: userId
-        });
-      }
+      // Assign role (now required)
+      await storage.assignUserRole({
+        userId: newUser.id,
+        roleId: roleId,
+        assignedBy: userId
+      });
 
       // Send welcome email with login credentials
       const loginUrl = `${req.protocol}://${req.get('host')}`;

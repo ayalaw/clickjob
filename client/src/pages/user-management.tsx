@@ -206,7 +206,7 @@ export default function UserManagement() {
     
     if (newUserFirstName.trim()) userData.firstName = newUserFirstName.trim();
     if (newUserLastName.trim()) userData.lastName = newUserLastName.trim();
-    if (newUserRole && newUserRole !== "no-role") userData.roleId = newUserRole;
+    if (newUserRole) userData.roleId = newUserRole;
     
     addUserMutation.mutate(userData);
   };
@@ -266,13 +266,12 @@ export default function UserManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="role">תפקיד (אופציונלי)</Label>
+                  <Label htmlFor="role">תפקיד (חובה)</Label>
                   <Select value={newUserRole} onValueChange={setNewUserRole}>
                     <SelectTrigger data-testid="select-new-user-role">
                       <SelectValue placeholder="בחר תפקיד" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="no-role">ללא תפקיד</SelectItem>
                       {allRoles.map((role) => (
                         <SelectItem key={role.id} value={role.id}>
                           {role.name}
@@ -290,7 +289,7 @@ export default function UserManagement() {
                   </Button>
                   <Button 
                     onClick={handleAddUser}
-                    disabled={!newUserEmail.trim() || addUserMutation.isPending}
+                    disabled={!newUserEmail.trim() || !newUserRole || addUserMutation.isPending}
                     data-testid="button-confirm-add-user"
                   >
                     {addUserMutation.isPending ? "מוסיף..." : "הוסף משתמש"}
