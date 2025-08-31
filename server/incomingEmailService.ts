@@ -204,7 +204,7 @@ async function checkCpanelEmails(): Promise<void> {
             return;
           }
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
+          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
           
           fetch.on('message', (msg: any, seqno: any) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
@@ -212,8 +212,15 @@ async function checkCpanelEmails(): Promise<void> {
             
             msg.once('attributes', (attrs: any) => {
               messageUid = attrs.uid;
-              // סימון המייל כנקרא מיד כשאנחנו מתחילים לעבד אותו
-              console.log(`📧 מייל ${messageUid} סומן כנקרא אוטומטית`);
+              
+              // סימון המייל כנקרא מיד כשאנחנו מקבלים את ה-UID
+              imap.addFlags(messageUid, ['\\Seen'], (err: any) => {
+                if (err) {
+                  console.error('❌ שגיאה בסימון מייל כנקרא:', err.message);
+                } else {
+                  console.log(`✅ מייל ${messageUid} סומן כנקרא מיד`);
+                }
+              });
             });
             
             msg.on('body', (stream: any, info: any) => {
