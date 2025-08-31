@@ -255,6 +255,50 @@ function extractDataFromText(text: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Bootstrap admin user - special route for initial setup (before auth middleware)
+  app.post('/api/bootstrap-admin', async (req, res) => {
+    try {
+      // Create super admin role if doesn't exist
+      let superAdminRole;
+      try {
+        superAdminRole = await storage.getRoleByType('super_admin');
+      } catch {
+        superAdminRole = await storage.createRole({
+          name: 'מנהל מערכת ראשי',
+          type: 'super_admin',
+          description: 'גישה מלאה למערכת'
+        });
+      }
+
+      // Get the target user (hardcoded for now)
+      const targetUserId = '46866906';
+      const existingUser = await storage.getUser(targetUserId);
+      if (!existingUser) {
+        return res.status(404).json({ message: "Target user not found" });
+      }
+
+      // Check if user already has super admin role
+      const userWithRoles = await storage.getUserWithRoles(targetUserId);
+      const hasRole = userWithRoles?.userRoles?.some(ur => ur.role.type === 'super_admin');
+      
+      if (!hasRole) {
+        // Assign super admin role
+        await storage.assignUserRole({
+          userId: targetUserId,
+          roleId: superAdminRole.id,
+          assignedBy: targetUserId, // Self-assigned for bootstrap
+          assignedAt: new Date()
+        });
+        res.json({ message: "Super admin role assigned successfully" });
+      } else {
+        res.json({ message: "User already has super admin role" });
+      }
+    } catch (error) {
+      console.error("Error bootstrapping admin:", error);
+      res.status(500).json({ message: "Failed to bootstrap admin", error: error.message });
+    }
+  });
+
   // Static files serving for uploads - Add CORS middleware
   app.use('/uploads', (req, res, next) => {
     // Add CORS headers for file access

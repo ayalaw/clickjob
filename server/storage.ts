@@ -1508,6 +1508,20 @@ export class DatabaseStorage implements IStorage {
     return userWithRoles;
   }
 
+  async getAllUsers(): Promise<UserWithRoles[]> {
+    const allUsers = await db.select().from(users);
+    const usersWithRoles: UserWithRoles[] = [];
+    
+    for (const user of allUsers) {
+      const userWithRoles = await this.getUserWithRoles(user.id);
+      if (userWithRoles) {
+        usersWithRoles.push(userWithRoles);
+      }
+    }
+    
+    return usersWithRoles;
+  }
+
   async assignUserRole(userRole: InsertUserRole): Promise<UserRole> {
     const [created] = await db.insert(userRoles).values(userRole).returning();
     return created;
