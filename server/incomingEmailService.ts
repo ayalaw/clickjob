@@ -761,4 +761,123 @@ export function startEmailMonitoring(): void {
   
   // בדיקה ראשונית
   checkIncomingEmails();
+  
+  // בדיקה ידנית חד פעמית לדיבוג
+  setTimeout(async () => {
+    console.log('🔍 מפעיל בדיקה ידנית של כל המיילים...');
+    await checkAllEmails();
+  }, 5000);
+}
+
+// פונקציה לבדיקה ידנית של כל המיילים (כולל נקראו)
+export async function checkAllEmails(): Promise<void> {
+  console.log('🔍 בדיקה ידנית של כל המיילים (כולל נקראו)...');
+  
+  const imap = new Imap({
+    user: process.env.CPANEL_EMAIL_USER!,
+    password: process.env.CPANEL_EMAIL_PASS!,
+    host: 'mail.h-group.org.il', // השרת הנכון
+    port: 993,
+    tls: true,
+    authTimeout: 10000,
+    connTimeout: 10000,
+    tlsOptions: {
+      rejectUnauthorized: false
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    imap.once('ready', () => {
+      console.log('✅ מחובר לשרת IMAP לבדיקה ידנית');
+      
+      imap.openBox('INBOX', false, (err, box) => {
+        if (err) {
+          console.error('❌ שגיאה בפתיחת תיבת דואר:', err.message);
+          reject(err);
+          return;
+        }
+
+        console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה (כולל נקראו)`);
+
+        // חיפוש כל המיילים (כולל נקראו) מהיום האחרון
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        imap.search(['SINCE', yesterday], (err, results) => {
+          if (err) {
+            console.error('❌ שגיאה בחיפוש מיילים:', err.message);
+            reject(err);
+            return;
+          }
+
+          if (!results || results.length === 0) {
+            console.log('📭 לא נמצאו מיילים מהיום האחרון');
+            imap.end();
+            resolve();
+            return;
+          }
+
+          console.log(`🔍 נמצאו ${results.length} מיילים מהיום האחרון`);
+
+          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
+          
+          fetch.on('message', (msg: any, seqno: any) => {
+            console.log(`📩 בודק מייל מספר ${seqno}`);
+            let messageUid: number;
+            
+            msg.once('attributes', (attrs: any) => {
+              messageUid = attrs.uid;
+              const flags = attrs.flags || [];
+              const isRead = flags.includes('\\Seen');
+              console.log(`📧 מייל ${messageUid} - ${isRead ? 'נקרא' : 'לא נקרא'}`);
+            });
+            
+            msg.on('body', (stream: any, info: any) => {
+              let buffer = '';
+              
+              stream.on('data', (chunk: any) => {
+                buffer += chunk.toString('utf8');
+              });
+              
+              stream.once('end', async () => {
+                try {
+                  const parsed = await simpleParser(buffer);
+                  const emailId = `${parsed.from?.text}-${parsed.subject}-${parsed.date?.getTime()}`;
+                  
+                  console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
+                  console.log(`📅 תאריך: ${parsed.date}`);
+                  
+                  // בדיקה אם יש קבצים מצורפים
+                  const hasAttachments = parsed.attachments && parsed.attachments.length > 0;
+                  console.log(`📎 קבצים מצורפים: ${hasAttachments ? 'כן' : 'לא'}`);
+                  
+                } catch (error) {
+                  console.error('❌ שגיאה בעיבוד מייל:', error);
+                }
+              });
+            });
+          });
+
+          fetch.once('end', () => {
+            console.log('✅ סיימתי בדיקה ידנית של מיילים');
+            imap.end();
+            resolve();
+          });
+
+          fetch.once('error', (err: any) => {
+            console.error('❌ שגיאה בטעינת מיילים:', err.message);
+            imap.end();
+            reject(err);
+          });
+        });
+      });
+    });
+
+    imap.once('error', (err: any) => {
+      console.error('❌ שגיאה בחיבור ל-IMAP:', err.message);
+      reject(err);
+    });
+
+    imap.connect();
+  });
 }

@@ -2815,6 +2815,17 @@ ${recommendation}
     }
   });
 
+  // Route לבדיקה ידנית של כל המיילים
+  app.post('/api/check-all-emails', isAuthenticated, async (req, res) => {
+    try {
+      const { checkAllEmails } = await import('./incomingEmailService');
+      await checkAllEmails();
+      res.json({ message: 'בדיקה ידנית של כל המיילים הופעלה' });
+    } catch (error) {
+      console.error('שגיאה בבדיקה ידנית:', error);
+      res.status(500).json({ error: 'שגיאה בבדיקה ידנית של מיילים' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
