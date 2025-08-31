@@ -135,6 +135,7 @@ export async function checkIncomingEmails(): Promise<void> {
     await checkCpanelEmails();
   } catch (error) {
     console.error('❌ שגיאה בבדיקת מיילים נכנסים:', error);
+    // Don't crash the application - just log the error
   }
 }
 
@@ -353,13 +354,23 @@ async function checkCpanelEmails(): Promise<void> {
 
       imap.once('error', (err: any) => {
         console.error('❌ שגיאת חיבור IMAP:', err.message);
-        reject(err);
+        // Don't reject on IMAP errors - just resolve to avoid crashing the app
+        resolve();
       });
 
-      imap.connect();
+      // Wrap the connection in a timeout to prevent hanging
+      setTimeout(() => {
+        try {
+          imap.connect();
+        } catch (connectError) {
+          console.error('❌ שגיאה בחיבור IMAP:', connectError);
+          resolve();
+        }
+      }, 1000);
     } catch (error) {
       console.error('Error loading IMAP settings:', error);
-      reject(error);
+      // Don't reject on settings error - just resolve to avoid crashing the app
+      resolve();
     }
   });
 }

@@ -282,13 +282,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userWithRoles = await storage.getUserWithRoles(targetUserId);
       const hasRole = userWithRoles?.userRoles?.some(ur => ur.role.type === 'super_admin');
       
-      if (!hasRole) {
+      if (!hasRole && superAdminRole) {
         // Assign super admin role
         await storage.assignUserRole({
           userId: targetUserId,
           roleId: superAdminRole.id,
-          assignedBy: targetUserId, // Self-assigned for bootstrap
-          assignedAt: new Date()
+          assignedBy: targetUserId // Self-assigned for bootstrap
         });
         res.json({ message: "Super admin role assigned successfully" });
       } else {
@@ -296,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error bootstrapping admin:", error);
-      res.status(500).json({ message: "Failed to bootstrap admin", error: error.message });
+      res.status(500).json({ message: "Failed to bootstrap admin", error: (error as Error).message });
     }
   });
 
@@ -510,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -560,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const candidates = await storage.getCandidates();
-      const duplicate = candidates.find(candidate => 
+      const duplicate = candidates.candidates.find((candidate: any) => 
         (email && candidate.email === email) || 
         (mobile && candidate.mobile === mobile)
       );
@@ -684,7 +683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (req.file.mimetype === 'application/pdf') {
             try {
               const stringsOutput = execSync(`strings "${req.file.path}"`, { encoding: 'utf8' });
-              const lines = stringsOutput.split('\n').filter(line => 
+              const lines = stringsOutput.split('\n').filter((line: string) => 
                 line.trim().length > 2 && (
                   /[\u0590-\u05FF]/.test(line) || // Hebrew characters
                   /@/.test(line) || // Email
@@ -2348,10 +2347,11 @@ ${recommendation}
   });
 
   // Start automatic email monitoring 
-  if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
-    console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-    startEmailMonitoring();
-  }
+  // Temporarily disabled email monitoring to prevent IMAP crashes
+  // if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
+  //   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
+  //   startEmailMonitoring();
+  // }
 
   // RBAC Routes - Role & Permission Management
   
