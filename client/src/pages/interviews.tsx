@@ -69,7 +69,7 @@ export default function Interviews() {
     };
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     switch (status) {
       case 'active':
         return <Badge className="bg-green-100 text-green-800">פעיל</Badge>;
@@ -78,7 +78,7 @@ export default function Interviews() {
       case 'closed':
         return <Badge variant="destructive">סגור</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status || 'לא הוגדר'}</Badge>;
     }
   };
 
