@@ -315,18 +315,23 @@ async function checkCpanelEmails(): Promise<void> {
                       }
                     }
                     
-                    // בדיקה אם יש לנו מועמד תקין (פרטים אמיתיים שלא ריקים)
-                    const hasValidEmail = candidate.email && candidate.email.trim() !== '';
-                    const hasValidName = (candidate.firstName && candidate.firstName.trim() !== '') || 
-                                        (candidate.lastName && candidate.lastName.trim() !== '');
-                    const hasValidMobile = candidate.mobile && candidate.mobile.trim() !== '';
+                    // יצירת מועמד בכל מקרה אם יש קובץ קורות חיים
+                    const hasCVFile = candidate.cvPath && candidate.cvPath.trim() !== '';
                     
-                    const hasValidCandidate = hasValidEmail || hasValidName || hasValidMobile;
-                    
-                    if (hasValidCandidate) {
+                    if (hasCVFile) {
                       await createCandidateFromEmail(candidate);
-                      const displayName = [candidate.firstName, candidate.lastName].filter(n => n && n.trim()).join(' ') || 'מועמד חדש';
-                      console.log(`✅ נוצר מועמד חדש: ${displayName}`);
+                      
+                      const hasPersonalDetails = (candidate.firstName && candidate.firstName.trim()) || 
+                                               (candidate.lastName && candidate.lastName.trim()) ||
+                                               (candidate.email && candidate.email.trim()) ||
+                                               (candidate.mobile && candidate.mobile.trim());
+                      
+                      if (hasPersonalDetails) {
+                        const displayName = [candidate.firstName, candidate.lastName].filter(n => n && n.trim()).join(' ') || 'מועמד חדש';
+                        console.log(`✅ נוצר מועמד חדש עם פרטים: ${displayName}`);
+                      } else {
+                        console.log(`✅ נוצר מועמד חדש עם קובץ קורות חיים - פרטים אישיים יש למלא ידנית`);
+                      }
                       
                       // סימון המייל כ"עובד" רק אחרי הצלחה מלאה
                       processedEmails.add(emailId);
@@ -334,7 +339,7 @@ async function checkCpanelEmails(): Promise<void> {
                       
                       // המייל כבר סומן כנקרא אוטומטית בתחילת העיבוד
                     } else {
-                      console.log(`⚠️ לא נמצאו פרטי מועמד תקינים בקורות החיים - שדות ריקים או חסרים`);
+                      console.log(`⚠️ לא נמצא קובץ קורות חיים תקין במייל`);
                     }
                   } else {
                     console.log(`📧 מייל לא זוהה כמועמדות - נושא: "${parsed.subject}"`);
