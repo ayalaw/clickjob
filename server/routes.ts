@@ -24,7 +24,7 @@ import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
 import mime from 'mime-types';
-import { sendEmail, emailTemplates, sendWelcomeEmail } from './emailService';
+import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
 import { generateSecurePassword } from './passwordUtils';
 import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService';
 import nodemailer from 'nodemailer';
@@ -3034,6 +3034,22 @@ ${recommendation}
     } catch (error) {
       console.error('שגיאה בבדיקה ידנית:', error);
       res.status(500).json({ error: 'שגיאה בבדיקה ידנית של מיילים' });
+    }
+  });
+
+  // Route לטעינה מחדש של הגדרות מייל
+  app.post('/api/email-config/reload', isAuthenticated, async (req, res) => {
+    try {
+      console.log('🔄 מטען מחדש הגדרות מייל מהבסיס...');
+      const success = await reloadEmailConfig();
+      if (success) {
+        res.json({ message: 'הגדרות מייל נטענו מחדש בהצלחה', configured: true });
+      } else {
+        res.json({ message: 'הגדרות מייל לא תקינות', configured: false });
+      }
+    } catch (error) {
+      console.error('שגיאה בטעינה מחדש של הגדרות מייל:', error);
+      res.status(500).json({ error: 'שגיאה בטעינה מחדש של הגדרות מייל' });
     }
   });
 
