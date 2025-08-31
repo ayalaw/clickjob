@@ -210,20 +210,25 @@ export default function JobInterviews() {
         lastStatusChange: new Date(),
       });
 
-      // Send candidate profile to employer via email
-      if (reviewerFeedback.trim()) {
-        await apiRequest("POST", "/api/send-candidate-profile", {
-          candidateId: currentApplication.candidateId,
-          jobId: currentApplication.jobId,
-          reviewerFeedback: reviewerFeedback,
-          recipientEmail: jobData?.client?.email,
-          recipientName: jobData?.client?.contactName,
-        });
+      // Send candidate profile to employer via email (only if email is configured)
+      try {
+        if (jobData?.client?.email) {
+          await apiRequest("POST", "/api/send-candidate-profile", {
+            candidateId: currentApplication.candidateId,
+            jobId: currentApplication.jobId,
+            reviewerFeedback: reviewerFeedback || "מועמד מומלץ למשרה",
+            recipientEmail: jobData.client.email,
+            recipientName: jobData.client.contactName,
+          });
+        }
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Don't throw error - the candidate was still approved successfully
       }
       
       toast({
-        title: "מועמד נשלח למעסיק! ✅",
-        description: "המועמד נשלח למעסיק עם חוות הדעת שלך",
+        title: "מועמד אושר בהצלחה! ✅",
+        description: jobData?.client?.email ? "המועמד נשלח למעסיק עם חוות הדעת שלך" : "המועמד אושר והתווסף לרשימת המועמדים המאושרים",
       });
 
       // Move to next candidate automatically
