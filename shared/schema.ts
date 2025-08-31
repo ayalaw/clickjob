@@ -32,6 +32,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -41,6 +42,45 @@ export const jobStatusEnum = pgEnum('job_status', ['active', 'paused', 'closed']
 export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'rejected', 'accepted']);
 export const rejectionReasonEnum = pgEnum('rejection_reason', ['lack_of_experience', 'geographic_mismatch', 'salary_demands', 'qualifications_mismatch', 'other']);
 export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'failed', 'delivered', 'bounced']);
+export const roleTypeEnum = pgEnum('role_type', ['super_admin', 'admin', 'user']);
+
+// Roles table
+export const roles = pgTable("roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  type: roleTypeEnum("type").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Permissions table
+export const permissions = pgTable("permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  resource: varchar("resource").notNull(), // כמו 'candidates', 'jobs', 'settings'
+  action: varchar("action").notNull(), // כמו 'create', 'read', 'update', 'delete'
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User roles junction table
+export const userRoles = pgTable("user_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  roleId: varchar("role_id").notNull(),
+  assignedBy: varchar("assigned_by"), // מי הקצה את התפקיד
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+// Role permissions junction table
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roleId: varchar("role_id").notNull(),
+  permissionId: varchar("permission_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Message templates table
 export const messageTemplates = pgTable("message_templates", {
@@ -333,6 +373,46 @@ export const interviewEventsRelations = relations(interviewEvents, ({ one }) => 
   }),
 }));
 
+// Relations for RBAC system
+export const usersRelations = relations(users, ({ many }) => ({
+  userRoles: many(userRoles),
+}));
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  userRoles: many(userRoles),
+  rolePermissions: many(rolePermissions),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+  assignedByUser: one(users, {
+    fields: [userRoles.assignedBy],
+    references: [users.id],
+  }),
+}));
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(roles, {
+    fields: [rolePermissions.roleId],
+    references: [roles.id],
+  }),
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCandidateSchema = createInsertSchema(candidates).omit({
   id: true,
@@ -393,6 +473,52 @@ export const insertCandidateEventSchema = createInsertSchema(candidateEvents).om
   id: true,
   createdAt: true,
 });
+
+// Insert schemas for RBAC
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for RBAC
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+// Extended user type with roles
+export type UserWithRoles = User & {
+  userRoles: (UserRole & {
+    role: Role & {
+      rolePermissions: (RolePermission & {
+        permission: Permission;
+      })[];
+    };
+  })[];
+};
 export const insertReminderSchema = createInsertSchema(reminders).omit({
   id: true,
   createdAt: true,

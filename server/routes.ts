@@ -6,7 +6,20 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertCandidateSchema, insertClientSchema, insertJobSchema, insertJobApplicationSchema, insertTaskSchema, insertEmailSchema, insertMessageTemplateSchema } from "@shared/schema";
+import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware";
+import { 
+  insertCandidateSchema, 
+  insertClientSchema, 
+  insertJobSchema, 
+  insertJobApplicationSchema, 
+  insertTaskSchema, 
+  insertEmailSchema, 
+  insertMessageTemplateSchema,
+  insertRoleSchema,
+  insertPermissionSchema,
+  insertUserRoleSchema,
+  insertRolePermissionSchema
+} from "@shared/schema";
 import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
@@ -2294,6 +2307,202 @@ ${recommendation}
     console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
     startEmailMonitoring();
   }
+
+  // RBAC Routes - Role & Permission Management
+  
+  // Get all roles (Admin and Super Admin only)
+  app.get('/api/roles', isAuthenticated, requireRole('admin'), async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  // Get specific role (Admin and Super Admin only)
+  app.get('/api/roles/:id', isAuthenticated, requireRole('admin'), async (req, res) => {
+    try {
+      const role = await storage.getRole(req.params.id);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+      res.json(role);
+    } catch (error) {
+      console.error("Error fetching role:", error);
+      res.status(500).json({ message: "Failed to fetch role" });
+    }
+  });
+
+  // Create new role (Super Admin only)
+  app.post('/api/roles', isAuthenticated, requireRole('super_admin'), async (req, res) => {
+    try {
+      const roleData = insertRoleSchema.parse(req.body);
+      const role = await storage.createRole(roleData);
+      res.status(201).json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create role" });
+    }
+  });
+
+  // Update role (Super Admin only)
+  app.put('/api/roles/:id', isAuthenticated, requireRole('super_admin'), async (req, res) => {
+    try {
+      const roleData = insertRoleSchema.partial().parse(req.body);
+      const role = await storage.updateRole(req.params.id, roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Error updating role:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
+  // Delete role (Super Admin only)
+  app.delete('/api/roles/:id', isAuthenticated, requireRole('super_admin'), async (req, res) => {
+    try {
+      await storage.deleteRole(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting role:", error);
+      res.status(500).json({ message: "Failed to delete role" });
+    }
+  });
+
+  // Get all permissions (Admin and Super Admin only)
+  app.get('/api/permissions', isAuthenticated, requireRole('admin'), async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
+    }
+  });
+
+  // Create new permission (Super Admin only)
+  app.post('/api/permissions', isAuthenticated, requireRole('super_admin'), async (req, res) => {
+    try {
+      const permissionData = insertPermissionSchema.parse(req.body);
+      const permission = await storage.createPermission(permissionData);
+      res.status(201).json(permission);
+    } catch (error) {
+      console.error("Error creating permission:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create permission" });
+    }
+  });
+
+  // Assign role to user (Admin and Super Admin only)
+  app.post('/api/users/:userId/roles', isAuthenticated, requireRole('admin'), async (req, res) => {
+    try {
+      const { roleId } = req.body;
+      const userId = req.params.userId;
+      
+      if (!roleId) {
+        return res.status(400).json({ message: "Role ID is required" });
+      }
+
+      // Only Super Admin can assign super_admin or admin roles
+      const role = await storage.getRole(roleId);
+      if (role && (role.type === 'super_admin' || role.type === 'admin')) {
+        const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+        if (!isSuperAdmin) {
+          return res.status(403).json({ message: "Only Super Admin can assign admin or super admin roles" });
+        }
+      }
+
+      const userRole = await storage.assignUserRole({
+        userId,
+        roleId,
+        assignedBy: req.userPermissions?.userId || 'system'
+      });
+      
+      res.status(201).json(userRole);
+    } catch (error) {
+      console.error("Error assigning user role:", error);
+      res.status(500).json({ message: "Failed to assign user role" });
+    }
+  });
+
+  // Remove role from user (Admin and Super Admin only)
+  app.delete('/api/users/:userId/roles/:roleId', isAuthenticated, requireRole('admin'), async (req, res) => {
+    try {
+      const { userId, roleId } = req.params;
+      
+      // Only Super Admin can remove super_admin or admin roles
+      const role = await storage.getRole(roleId);
+      if (role && (role.type === 'super_admin' || role.type === 'admin')) {
+        const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+        if (!isSuperAdmin) {
+          return res.status(403).json({ message: "Only Super Admin can remove admin or super admin roles" });
+        }
+      }
+
+      await storage.removeUserRole(userId, roleId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing user role:", error);
+      res.status(500).json({ message: "Failed to remove user role" });
+    }
+  });
+
+  // Get user with roles and permissions
+  app.get('/api/users/:id/roles', isAuthenticated, injectUserPermissions, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      
+      // Users can only see their own roles unless they're admin or super admin
+      const requestingUserId = req.userPermissions?.userId;
+      const isAdmin = await req.userPermissions?.isAdmin();
+      const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+      
+      if (userId !== requestingUserId && !isAdmin && !isSuperAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(userId);
+      if (!userWithRoles) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(userWithRoles);
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+      res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
+  // Check if user has specific permission
+  app.get('/api/users/:id/permissions/:resource/:action', isAuthenticated, injectUserPermissions, async (req, res) => {
+    try {
+      const { id: userId, resource, action } = req.params;
+      
+      // Users can only check their own permissions unless they're admin or super admin
+      const requestingUserId = req.userPermissions?.userId;
+      const isAdmin = await req.userPermissions?.isAdmin();
+      const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+      
+      if (userId !== requestingUserId && !isAdmin && !isSuperAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const hasPermission = await storage.hasPermission(userId, resource, action);
+      res.json({ hasPermission });
+    } catch (error) {
+      console.error("Error checking user permission:", error);
+      res.status(500).json({ message: "Failed to check user permission" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

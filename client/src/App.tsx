@@ -23,6 +23,7 @@ import SystemSettings from "@/pages/system-settings";
 import Settings from "@/pages/settings";
 import CVSearch from "@/pages/cv-search";
 import Calendar from "@/pages/calendar";
+import UserManagement from "@/pages/user-management";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,6 +59,7 @@ function Router() {
           <Route path="/emails" component={Emails} />
           <Route path="/email-settings" component={EmailSettings} />
           <Route path="/system-settings" component={SystemSettings} />
+          <Route path="/user-management" component={UserManagement} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

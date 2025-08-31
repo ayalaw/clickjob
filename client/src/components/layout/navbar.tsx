@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, Building2, Briefcase, Mail, BarChart3, Settings, UserCheck, Search, Menu, Calendar } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Briefcase, Mail, BarChart3, Settings, UserCheck, Search, Menu, Calendar, Shield } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ const navigation = [
   { name: "סינון ראיונות", href: "/interviews", icon: UserCheck },
   { name: "מערכת מיילים", href: "/emails", icon: Mail },
   { name: "הגדרות מייל", href: "/email-settings", icon: Settings },
+  { name: "ניהול משתמשים", href: "/user-management", icon: Shield },
   { name: "דוחות ואנליטיקה", href: "/reports", icon: BarChart3 },
   { name: "הגדרות מערכת", href: "/settings", icon: Settings },
 ];

@@ -11,8 +11,13 @@ import {
   systemSettings,
   reminders,
   interviewEvents,
+  roles,
+  permissions,
+  userRoles,
+  rolePermissions,
   type User,
   type UpsertUser,
+  type UserWithRoles,
   type Candidate,
   type InsertCandidate,
   type Client,
@@ -40,6 +45,14 @@ import {
   type InterviewEvent,
   type InterviewEventWithDetails,
   type InsertInterviewEvent,
+  type Role,
+  type InsertRole,
+  type Permission,
+  type InsertPermission,
+  type UserRole,
+  type InsertUserRole,
+  type RolePermission,
+  type InsertRolePermission,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
@@ -71,6 +84,33 @@ export interface IStorage {
   getInterviewEvents(userId?: string): Promise<InterviewEventWithDetails[]>;
   getInterviewEvent(id: string): Promise<InterviewEventWithDetails | undefined>;
   createInterviewEvent(event: InsertInterviewEvent): Promise<InterviewEvent>;
+
+  // Role & Permission operations for RBAC
+  getRoles(): Promise<Role[]>;
+  getRole(id: string): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: string, role: Partial<InsertRole>): Promise<Role>;
+  deleteRole(id: string): Promise<void>;
+  
+  getPermissions(): Promise<Permission[]>;
+  getPermission(id: string): Promise<Permission | undefined>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  deletePermission(id: string): Promise<void>;
+  
+  // User role assignments
+  getUserWithRoles(id: string): Promise<UserWithRoles | undefined>;
+  assignUserRole(userRole: InsertUserRole): Promise<UserRole>;
+  removeUserRole(userId: string, roleId: string): Promise<void>;
+  getUserRoles(userId: string): Promise<UserRole[]>;
+  
+  // Role permission assignments
+  assignRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission>;
+  removeRolePermission(roleId: string, permissionId: string): Promise<void>;
+  getRolePermissions(roleId: string): Promise<RolePermission[]>;
+  
+  // Permission checking
+  hasPermission(userId: string, resource: string, action: string): Promise<boolean>;
+  hasRole(userId: string, roleType: string): Promise<boolean>;
   updateInterviewEvent(id: string, event: Partial<InsertInterviewEvent>): Promise<InterviewEvent>;
   deleteInterviewEvent(id: string): Promise<void>;
   getUpcomingInterviewEvents(userId?: string): Promise<InterviewEventWithDetails[]>;
@@ -1337,6 +1377,135 @@ export class DatabaseStorage implements IStorage {
     }
 
     return await query;
+  }
+
+  // RBAC Implementation
+  async getRoles(): Promise<Role[]> {
+    return await db.select().from(roles).orderBy(asc(roles.name));
+  }
+
+  async getRole(id: string): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role || undefined;
+  }
+
+  async createRole(role: InsertRole): Promise<Role> {
+    const [created] = await db.insert(roles).values(role).returning();
+    return created;
+  }
+
+  async updateRole(id: string, role: Partial<InsertRole>): Promise<Role> {
+    const [updated] = await db
+      .update(roles)
+      .set({ ...role, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteRole(id: string): Promise<void> {
+    await db.delete(roles).where(eq(roles.id, id));
+  }
+
+  async getPermissions(): Promise<Permission[]> {
+    return await db.select().from(permissions).orderBy(asc(permissions.resource), asc(permissions.action));
+  }
+
+  async getPermission(id: string): Promise<Permission | undefined> {
+    const [permission] = await db.select().from(permissions).where(eq(permissions.id, id));
+    return permission || undefined;
+  }
+
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    const [created] = await db.insert(permissions).values(permission).returning();
+    return created;
+  }
+
+  async deletePermission(id: string): Promise<void> {
+    await db.delete(permissions).where(eq(permissions.id, id));
+  }
+
+  async getUserWithRoles(id: string): Promise<UserWithRoles | undefined> {
+    const userWithRoles = await db.query.users.findFirst({
+      where: eq(users.id, id),
+      with: {
+        userRoles: {
+          with: {
+            role: {
+              with: {
+                rolePermissions: {
+                  with: {
+                    permission: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    return userWithRoles as UserWithRoles | undefined;
+  }
+
+  async assignUserRole(userRole: InsertUserRole): Promise<UserRole> {
+    const [created] = await db.insert(userRoles).values(userRole).returning();
+    return created;
+  }
+
+  async removeUserRole(userId: string, roleId: string): Promise<void> {
+    await db.delete(userRoles).where(
+      and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId))
+    );
+  }
+
+  async getUserRoles(userId: string): Promise<UserRole[]> {
+    return await db.select().from(userRoles).where(eq(userRoles.userId, userId));
+  }
+
+  async assignRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission> {
+    const [created] = await db.insert(rolePermissions).values(rolePermission).returning();
+    return created;
+  }
+
+  async removeRolePermission(roleId: string, permissionId: string): Promise<void> {
+    await db.delete(rolePermissions).where(
+      and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId))
+    );
+  }
+
+  async getRolePermissions(roleId: string): Promise<RolePermission[]> {
+    return await db.select().from(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+  }
+
+  async hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
+    const userWithRoles = await this.getUserWithRoles(userId);
+    if (!userWithRoles) return false;
+
+    // Check if user has any role that grants this permission
+    for (const userRole of userWithRoles.userRoles) {
+      const role = userRole.role;
+      
+      // Super admin has all permissions
+      if (role.type === 'super_admin') return true;
+      
+      // Check role permissions
+      for (const rolePermission of role.rolePermissions) {
+        const permission = rolePermission.permission;
+        if (permission.resource === resource && permission.action === action) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  async hasRole(userId: string, roleType: string): Promise<boolean> {
+    const userWithRoles = await this.getUserWithRoles(userId);
+    if (!userWithRoles) return false;
+
+    return userWithRoles.userRoles.some(userRole => userRole.role.type === roleType);
   }
 }
 
