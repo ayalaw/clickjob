@@ -379,9 +379,11 @@ export default function Interviews() {
                         {selectedJobDetails.candidates.map((candidate) => (
                           <TableRow key={candidate.id} className="hover:bg-muted/50">
                             <TableCell>
-                              <div className="font-medium">
-                                {candidate.firstName} {candidate.lastName}
-                              </div>
+                              <Link href={`/candidates/${candidate.id}`}>
+                                <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline">
+                                  {candidate.firstName} {candidate.lastName}
+                                </div>
+                              </Link>
                               {candidate.nationalId && (
                                 <div className="text-sm text-gray-500">
                                   ת.ז: {candidate.nationalId}
@@ -413,7 +415,7 @@ export default function Interviews() {
                               <Link href={`/candidates/${candidate.id}`}>
                                 <button className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer text-sm">
                                   <Eye className="h-4 w-4" />
-                                  פרטים
+                                  צפה
                                 </button>
                               </Link>
                             </TableCell>
