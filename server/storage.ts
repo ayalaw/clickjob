@@ -702,9 +702,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateJobApplication(id: string, application: Partial<InsertJobApplication>): Promise<JobApplication> {
+    // Convert Date objects to ISO strings for timestamp fields
+    const updates = { ...application };
+    if (updates.reviewedAt && updates.reviewedAt instanceof Date) {
+      updates.reviewedAt = updates.reviewedAt.toISOString();
+    }
+    if (updates.interviewDate && updates.interviewDate instanceof Date) {
+      updates.interviewDate = updates.interviewDate.toISOString();
+    }
+    if (updates.appliedAt && updates.appliedAt instanceof Date) {
+      updates.appliedAt = updates.appliedAt.toISOString();
+    }
+    
     const [updatedApplication] = await db
       .update(jobApplications)
-      .set(application)
+      .set(updates)
       .where(eq(jobApplications.id, id))
       .returning();
     return updatedApplication;

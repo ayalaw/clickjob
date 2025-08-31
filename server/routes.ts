@@ -1386,6 +1386,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/job-applications/:id', isAuthenticated, async (req, res) => {
     try {
       const updates = req.body;
+      
+      // Convert Date objects to ISO strings for timestamp fields
+      if (updates.reviewedAt && typeof updates.reviewedAt === 'object') {
+        updates.reviewedAt = new Date(updates.reviewedAt).toISOString();
+      }
+      if (updates.interviewDate && typeof updates.interviewDate === 'object') {
+        updates.interviewDate = new Date(updates.interviewDate).toISOString();
+      }
+      if (updates.appliedAt && typeof updates.appliedAt === 'object') {
+        updates.appliedAt = new Date(updates.appliedAt).toISOString();
+      }
+      
       const application = await storage.updateJobApplication(req.params.id, updates);
       
       // Add event for job application status change
