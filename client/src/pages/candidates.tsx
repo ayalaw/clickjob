@@ -176,7 +176,7 @@ export default function Candidates() {
   }
 
   return (
-    <div dir="rtl" className="space-y-6">
+    <div dir="rtl" className="min-h-screen w-full max-w-full space-y-6 p-6">
       <div className="flex items-center gap-2 mb-6">
         <Users className="h-6 w-6" />
         <h1 className="text-2xl font-bold">מועמדים</h1>
@@ -267,8 +267,8 @@ export default function Candidates() {
           ) : (
             <>
               {candidatesData?.candidates && candidatesData.candidates.length > 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
-                  <div className="min-w-[1400px]">
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto w-full">
+                  <div className="w-full min-w-[1400px]">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50 dark:bg-gray-900">
