@@ -246,7 +246,7 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`${candidates.firstName} || ' ' || ${candidates.lastName} ILIKE ${`%${search}%`} OR ${candidates.email} ILIKE ${`%${search}%`} OR ${candidates.profession} ILIKE ${`%${search}%`}`);
     }
     
-    if (dateFilter) {
+    if (dateFilter && dateFilter !== 'all') {
       switch (dateFilter) {
         case 'today':
           conditions.push(sql`DATE(${candidates.createdAt}) = CURRENT_DATE`);

@@ -199,7 +199,7 @@ export default function Candidates() {
                     <SelectValue placeholder="סינון לפי תאריך" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">כל התאריכים</SelectItem>
+                    <SelectItem value="all">כל התאריכים</SelectItem>
                     <SelectItem value="today">היום</SelectItem>
                     <SelectItem value="yesterday">אתמול</SelectItem>
                     <SelectItem value="this_week">השבוע</SelectItem>
