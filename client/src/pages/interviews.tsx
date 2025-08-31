@@ -82,7 +82,7 @@ export default function Interviews() {
       submitted: jobApplications.filter(app => app.status === 'submitted').length,
       interview: jobApplications.filter(app => app.status === 'interview').length,
       rejected: jobApplications.filter(app => app.status === 'rejected').length,
-      waitingForInterview: jobApplications.filter(app => app.status === 'invited_to_interview' || app.status === 'submitted').length,
+      waitingForInterview: jobApplications.filter(app => app.status === 'submitted').length,
     };
   };
 
@@ -105,7 +105,7 @@ export default function Interviews() {
         candidateIds = jobApplications.filter(app => app.status === 'rejected').map(app => app.candidateId);
         break;
       case 'waitingForInterview':
-        candidateIds = jobApplications.filter(app => app.status === 'invited_to_interview' || app.status === 'submitted').map(app => app.candidateId);
+        candidateIds = jobApplications.filter(app => app.status === 'submitted').map(app => app.candidateId);
         break;
     }
     
