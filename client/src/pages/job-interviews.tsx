@@ -139,8 +139,12 @@ export default function JobInterviews() {
     enabled: isAuthenticated && !!jobId,
   });
 
-  // Show all applications for this job
-  const applications = applicationsData?.applications.filter(app => app.jobId === jobId) || [];
+  // Show only applications that haven't been reviewed yet
+  const applications = applicationsData?.applications.filter(app => 
+    app.jobId === jobId && 
+    app.status === 'submitted' && 
+    !app.reviewedAt
+  ) || [];
   const currentApplication = applications[currentIndex];
 
   // Check previous events when current application changes
@@ -494,10 +498,10 @@ export default function JobInterviews() {
         <div className="text-center">
           <UserCheck className="h-16 w-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-            אין מועמדויות למשרה זו
+            כל המועמדים נבדקו! ✅
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            לא נמצאו מועמדויות הממתינות לסקירה עבור המשרה הזו
+            כל המועמדויות למשרה זו כבר נבדקו ואושרו/נפסלו. אין מועמדים נוספים לבדיקה.
           </p>
           <Link href="/interviews">
             <Button>חזור לרשימת משרות</Button>
