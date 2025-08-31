@@ -15,27 +15,55 @@ async function loadEmailConfig() {
     const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
     const emailPass = await storage.getSystemSetting('CPANEL_EMAIL_PASS');
 
-    if (smtpHost && emailUser && emailPass) {
-      // cPanel SMTP configuration
-      transporter = nodemailer.createTransport({
-        host: smtpHost.value,
-        port: parseInt(smtpPort?.value || '587'),
-        secure: smtpSecure?.value === 'true',
-        auth: {
-          user: emailUser.value,
-          pass: emailPass.value,
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
-      console.log("📧 Email configured with cPanel SMTP from database");
-      emailConfigLoaded = true;
-      return;
+    // Check if cPanel credentials are properly set (not placeholder values)
+    const isValidPassword = emailPass?.value && 
+      emailPass.value !== 'הכנס-כאן-את-הסיסמה-האמיתית' && 
+      emailPass.value.length > 5;
+
+    if (smtpHost && emailUser && isValidPassword) {
+      try {
+        // cPanel SMTP configuration
+        transporter = nodemailer.createTransport({
+          host: smtpHost.value,
+          port: parseInt(smtpPort?.value || '587'),
+          secure: smtpSecure?.value === 'true',
+          auth: {
+            user: emailUser.value,
+            pass: emailPass.value,
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        console.log("📧 Email configured with cPanel SMTP from database");
+        emailConfigLoaded = true;
+        return;
+      } catch (transportError) {
+        console.warn("❌ שגיאה ביצירת transporter עם הגדרות cPanel:", transportError);
+      }
+    } else {
+      console.warn("❌ הגדרות cPanel לא תקינות - יש להגדיר סיסמה תקינה בהגדרות המערכת");
     }
 
-    // Only use cPanel - no Gmail fallback
-    console.warn("❌ הגדרות cPanel לא נמצאו במסד הנתונים. יש להגדיר אותן בדף הגדרות המערכת.");
+    // Fallback to environment variables if available
+    if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+      try {
+        transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_PASS,
+          },
+        });
+        console.log("📧 Email configured with Gmail fallback from environment");
+        emailConfigLoaded = true;
+        return;
+      } catch (gmailError) {
+        console.warn("❌ שגיאה בהגדרת Gmail fallback:", gmailError);
+      }
+    }
+
+    console.warn("❌ לא ניתן להגדיר מערכת מייל - יש להגדיר פרטי SMTP תקינים בהגדרות המערכת.");
     emailConfigLoaded = false;
   } catch (error) {
     console.error("Error loading email configuration:", error);
@@ -44,6 +72,13 @@ async function loadEmailConfig() {
 
 // Initialize email configuration
 loadEmailConfig();
+
+// Export function to reload email config
+export async function reloadEmailConfig() {
+  console.log("🔄 Reloading email configuration...");
+  await loadEmailConfig();
+  return emailConfigLoaded;
+}
 
 // Gmail API setup for reading incoming emails
 const oauth2Client = new google.auth.OAuth2(
@@ -78,11 +113,17 @@ interface EmailParams {
 export async function sendEmail(params: EmailParams): Promise<{ success: boolean; error?: string }> {
   // Ensure email configuration is loaded
   if (!emailConfigLoaded) {
+    console.log("🔄 Email config not loaded, attempting to reload...");
     await loadEmailConfig();
   }
 
   if (!transporter) {
-    return { success: false, error: "Email credentials not configured" };
+    console.log("❌ No transporter available, attempting to reload config...");
+    await loadEmailConfig();
+    
+    if (!transporter) {
+      return { success: false, error: "Email credentials not configured - check system settings" };
+    }
   }
 
   try {
@@ -100,8 +141,13 @@ export async function sendEmail(params: EmailParams): Promise<{ success: boolean
       attachments: params.attachments,
     };
 
-    await transporter.sendMail(mailOptions);
-    return { success: true };
+    const result = await transporter.sendMail(mailOptions);
+    console.log("📧 Email sent successfully:", {
+      to: params.to,
+      subject: params.subject,
+      messageId: result.messageId
+    });
+    return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('Email sending error:', error);
     return { 

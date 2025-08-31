@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { ReminderForm } from "@/components/reminder-form";
+import { EmailDialog } from "@/components/email-dialog";
 import type { Candidate } from "@shared/schema";
 
 export default function CandidateDetail() {
@@ -58,6 +59,7 @@ export default function CandidateDetail() {
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
   const [recommendation, setRecommendation] = useState("");
   const [jobSearchTerm, setJobSearchTerm] = useState("");
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -705,6 +707,16 @@ export default function CandidateDetail() {
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
+                onClick={() => setEmailDialogOpen(true)}
+                className="flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                data-testid="button-send-to-employer"
+              >
+                <Mail className="w-4 h-4" />
+                שלח למעסיק
+              </Button>
+              
+              <Button 
+                variant="outline" 
                 onClick={() => setShowEvents(!showEvents)}
                 className="flex items-center gap-2"
                 data-testid="button-recent-events"
@@ -1303,6 +1315,15 @@ export default function CandidateDetail() {
             </div>
           </div>
         </main>
+        
+        {/* Email Dialog for sending candidate to employer */}
+        <EmailDialog
+          isOpen={emailDialogOpen}
+          onClose={() => setEmailDialogOpen(false)}
+          type="candidate"
+          candidateId={candidate?.id}
+          candidateName={candidate ? `${candidate.firstName} ${candidate.lastName}` : ""}
+        />
       </div>
     );
   }
