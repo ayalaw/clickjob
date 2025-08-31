@@ -67,7 +67,7 @@ export interface IStorage {
   deleteUser(id: string): Promise<void>;
 
   // Candidate operations
-  getCandidates(limit?: number, offset?: number, search?: string): Promise<{ candidates: Candidate[]; total: number }>;
+  getCandidates(limit?: number, offset?: number, search?: string, dateFilter?: string): Promise<{ candidates: Candidate[]; total: number }>;
   getCandidate(id: string): Promise<Candidate | undefined>;
   createCandidate(candidate: InsertCandidate): Promise<Candidate>;
   updateCandidate(id: string, candidate: Partial<InsertCandidate>): Promise<Candidate>;
@@ -239,15 +239,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Candidate operations
-  async getCandidates(limit = 50, offset = 0, search?: string): Promise<{ candidates: Candidate[]; total: number }> {
-    const searchCondition = search 
-      ? sql`${candidates.firstName} || ' ' || ${candidates.lastName} ILIKE ${`%${search}%`} OR ${candidates.email} ILIKE ${`%${search}%`} OR ${candidates.profession} ILIKE ${`%${search}%`}`
-      : undefined;
+  async getCandidates(limit = 50, offset = 0, search?: string, dateFilter?: string): Promise<{ candidates: Candidate[]; total: number }> {
+    let conditions = [];
+    
+    if (search) {
+      conditions.push(sql`${candidates.firstName} || ' ' || ${candidates.lastName} ILIKE ${`%${search}%`} OR ${candidates.email} ILIKE ${`%${search}%`} OR ${candidates.profession} ILIKE ${`%${search}%`}`);
+    }
+    
+    if (dateFilter) {
+      switch (dateFilter) {
+        case 'today':
+          conditions.push(sql`DATE(${candidates.createdAt}) = CURRENT_DATE`);
+          break;
+        case 'yesterday':
+          conditions.push(sql`DATE(${candidates.createdAt}) = CURRENT_DATE - INTERVAL '1 day'`);
+          break;
+        case 'this_week':
+          conditions.push(sql`${candidates.createdAt} >= CURRENT_DATE - INTERVAL '7 days'`);
+          break;
+        case 'this_month':
+          conditions.push(sql`EXTRACT(MONTH FROM ${candidates.createdAt}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${candidates.createdAt}) = EXTRACT(YEAR FROM CURRENT_DATE)`);
+          break;
+      }
+    }
+
+    const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
     const candidateResults = await db
       .select()
       .from(candidates)
-      .where(searchCondition)
+      .where(whereCondition)
       .orderBy(desc(candidates.createdAt))
       .limit(limit)
       .offset(offset);
@@ -255,7 +276,7 @@ export class DatabaseStorage implements IStorage {
     const totalResults = await db
       .select({ count: count() })
       .from(candidates)
-      .where(searchCondition);
+      .where(whereCondition);
 
     return {
       candidates: candidateResults,

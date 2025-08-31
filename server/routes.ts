@@ -589,8 +589,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       const search = req.query.search as string;
+      const dateFilter = req.query.dateFilter as string;
       
-      const result = await storage.getCandidates(limit, offset, search);
+      const result = await storage.getCandidates(limit, offset, search, dateFilter);
       res.json(result);
     } catch (error) {
       console.error("Error fetching candidates:", error);
@@ -2347,11 +2348,8 @@ ${recommendation}
   });
 
   // Start automatic email monitoring 
-  // Temporarily disabled email monitoring to prevent IMAP crashes
-  // if (process.env.CPANEL_IMAP_HOST || process.env.GMAIL_USER) {
-  //   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-  //   startEmailMonitoring();
-  // }
+  console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
+  startEmailMonitoring();
 
   // RBAC Routes - Role & Permission Management
   

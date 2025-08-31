@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CandidateForm from "@/components/forms/candidate-form";
 import SearchFilter from "@/components/search-filter";
 import { EmailDialog } from "@/components/email-dialog";
@@ -22,6 +23,7 @@ export default function Candidates() {
   const [, setLocation] = useLocation();
   const navigate = (path: string) => setLocation(path);
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [emailDialog, setEmailDialog] = useState<{
@@ -51,7 +53,7 @@ export default function Candidates() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: Candidate[]; total: number }>({
-    queryKey: ["/api/candidates", { search }],
+    queryKey: ["/api/candidates", { search, dateFilter }],
     enabled: isAuthenticated,
   });
 
@@ -190,6 +192,20 @@ export default function Candidates() {
                   className="pr-10"
                   data-testid="input-search-candidates"
                 />
+              </div>
+              <div className="min-w-[200px]">
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger data-testid="select-date-filter">
+                    <SelectValue placeholder="סינון לפי תאריך" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">כל התאריכים</SelectItem>
+                    <SelectItem value="today">היום</SelectItem>
+                    <SelectItem value="yesterday">אתמול</SelectItem>
+                    <SelectItem value="this_week">השבוע</SelectItem>
+                    <SelectItem value="this_month">החודש</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <SearchFilter />
             </div>

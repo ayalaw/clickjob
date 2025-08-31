@@ -354,6 +354,7 @@ async function checkCpanelEmails(): Promise<void> {
 
       imap.once('error', (err: any) => {
         console.error('❌ שגיאת חיבור IMAP:', err.message);
+        console.log('💡 המערכת תמשיך לעבוד ללא מעקב מיילים');
         // Don't reject on IMAP errors - just resolve to avoid crashing the app
         resolve();
       });
@@ -414,7 +415,7 @@ async function processGmailMessage(messageId: string): Promise<void> {
     console.log(`📩 עוצב מייל: ${subject} מאת: ${from}`);
     
     // בדיקה אם זה מייל עם קורות חיים או מועמדות
-    if (isJobApplicationEmail(subject, body, from)) {
+    if (isJobApplicationEmail(subject, body, from, false)) {
       const candidate = parseCandidate(subject, body, from);
       
       if (candidate.email && (candidate.firstName || candidate.jobCode)) {
@@ -886,7 +887,8 @@ export async function checkAllEmails(): Promise<void> {
 
     imap.once('error', (err: any) => {
       console.error('❌ שגיאה בחיבור ל-IMAP:', err.message);
-      reject(err);
+      console.log('💡 המערכת תמשיך לעבוד ללא מעקב מיילים');
+      resolve(); // Don't reject - just resolve to prevent crash
     });
 
     imap.connect();
