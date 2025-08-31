@@ -68,12 +68,12 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Start automatic email monitoring after server starts
-    import('./email-test').then(({ testMailConnection }) => {
+    // Start cPanel email system after server starts
+    import('./cpanel-email').then(({ testAllCpanelEmail }) => {
       setTimeout(() => {
-        console.log('🚀 בודק הגדרות מייל...');
-        testMailConnection();
-      }, 3000); // Wait 3 seconds after server start
+        console.log('🚀 מפעיל מערכת cPanel מלאה...');
+        testAllCpanelEmail();
+      }, 5000); // Wait 5 seconds after server start
     });
   });
 })();
