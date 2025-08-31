@@ -333,9 +333,9 @@ export default function JobInterviews() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-2 gap-6">
-          {/* Right Column - Job Details */}
-          <div className="space-y-6">
+        <div className="grid grid-cols-10 gap-6">
+          {/* Right Column - Job Details (30%) */}
+          <div className="col-span-3 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -475,8 +475,8 @@ export default function JobInterviews() {
             </Card>
           </div>
 
-          {/* Left Column - CV Preview */}
-          <div>
+          {/* Left Column - CV Preview (70%) */}
+          <div className="col-span-7">
             <Card className="h-fit">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -506,8 +506,9 @@ export default function JobInterviews() {
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
                     <iframe
                       src={`/api/candidates/${currentApplication.candidate.id}/cv`}
-                      className="w-full h-96"
+                      className="w-full min-h-screen border-0"
                       title="תצוגה מקדימה של קורות החיים"
+                      style={{ height: 'calc(100vh - 200px)' }}
                     />
                   </div>
                 ) : (
