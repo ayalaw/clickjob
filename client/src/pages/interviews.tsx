@@ -19,7 +19,10 @@ import {
   Eye,
   Calendar,
   Users,
-  Briefcase
+  Briefcase,
+  Phone,
+  Mail,
+  User
 } from "lucide-react";
 import type { JobWithClient } from "@shared/schema";
 
@@ -58,6 +61,16 @@ export default function Interviews() {
   });
 
   const applications = applicationsData?.applications || [];
+
+  // Fetch candidates waiting for interviews
+  const { data: candidatesData } = useQuery<{ candidates: any[] }>({
+    queryKey: ["/api/candidates/enriched"],
+    enabled: isAuthenticated,
+  });
+
+  const candidatesWaitingForInterview = candidatesData?.candidates?.filter(
+    candidate => candidate.status === 'invited_to_interview'
+  ) || [];
 
   const getJobStats = (jobId: string) => {
     const jobApplications = applications.filter(app => app.jobId === jobId);
@@ -131,13 +144,95 @@ export default function Interviews() {
               <CardContent className="p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">
-                    {applications.filter(app => app.status === 'submitted').length}
+                    {candidatesWaitingForInterview.length}
                   </div>
-                  <div className="text-sm text-gray-600">ממתינים לסקירה</div>
+                  <div className="text-sm text-gray-600">ממתינים לראיון</div>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Candidates Waiting for Interview Table */}
+          {candidatesWaitingForInterview.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  ממתינים לראיון ({candidatesWaitingForInterview.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>שם מועמד</TableHead>
+                        <TableHead>טלפון</TableHead>
+                        <TableHead>אימייל</TableHead>
+                        <TableHead>עיר</TableHead>
+                        <TableHead>מקצוע</TableHead>
+                        <TableHead>תאריך עדכון</TableHead>
+                        <TableHead>פעולות</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {candidatesWaitingForInterview.map((candidate) => (
+                        <TableRow key={candidate.id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <div>
+                                <div className="font-medium">
+                                  {candidate.firstName} {candidate.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {candidate.nationalId ? `ת.ז: ${candidate.nationalId}` : ''}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 text-gray-500" />
+                              <span className="text-sm">{candidate.mobile || candidate.phone || 'לא הוגדר'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-3 w-3 text-gray-500" />
+                              <span className="text-sm">{candidate.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-gray-500" />
+                              <span className="text-sm">{candidate.city || 'לא הוגדר'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{candidate.profession || 'לא הוגדר'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">
+                              {candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString('he-IL') : '-'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/candidates/${candidate.id}`}>
+                              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer text-sm">
+                                <Eye className="h-4 w-4" />
+                                פרטים
+                              </div>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Jobs Table */}
           <Card>
