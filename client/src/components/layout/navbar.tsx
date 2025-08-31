@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, Users, Building2, Briefcase, Mail, BarChart3, Settings, UserCheck, Search, Menu, Calendar, Shield } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,7 @@ const navigation = [
 export default function Navbar() {
   const [location] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { canManageUsers } = usePermissions();
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
@@ -41,27 +43,35 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8 space-x-reverse">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = location === item.href;
-              
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    isActive 
-                      ? "text-primary bg-blue-50 dark:bg-blue-900/20" 
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  )}
-                  data-testid={`link-nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`}
-                >
-                  <Icon className="h-4 w-4 ml-2" />
-                  {item.name}
-                </Link>
-              );
-            })}
+            {navigation
+              .filter((item) => {
+                // Show user management only if user has permission
+                if (item.href === '/user-management') {
+                  return canManageUsers;
+                }
+                return true;
+              })
+              .map((item) => {
+                const Icon = item.icon;
+                const isActive = location === item.href;
+                
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      isActive 
+                        ? "text-primary bg-blue-50 dark:bg-blue-900/20" 
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    )}
+                    data-testid={`link-nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`}
+                  >
+                    <Icon className="h-4 w-4 ml-2" />
+                    {item.name}
+                  </Link>
+                );
+              })}
           </div>
 
           {/* Mobile menu button */}
@@ -73,26 +83,34 @@ export default function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {navigation.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location === item.href;
-                  
-                  return (
-                    <DropdownMenuItem key={item.name} asChild>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "flex items-center w-full px-2 py-2",
-                          isActive && "bg-blue-50 dark:bg-blue-900/20"
-                        )}
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Icon className="h-4 w-4 ml-2" />
-                        {item.name}
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
+                {navigation
+                  .filter((item) => {
+                    // Show user management only if user has permission
+                    if (item.href === '/user-management') {
+                      return canManageUsers;
+                    }
+                    return true;
+                  })
+                  .map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location === item.href;
+                    
+                    return (
+                      <DropdownMenuItem key={item.name} asChild>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex items-center w-full px-2 py-2",
+                            isActive && "bg-blue-50 dark:bg-blue-900/20"
+                          )}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Icon className="h-4 w-4 ml-2" />
+                          {item.name}
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

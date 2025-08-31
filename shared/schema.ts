@@ -375,7 +375,8 @@ export const interviewEventsRelations = relations(interviewEvents, ({ one }) => 
 
 // Relations for RBAC system
 export const usersRelations = relations(users, ({ many }) => ({
-  userRoles: many(userRoles),
+  userRoles: many(userRoles, { relationName: "user_roles" }),
+  assignedRoles: many(userRoles, { relationName: "assigned_roles" }),
 }));
 
 export const rolesRelations = relations(roles, ({ many }) => ({
@@ -391,6 +392,7 @@ export const userRolesRelations = relations(userRoles, ({ one }) => ({
   user: one(users, {
     fields: [userRoles.userId],
     references: [users.id],
+    relationName: "user_roles",
   }),
   role: one(roles, {
     fields: [userRoles.roleId],
@@ -399,6 +401,7 @@ export const userRolesRelations = relations(userRoles, ({ one }) => ({
   assignedByUser: one(users, {
     fields: [userRoles.assignedBy],
     references: [users.id],
+    relationName: "assigned_roles",
   }),
 }));
 

@@ -2456,6 +2456,43 @@ ${recommendation}
     }
   });
 
+  // Get current user's roles and permissions
+  app.get('/api/users/roles', isAuthenticated, injectUserPermissions, async (req, res) => {
+    try {
+      const userId = req.userPermissions?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const userWithRoles = await storage.getUserWithRoles(userId);
+      if (!userWithRoles) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(userWithRoles);
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+      res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
+  // Get all users with their roles (Admin and Super Admin only)
+  app.get('/api/users/all', isAuthenticated, requireRole('admin'), async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const usersWithRoles = await Promise.all(
+        users.map(async (user) => {
+          const userWithRoles = await storage.getUserWithRoles(user.id);
+          return userWithRoles;
+        })
+      );
+      res.json(usersWithRoles.filter(Boolean));
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   // Get user with roles and permissions
   app.get('/api/users/:id/roles', isAuthenticated, injectUserPermissions, async (req, res) => {
     try {

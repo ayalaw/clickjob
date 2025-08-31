@@ -1426,26 +1426,86 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserWithRoles(id: string): Promise<UserWithRoles | undefined> {
-    const userWithRoles = await db.query.users.findFirst({
-      where: eq(users.id, id),
-      with: {
-        userRoles: {
-          with: {
-            role: {
-              with: {
-                rolePermissions: {
-                  with: {
-                    permission: true
-                  }
-                }
-              }
-            }
+    // Get user with roles using manual joins to avoid relation ambiguity
+    const result = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        userRole: {
+          id: userRoles.id,
+          userId: userRoles.userId,
+          roleId: userRoles.roleId,
+          assignedBy: userRoles.assignedBy,
+          assignedAt: userRoles.assignedAt,
+          role: {
+            id: roles.id,
+            name: roles.name,
+            type: roles.type,
+            description: roles.description,
+            createdAt: roles.createdAt,
+            updatedAt: roles.updatedAt,
           }
         }
-      }
-    });
-    
-    return userWithRoles as UserWithRoles | undefined;
+      })
+      .from(users)
+      .leftJoin(userRoles, eq(users.id, userRoles.userId))
+      .leftJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(users.id, id));
+
+    if (result.length === 0) return undefined;
+
+    // Group by user and collect roles
+    const user = result[0];
+    const userWithRoles: UserWithRoles = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      userRoles: result
+        .filter(r => r.userRole.id !== null)
+        .map(r => ({
+          id: r.userRole.id!,
+          userId: r.userRole.userId!,
+          roleId: r.userRole.roleId!,
+          assignedBy: r.userRole.assignedBy!,
+          assignedAt: r.userRole.assignedAt!,
+          role: {
+            ...r.userRole.role!,
+            rolePermissions: [] // Will get permissions separately if needed
+          }
+        }))
+    };
+
+    // Get permissions for each role
+    for (const userRole of userWithRoles.userRoles) {
+      const rolePermissions = await db
+        .select({
+          permission: {
+            id: permissions.id,
+            name: permissions.name,
+            resource: permissions.resource,
+            action: permissions.action,
+            description: permissions.description
+          }
+        })
+        .from(rolePermissions)
+        .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleId, userRole.roleId));
+
+      userRole.role.rolePermissions = rolePermissions.map(rp => ({
+        permission: rp.permission
+      }));
+    }
+
+    return userWithRoles;
   }
 
   async assignUserRole(userRole: InsertUserRole): Promise<UserRole> {
