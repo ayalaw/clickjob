@@ -56,13 +56,14 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: { email: string; firstName?: string | null; lastName?: string | null }): Promise<User>;
+  createUser(user: { email: string; firstName?: string | null; lastName?: string | null; password?: string }): Promise<User>;
 
   // Candidate operations
   getCandidates(limit?: number, offset?: number, search?: string): Promise<{ candidates: Candidate[]; total: number }>;
@@ -205,14 +206,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: { email: string; firstName?: string | null; lastName?: string | null }): Promise<User> {
+  async createUser(userData: { email: string; firstName?: string | null; lastName?: string | null; password?: string }): Promise<User> {
+    const userData_with_password = {
+      email: userData.email,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      password: userData.password ? await bcrypt.hash(userData.password, 10) : null,
+    };
+    
     const [user] = await db
       .insert(users)
-      .values({
-        email: userData.email,
-        firstName: userData.firstName || null,
-        lastName: userData.lastName || null,
-      })
+      .values(userData_with_password)
       .returning();
     return user;
   }

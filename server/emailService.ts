@@ -215,3 +215,87 @@ export const emailTemplates = {
     `
   })
 };
+
+interface WelcomeEmailData {
+  to: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  password: string;
+  loginUrl: string;
+}
+
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
+  try {
+    if (!emailConfigLoaded) {
+      await loadEmailConfig();
+    }
+
+    if (!transporter) {
+      console.error('Email configuration not available');
+      return false;
+    }
+
+    const userName = data.firstName && data.lastName 
+      ? `${data.firstName} ${data.lastName}` 
+      : data.email;
+
+    const mailOptions = {
+      from: process.env.CPANEL_EMAIL_USER,
+      to: data.to,
+      subject: 'פרטי כניסה למערכת הגיוס - ברוכים הבאים!',
+      html: `
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h1 style="color: #2563eb; text-align: center; margin-bottom: 30px;">
+              🎉 ברוכים הבאים למערכת הגיוס!
+            </h1>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #333;">
+              שלום ${userName},
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #333;">
+              נוצר עבורך חשבון חדש במערכת ניהול הגיוס שלנו. להלן פרטי הכניסה שלך:
+            </p>
+            
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; margin: 20px 0; border-right: 4px solid #2563eb;">
+              <h3 style="margin-top: 0; color: #1e40af;">פרטי כניסה:</h3>
+              <p style="margin: 10px 0;"><strong>כתובת מייל:</strong> ${data.email}</p>
+              <p style="margin: 10px 0;"><strong>סיסמה זמנית:</strong> <code style="background-color: #e5e7eb; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${data.password}</code></p>
+              <p style="margin: 10px 0;"><strong>כתובת המערכת:</strong> <a href="${data.loginUrl}" style="color: #2563eb;">${data.loginUrl}</a></p>
+            </div>
+            
+            <div style="background-color: #fef3cd; padding: 15px; border-radius: 6px; margin: 20px 0; border-right: 4px solid #f59e0b;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;">
+                <strong>⚠️ חשוב:</strong> זוהי סיסמה זמנית. מומלץ לשנות את הסיסמה לאחר הכניסה הראשונה למערכת.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.loginUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                כניסה למערכת
+              </a>
+            </div>
+            
+            <p style="font-size: 14px; color: #6b7280; text-align: center; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+              אם יש לך שאלות או בעיות בכניסה למערכת, אנא פנה למנהל המערכת.
+            </p>
+            
+            <p style="font-size: 14px; color: #6b7280; text-align: center;">
+              תודה,<br>
+              צוות מערכת הגיוס
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Welcome email sent to ${data.to}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send welcome email:', error);
+    return false;
+  }
+}

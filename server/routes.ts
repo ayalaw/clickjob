@@ -24,7 +24,8 @@ import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
 import mime from 'mime-types';
-import { sendEmail, emailTemplates } from './emailService';
+import { sendEmail, emailTemplates, sendWelcomeEmail } from './emailService';
+import { generateSecurePassword } from './passwordUtils';
 import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService';
 import nodemailer from 'nodemailer';
 
@@ -2593,19 +2594,43 @@ ${recommendation}
         return res.status(409).json({ message: 'User with this email already exists' });
       }
 
-      // Create new user
+      // Generate secure password
+      const tempPassword = generateSecurePassword();
+      
+      // Create new user with password
       const newUser = await storage.createUser({
         email: email.trim(),
         firstName: firstName?.trim() || null,
         lastName: lastName?.trim() || null,
+        password: tempPassword,
       });
 
       // Assign role if provided
-      if (roleId) {
+      if (roleId && roleId !== 'no-role') {
         await storage.assignRole(newUser.id, roleId);
       }
 
-      res.status(201).json(newUser);
+      // Send welcome email with login credentials
+      const loginUrl = `${req.protocol}://${req.get('host')}`;
+      const emailSent = await sendWelcomeEmail({
+        to: newUser.email!,
+        firstName: newUser.firstName || undefined,
+        lastName: newUser.lastName || undefined,
+        email: newUser.email!,
+        password: tempPassword,
+        loginUrl,
+      });
+
+      if (!emailSent) {
+        console.warn('Failed to send welcome email to new user');
+      }
+
+      // Return user without password
+      const { password, ...userWithoutPassword } = newUser as any;
+      res.status(201).json({
+        ...userWithoutPassword,
+        emailSent,
+      });
     } catch (error) {
       console.error('Error creating user:', error);
       res.status(500).json({ message: 'Internal server error' });
