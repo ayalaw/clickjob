@@ -197,7 +197,9 @@ async function checkCpanelEmails(): Promise<void> {
             // נסה לחפש מיילים מהיומיים האחרונים כרגיעה
             const twoDaysAgo = new Date();
             twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-            const searchDate = twoDaysAgo.toISOString().split('T')[0].replace(/-/g, '-');
+            const searchDate = twoDaysAgo.getDate().toString().padStart(2, '0') + '-' + 
+                              (twoDaysAgo.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                              twoDaysAgo.getFullYear();
             
             console.log('🔍 מחפש מיילים מהיומיים האחרונים לעיבוד מחדש...');
             imap.search(['SINCE', searchDate], (err2: any, fallbackResults: any) => {
@@ -223,8 +225,31 @@ async function checkCpanelEmails(): Promise<void> {
           console.log(`🔍 נמצאו ${results.length} מיילים לא נקראו לעיבוד`);
           
           if (results.length === 0) {
-            imap.end();
-            resolve();
+            // בדיקה נוספת - מיילים מהיום (כולל נקראו) למקרה שפספסנו משהו
+            const today = new Date();
+            const todayStr = today.getDate().toString().padStart(2, '0') + '-' + 
+                            (today.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                            today.getFullYear();
+            console.log(`🔍 בודק מיילים מהיום (${todayStr}) כולל נקראו...`);
+            
+            imap.search(['SINCE', todayStr], (err3: any, todayResults: any) => {
+              if (err3) {
+                console.error('❌ שגיאה בחיפוש מיילים מהיום:', err3.message);
+                imap.end();
+                resolve();
+                return;
+              }
+              
+              console.log(`📧 נמצאו ${todayResults ? todayResults.length : 0} מיילים מהיום (כולל נקראו)`);
+              
+              if (todayResults && todayResults.length > 0) {
+                // נבדוק את המיילים האלה גם כן
+                processBatchEmails(imap, todayResults, resolve, reject);
+              } else {
+                imap.end();
+                resolve();
+              }
+            });
             return;
           }
 
