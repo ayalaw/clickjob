@@ -171,6 +171,7 @@ export default function Interviews() {
                         <TableHead>סה״כ מועמדים למשרה</TableHead>
                         <TableHead>ממתינים לראיון</TableHead>
                         <TableHead>נשלחו למעסיק</TableHead>
+                        <TableHead>נפסלו</TableHead>
                         <TableHead>פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -229,6 +230,11 @@ export default function Interviews() {
                             <TableCell>
                               <div className="text-center">
                                 <span className="text-lg font-bold text-green-600">{stats.interview}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-center">
+                                <span className="text-lg font-bold text-red-600">{stats.rejected}</span>
                               </div>
                             </TableCell>
                             <TableCell>
