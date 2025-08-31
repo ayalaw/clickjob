@@ -245,8 +245,11 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
       ? `${data.firstName} ${data.lastName}` 
       : data.email;
 
+    // Get email configuration from database (if loaded)
+    const senderEmail = transporter.options?.auth?.user || 'system@recruitment.com';
+    
     const mailOptions = {
-      from: process.env.CPANEL_EMAIL_USER,
+      from: senderEmail,
       to: data.email,
       subject: 'פרטי כניסה למערכת הגיוס - ברוכים הבאים!',
       html: `
@@ -307,6 +310,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
       messageId: result.messageId,
       response: result.response
     });
+    console.log('✅ Welcome email sent successfully to:', data.email);
     return true;
   } catch (error) {
     console.error('❌ Failed to send welcome email:', error);
