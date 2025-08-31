@@ -1412,6 +1412,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: new Date().toISOString()
           }
         });
+        
+        // Update candidate status automatically based on application status
+        if (updates.status === 'hired') {
+          await storage.updateCandidate(application.candidateId, { status: 'hired' });
+        } else if (updates.status === 'interview_scheduled') {
+          await storage.updateCandidate(application.candidateId, { status: 'invited_to_interview' });
+        } else if (updates.status === 'rejected') {
+          await storage.updateCandidate(application.candidateId, { status: 'rejected_by_employer' });
+        } else if (updates.status === 'interview') {
+          await storage.updateCandidate(application.candidateId, { status: 'invited_to_interview' });
+        }
       }
       
       res.json(application);
