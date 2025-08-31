@@ -171,7 +171,7 @@ export default function UserManagement() {
     
     if (newUserFirstName.trim()) userData.firstName = newUserFirstName.trim();
     if (newUserLastName.trim()) userData.lastName = newUserLastName.trim();
-    if (newUserRole) userData.roleId = newUserRole;
+    if (newUserRole && newUserRole !== "no-role") userData.roleId = newUserRole;
     
     addUserMutation.mutate(userData);
   };
@@ -237,7 +237,7 @@ export default function UserManagement() {
                       <SelectValue placeholder="בחר תפקיד" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">ללא תפקיד</SelectItem>
+                      <SelectItem value="no-role">ללא תפקיד</SelectItem>
                       {allRoles.map((role) => (
                         <SelectItem key={role.id} value={role.id}>
                           {role.name}
