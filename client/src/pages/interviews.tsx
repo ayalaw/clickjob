@@ -362,48 +362,48 @@ export default function Interviews() {
                     אין מועמדים בסטטוס זה למשרה
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
+                  <div className="overflow-x-auto bg-white rounded-lg shadow">
+                    <Table className="w-full">
+                      <TableHeader className="bg-gray-50">
                         <TableRow>
-                          <TableHead>שם מועמד</TableHead>
-                          <TableHead>טלפון</TableHead>
-                          <TableHead>אימייל</TableHead>
-                          <TableHead>עיר</TableHead>
-                          <TableHead>מקצוע</TableHead>
-                          <TableHead>סטטוס נוכחי</TableHead>
-                          <TableHead>פעולות</TableHead>
+                          <TableHead className="text-right font-semibold text-gray-700 px-6 py-4">שם מועמד</TableHead>
+                          <TableHead className="text-right font-semibold text-gray-700 px-4 py-4">טלפון</TableHead>
+                          <TableHead className="text-right font-semibold text-gray-700 px-4 py-4">אימייל</TableHead>
+                          <TableHead className="text-right font-semibold text-gray-700 px-4 py-4">עיר</TableHead>
+                          <TableHead className="text-right font-semibold text-gray-700 px-4 py-4">מקצוע</TableHead>
+                          <TableHead className="text-right font-semibold text-gray-700 px-4 py-4">סטטוס נוכחי</TableHead>
+                          <TableHead className="text-center font-semibold text-gray-700 px-4 py-4">פעולות</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedJobDetails.candidates.map((candidate) => (
-                          <TableRow key={candidate.id} className="hover:bg-muted/50">
-                            <TableCell>
+                        {selectedJobDetails.candidates.map((candidate, index) => (
+                          <TableRow key={candidate.id} className={`hover:bg-blue-50 border-b ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                            <TableCell className="px-6 py-4">
                               <Link href={`/candidates/${candidate.id}`}>
-                                <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline">
+                                <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline text-lg">
                                   {candidate.firstName} {candidate.lastName}
                                 </div>
                               </Link>
                               {candidate.nationalId && (
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-gray-500 mt-1">
                                   ת.ז: {candidate.nationalId}
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{candidate.mobile || candidate.phone || 'לא הוגדר'}</span>
+                            <TableCell className="px-4 py-4">
+                              <span className="text-base font-medium text-gray-700">{candidate.mobile || candidate.phone || 'לא הוגדר'}</span>
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{candidate.email}</span>
+                            <TableCell className="px-4 py-4">
+                              <span className="text-base text-gray-700 break-all">{candidate.email}</span>
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{candidate.city || 'לא הוגדר'}</span>
+                            <TableCell className="px-4 py-4">
+                              <span className="text-base text-gray-700">{candidate.city || 'לא הוגדר'}</span>
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{candidate.profession || 'לא הוגדר'}</span>
+                            <TableCell className="px-4 py-4">
+                              <span className="text-base text-gray-700">{candidate.profession || 'לא הוגדר'}</span>
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm px-2 py-1 bg-gray-100 rounded-md">
+                            <TableCell className="px-4 py-4">
+                              <span className="text-sm px-3 py-2 bg-blue-100 text-blue-800 rounded-full font-medium">
                                 {candidate.status === 'invited_to_interview' ? 'זומן לראיון' :
                                  candidate.status === 'submitted' ? 'ממתין לסקירה' :
                                  candidate.status === 'interview' ? 'נשלח למעסיק' :
@@ -411,9 +411,9 @@ export default function Interviews() {
                                  candidate.status}
                               </span>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-4 py-4 text-center">
                               <Link href={`/candidates/${candidate.id}`}>
-                                <button className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer text-sm">
+                                <button className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer text-sm font-medium transition-colors">
                                   <Eye className="h-4 w-4" />
                                   צפה
                                 </button>
