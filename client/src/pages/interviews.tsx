@@ -234,9 +234,9 @@ export default function Interviews() {
                         <TableHead>סטטוס</TableHead>
                         <TableHead>סה״כ מועמדים למשרה</TableHead>
                         <TableHead>ממתינים לראיון</TableHead>
-                        <TableHead>מחכים לראיון</TableHead>
                         <TableHead>נשלחו למעסיק</TableHead>
                         <TableHead>נפסלו</TableHead>
+                        <TableHead>מחכים לראיון</TableHead>
                         <TableHead>פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -305,16 +305,6 @@ export default function Interviews() {
                             <TableCell>
                               <div className="text-center">
                                 <button 
-                                  onClick={() => handleStatusClick(job.id, job.title, 'waitingForInterview')}
-                                  className="text-lg font-bold text-orange-600 hover:text-orange-800 cursor-pointer hover:underline transition-colors"
-                                >
-                                  {stats.waitingForInterview}
-                                </button>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-center">
-                                <button 
                                   onClick={() => handleStatusClick(job.id, job.title, 'interview')}
                                   className="text-lg font-bold text-green-600 hover:text-green-800 cursor-pointer hover:underline transition-colors"
                                 >
@@ -329,6 +319,16 @@ export default function Interviews() {
                                   className="text-lg font-bold text-red-600 hover:text-red-800 cursor-pointer hover:underline transition-colors"
                                 >
                                   {stats.rejected}
+                                </button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-center">
+                                <button 
+                                  onClick={() => handleStatusClick(job.id, job.title, 'waitingForInterview')}
+                                  className="text-lg font-bold text-orange-600 hover:text-orange-800 cursor-pointer hover:underline transition-colors"
+                                >
+                                  {stats.waitingForInterview}
                                 </button>
                               </div>
                             </TableCell>
