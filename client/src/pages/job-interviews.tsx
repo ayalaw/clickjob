@@ -548,13 +548,13 @@ export default function JobInterviews() {
                       <div className="flex-1 bg-white rounded border overflow-hidden">
                         {currentApplication.candidate.cvPath?.toLowerCase().includes('.pdf') ? (
                           <iframe
-                            src={`/uploads/${currentApplication.candidate.cvPath?.replace('uploads/', '')}`}
+                            src={`/api/candidates/${currentApplication.candidate.id}/cv`}
                             className="w-full h-full border-0"
                             title="קורות חיים"
                           />
                         ) : currentApplication.candidate.cvPath?.toLowerCase().includes('.doc') ? (
                           <iframe
-                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + currentApplication.candidate.cvPath?.replace('uploads/', ''))}`}
+                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/api/candidates/' + currentApplication.candidate.id + '/cv')}`}
                             className="w-full h-full border-0"
                             title="קורות חיים"
                           />
