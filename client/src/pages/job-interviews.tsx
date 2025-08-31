@@ -54,10 +54,12 @@ export default function JobInterviews() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch job details
-  const { data: jobData } = useQuery<JobWithClient>({
-    queryKey: ["/api/jobs", jobId],
+  const { data: jobsData } = useQuery<{ jobs: JobWithClient[] }>({
+    queryKey: ["/api/jobs"],
     enabled: isAuthenticated && !!jobId,
   });
+
+  const jobData = jobsData?.jobs.find(job => job.id === jobId);
 
   // Fetch job applications for this specific job
   const { data: applicationsData, isLoading: applicationsLoading } = useQuery<{ applications: JobApplicationWithDetails[] }>({
