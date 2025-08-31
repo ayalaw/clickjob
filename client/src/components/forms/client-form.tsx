@@ -42,6 +42,8 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "הצלחה",
         description: "הלקוח נוצר בהצלחה",
@@ -74,6 +76,8 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "הצלחה",
         description: "הלקוח עודכן בהצלחה",

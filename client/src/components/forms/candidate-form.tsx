@@ -356,6 +356,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         description: `${result.candidate.firstName} ${result.candidate.lastName} נוסף למערכת`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       onSuccess();
     },
     onError: (error) => {
@@ -378,6 +380,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         description: `${result.candidate.firstName} ${result.candidate.lastName} עודכן במערכת`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       onSuccess();
     },
     onError: (error) => {

@@ -79,6 +79,8 @@ export default function JobInterviews() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
       // Also invalidate specific candidate data if available
       if (currentApplication?.candidateId) {
