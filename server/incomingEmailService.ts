@@ -189,67 +189,21 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש מיילים שלא נקראו, ואם אין - מיילים מהיומיים האחרונים שלא עובדו
+        // חיפוש רק מיילים שלא נקראו
         imap.search(['UNSEEN'], (err: any, results: any) => {
           if (err) {
-            console.error('❌ שגיאה בחיפוש מיילים לא נקראו:', err.message);
-            
-            // נסה לחפש מיילים מהיומיים האחרונים כרגיעה
-            const twoDaysAgo = new Date();
-            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-            const searchDate = twoDaysAgo.getDate().toString().padStart(2, '0') + '-' + 
-                              (twoDaysAgo.getMonth() + 1).toString().padStart(2, '0') + '-' + 
-                              twoDaysAgo.getFullYear();
-            
-            console.log('🔍 מחפש מיילים מהיומיים האחרונים לעיבוד מחדש...');
-            imap.search(['SINCE', searchDate], (err2: any, fallbackResults: any) => {
-              if (err2) {
-                console.error('❌ שגיאה בחיפוש מיילים מהיומיים האחרונים:', err2.message);
-                reject(err2);
-                return;
-              }
-              
-              const unprocessedResults = fallbackResults ? fallbackResults.filter((id: any) => !processedEmails.has(id.toString())) : [];
-              console.log(`📧 נמצאו ${unprocessedResults.length} מיילים לא מעובדים מהיומיים האחרונים`);
-              
-              if (unprocessedResults.length > 0) {
-                processBatchEmails(imap, unprocessedResults, resolve, reject);
-              } else {
-                console.log('✅ אין מיילים לעיבוד');
-                resolve();
-              }
-            });
+            console.error('❌ שגיאה בחיפוש מיילים:', err.message);
+            imap.end();
+            reject(err);
             return;
           }
 
           console.log(`🔍 נמצאו ${results.length} מיילים לא נקראו לעיבוד`);
           
           if (results.length === 0) {
-            // בדיקה נוספת - מיילים מהיום (כולל נקראו) למקרה שפספסנו משהו
-            const today = new Date();
-            const todayStr = today.getDate().toString().padStart(2, '0') + '-' + 
-                            (today.getMonth() + 1).toString().padStart(2, '0') + '-' + 
-                            today.getFullYear();
-            console.log(`🔍 בודק מיילים מהיום (${todayStr}) כולל נקראו...`);
-            
-            imap.search(['SINCE', todayStr], (err3: any, todayResults: any) => {
-              if (err3) {
-                console.error('❌ שגיאה בחיפוש מיילים מהיום:', err3.message);
-                imap.end();
-                resolve();
-                return;
-              }
-              
-              console.log(`📧 נמצאו ${todayResults ? todayResults.length : 0} מיילים מהיום (כולל נקראו)`);
-              
-              if (todayResults && todayResults.length > 0) {
-                // נבדוק את המיילים האלה גם כן
-                processBatchEmails(imap, todayResults, resolve, reject);
-              } else {
-                imap.end();
-                resolve();
-              }
-            });
+            console.log('✅ אין מיילים לא נקראו');
+            imap.end();
+            resolve();
             return;
           }
 
