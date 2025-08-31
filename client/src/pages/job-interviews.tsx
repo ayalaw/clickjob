@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   UserCheck, 
   Building2, 
@@ -26,7 +30,9 @@ import {
   ArrowRight,
   Briefcase,
   MessageSquare,
-  Eye
+  Eye,
+  Calendar,
+  Plus
 } from "lucide-react";
 import type { JobApplicationWithDetails, JobApplication, JobWithClient } from "@shared/schema";
 
@@ -38,6 +44,19 @@ export default function JobInterviews() {
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reviewerFeedback, setReviewerFeedback] = useState("");
+  const [whatsappDialog, setWhatsappDialog] = useState(false);
+  const [selectedWhatsappMessage, setSelectedWhatsappMessage] = useState("");
+  const [interviewDialog, setInterviewDialog] = useState(false);
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("");
+
+  const whatsappMessages = [
+    "שלום, זה מחברת גיוס H-Group. ניסיתי להתקשר אליך לגבי משרה שתואמת לך. אנא צור איתי קשר בחזרה",
+    "שלום, מחברת גיוס H-Group. יש לי הצעת עבודה מעניינת בשבילך. אשמח לשוחח איתך",
+    "היי, זה מחברת גיוס H-Group. זכור שהיה לנו קדם קשר? יש לי משרה נחמדה שתתאים לך",
+    "שלום, מחברת גיוס H-Group. אשמח לשוחח איתך על משרה שמתאימה לפרופיל שלך",
+    "היי, זה מחברת גיוס H-Group. נשמח לשמוע אם אתה עדיין מחפש משרה חדשה"
+  ];
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -68,7 +87,26 @@ export default function JobInterviews() {
     enabled: isAuthenticated && !!jobId,
   });
 
-  const applications = applicationsData?.applications.filter(app => app.jobId === jobId) || [];
+  // Filter applications and hide ones that were rejected or sent to employer in the last 45 days
+  const filteredApplications = (applicationsData?.applications.filter(app => {
+    if (app.jobId !== jobId) return false;
+    
+    // Check if candidate was rejected or sent to employer in the last 45 days
+    const candidate = app.candidate;
+    if (candidate.status === 'sent_to_employer' || candidate.status === 'rejected_by_employer') {
+      const updatedAt = candidate.updatedAt ? new Date(candidate.updatedAt) : null;
+      if (updatedAt) {
+        const daysSinceChange = Math.floor((Date.now() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysSinceChange < 45) {
+          return false; // Hide for 45 days
+        }
+      }
+    }
+    
+    return true;
+  }) || []);
+
+  const applications = filteredApplications;
   const currentApplication = applications[currentIndex];
 
   // Mutations for application actions
@@ -120,41 +158,85 @@ export default function JobInterviews() {
     },
   });
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (!currentApplication) return;
     
-    updateApplicationMutation.mutate({
-      id: currentApplication.id,
-      updates: {
-        status: 'interview',
-        reviewerFeedback,
-        reviewedAt: new Date().toISOString(),
-        sentToClient: true,
+    try {
+      // Update application status
+      await updateApplicationMutation.mutateAsync({
+        id: currentApplication.id,
+        updates: {
+          status: 'interview',
+          reviewerFeedback,
+          reviewedAt: new Date(),
+          sentToClient: true,
+        }
+      });
+
+      // Update candidate status to 'sent_to_employer'
+      await apiRequest("PATCH", `/api/candidates/${currentApplication.candidateId}`, {
+        status: 'sent_to_employer',
+        lastStatusChange: new Date(),
+      });
+
+      // Send candidate profile to employer via email
+      if (reviewerFeedback.trim()) {
+        await apiRequest("POST", "/api/send-candidate-profile", {
+          candidateId: currentApplication.candidateId,
+          jobId: currentApplication.jobId,
+          reviewerFeedback: reviewerFeedback,
+          recipientEmail: jobData?.client?.email,
+          recipientName: jobData?.client?.contactName,
+        });
       }
-    });
-    
-    toast({
-      title: "מועמד אושר! ✅",
-      description: "המועמד הועבר לשלב הבא ונשלח ללקוח",
-    });
+      
+      toast({
+        title: "מועמד נשלח למעסיק! ✅",
+        description: "המועמד נשלח למעסיק עם חוות הדעת שלך",
+      });
+    } catch (error) {
+      console.error('Error approving candidate:', error);
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בשליחת המועמד למעסיק",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!currentApplication) return;
     
-    updateApplicationMutation.mutate({
-      id: currentApplication.id,
-      updates: {
-        status: 'rejected',
-        reviewerFeedback,
-        reviewedAt: new Date().toISOString(),
-      }
-    });
-    
-    toast({
-      title: "מועמד נפסל ❌",
-      description: "המועמד הועבר לסטטוס נפסל",
-    });
+    try {
+      // Update application status
+      await updateApplicationMutation.mutateAsync({
+        id: currentApplication.id,
+        updates: {
+          status: 'rejected',
+          reviewerFeedback,
+          reviewedAt: new Date(),
+        }
+      });
+
+      // Update candidate status to 'rejected_by_employer'
+      await apiRequest("PATCH", `/api/candidates/${currentApplication.candidateId}`, {
+        status: 'rejected_by_employer',
+        lastStatusChange: new Date(),
+        notes: reviewerFeedback ? `הערות פסילה: ${reviewerFeedback}` : undefined,
+      });
+      
+      toast({
+        title: "מועמד נפסל ❌",
+        description: "המועמד סומן כנפסל והערותיך נשמרו",
+      });
+    } catch (error) {
+      console.error('Error rejecting candidate:', error);
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בעדכון סטטוס המועמד",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleNeedsMoreReview = () => {
@@ -165,7 +247,7 @@ export default function JobInterviews() {
       updates: {
         status: 'submitted',
         reviewerFeedback,
-        reviewedAt: new Date().toISOString(),
+        reviewedAt: new Date(),
       }
     });
     
@@ -173,6 +255,97 @@ export default function JobInterviews() {
       title: "נדרש ראיון נוסף 🔄",
       description: "המועמד סומן לבדיקה נוספת",
     });
+  };
+
+  const handleWhatsappSend = async () => {
+    if (!currentApplication || !selectedWhatsappMessage) return;
+    
+    try {
+      // Update candidate status to 'whatsapp_sent'
+      await apiRequest("PATCH", `/api/candidates/${currentApplication.candidateId}`, {
+        status: 'whatsapp_sent',
+        lastStatusChange: new Date(),
+        notes: `הודעת ווצאפ נשלחה: ${selectedWhatsappMessage}`,
+      });
+
+      // Update application with WhatsApp note
+      await updateApplicationMutation.mutateAsync({
+        id: currentApplication.id,
+        updates: {
+          reviewerFeedback: `הודעת ווצאפ נשלחה: ${selectedWhatsappMessage}`,
+        }
+      });
+
+      // Open WhatsApp with the message
+      const phoneNumber = currentApplication.candidate.phone?.replace(/^0/, '972');
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(selectedWhatsappMessage)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      setWhatsappDialog(false);
+      setSelectedWhatsappMessage("");
+      
+      toast({
+        title: "הודעת ווצאפ נשלחה! 📱",
+        description: "המועמד הועבר לסוף הרשימה והסטטוס עודכן",
+      });
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בשליחת הודעת ווצאפ",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleInterview = async () => {
+    if (!currentApplication || !interviewDate || !interviewTime) return;
+    
+    try {
+      const interviewDateTime = new Date(`${interviewDate}T${interviewTime}`);
+      
+      // Update application status
+      await updateApplicationMutation.mutateAsync({
+        id: currentApplication.id,
+        updates: {
+          status: 'submitted',
+          reviewerFeedback: `נדרש ראיון נוסף ב-${interviewDateTime.toLocaleDateString('he-IL')} בשעה ${interviewTime}`,
+          reviewedAt: new Date(),
+        }
+      });
+
+      // Update candidate status
+      await apiRequest("PATCH", `/api/candidates/${currentApplication.candidateId}`, {
+        status: 'waiting_for_second_interview',
+        lastStatusChange: new Date(),
+      });
+
+      // Create reminder event
+      await apiRequest("POST", "/api/reminders", {
+        title: `ראיון נוסף - ${currentApplication.candidate.firstName} ${currentApplication.candidate.lastName}`,
+        description: `ראיון נוסף למועמד ${currentApplication.candidate.firstName} ${currentApplication.candidate.lastName} למשרה ${jobData?.title}`,
+        dueDate: interviewDateTime,
+        type: 'interview',
+        candidateId: currentApplication.candidateId,
+        jobId: currentApplication.jobId,
+      });
+      
+      setInterviewDialog(false);
+      setInterviewDate("");
+      setInterviewTime("");
+      
+      toast({
+        title: "ראיון נוסף נקבע! 📅",
+        description: `ראיון נקבע ל-${interviewDateTime.toLocaleDateString('he-IL')} בשעה ${interviewTime}`,
+      });
+    } catch (error) {
+      console.error('Error scheduling interview:', error);
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בקביעת הראיון",
+        variant: "destructive",
+      });
+    }
   };
 
   const navigateToCandidate = (direction: 'prev' | 'next') => {
@@ -294,16 +467,54 @@ export default function JobInterviews() {
                       </a>
                     )}
                     {currentApplication.candidate.phone && (
-                      <a
-                        href={`https://wa.me/972${currentApplication.candidate.phone.replace(/^0/, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sm text-green-600 hover:text-green-800"
-                        data-testid="link-whatsapp"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        וואטסאפ
-                      </a>
+                      <Dialog open={whatsappDialog} onOpenChange={setWhatsappDialog}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1 text-sm text-green-600 hover:text-green-800 border-green-200"
+                            data-testid="button-whatsapp"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            שלח ווצאפ
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>שליחת הודעת ווצאפ</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label>בחר הודעה מוכנה:</Label>
+                              <Select value={selectedWhatsappMessage} onValueChange={setSelectedWhatsappMessage}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="בחר הודעה..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {whatsappMessages.map((message, index) => (
+                                    <SelectItem key={index} value={message}>
+                                      {message.substring(0, 50)}...
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {selectedWhatsappMessage && (
+                              <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm">{selectedWhatsappMessage}</p>
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              <Button onClick={handleWhatsappSend} disabled={!selectedWhatsappMessage}>
+                                שלח הודעה
+                              </Button>
+                              <Button variant="outline" onClick={() => setWhatsappDialog(false)}>
+                                ביטול
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     )}
                   </div>
                 </div>
@@ -455,15 +666,55 @@ export default function JobInterviews() {
                     <XCircle className="h-4 w-4 mr-2" />
                     ❌ לא מתאים
                   </Button>
-                  <Button
-                    onClick={handleNeedsMoreReview}
-                    disabled={updateApplicationMutation.isPending}
-                    variant="outline"
-                    data-testid="button-more-review"
-                  >
-                    <Clock className="h-4 w-4 mr-2" />
-                    🔄 נדרש ראיון נוסף
-                  </Button>
+                  <Dialog open={interviewDialog} onOpenChange={setInterviewDialog}>
+                    <DialogTrigger asChild>
+                      <Button
+                        disabled={updateApplicationMutation.isPending}
+                        variant="outline"
+                        data-testid="button-more-review"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        🔄 נדרש ראיון נוסף
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>קביעת ראיון נוסף</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="interview-date">תאריך הראיון:</Label>
+                          <Input
+                            id="interview-date"
+                            type="date"
+                            value={interviewDate}
+                            onChange={(e) => setInterviewDate(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="interview-time">שעת הראיון:</Label>
+                          <Input
+                            id="interview-time"
+                            type="time"
+                            value={interviewTime}
+                            onChange={(e) => setInterviewTime(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleScheduleInterview} 
+                            disabled={!interviewDate || !interviewTime}
+                          >
+                            קבע ראיון
+                          </Button>
+                          <Button variant="outline" onClick={() => setInterviewDialog(false)}>
+                            ביטול
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 {/* Internal Notes */}

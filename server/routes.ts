@@ -1788,6 +1788,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send candidate profile to employer
+  app.post('/api/send-candidate-profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const { candidateId, jobId, reviewerFeedback, recipientEmail, recipientName } = req.body;
+      
+      const candidate = await storage.getCandidate(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const job = await storage.getJob(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      // Create email content with reviewer feedback
+      const emailContent = `
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            המלצה על מועמד למשרה: ${job.title}
+          </h2>
+          
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #0369a1; margin-top: 0;">חוות דעת מקצועית</h3>
+            <p style="font-size: 16px; line-height: 1.6;">${reviewerFeedback}</p>
+          </div>
+
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #374151; margin-top: 0;">פרטי המועמד</h3>
+            <p><strong>שם מלא:</strong> ${candidate.firstName} ${candidate.lastName}</p>
+            <p><strong>אימייל:</strong> ${candidate.email}</p>
+            <p><strong>נייד:</strong> ${candidate.phone || 'לא צוין'}</p>
+            <p><strong>עיר:</strong> ${candidate.city || 'לא צוין'}</p>
+            ${candidate.profession ? `<p><strong>מקצוע:</strong> ${candidate.profession}</p>` : ''}
+            ${candidate.experience ? `<p><strong>ניסיון תעסוקתי:</strong> ${candidate.experience}</p>` : ''}
+          </div>
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px;">נשלח ממערכת ניהול גיוס H-Group</p>
+          </div>
+        </div>
+      `;
+      
+      const emailData = {
+        to: recipientEmail,
+        subject: `המלצה על מועמד: ${candidate.firstName} ${candidate.lastName} - ${job.title}`,
+        html: emailContent,
+      };
+
+      const result = await sendEmail(emailData);
+      
+      if (result.success) {
+        await storage.createEmail({
+          from: process.env.GMAIL_USER || 'noreply@h-group.org.il',
+          to: recipientEmail,
+          subject: emailData.subject,
+          body: emailContent,
+          isHtml: true,
+          status: 'sent',
+          sentAt: new Date(),
+          candidateId,
+          sentBy: req.user.claims.sub,
+        });
+        
+        // Add event for candidate sent to employer
+        await storage.addCandidateEvent({
+          candidateId,
+          eventType: 'sent_to_employer',
+          description: `נשלח למעסיק עם חוות דעת מקצועית`,
+          metadata: {
+            jobTitle: job.title,
+            jobId: jobId,
+            recipientEmail: recipientEmail,
+            reviewerFeedback: reviewerFeedback,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        res.json({ success: true });
+      } else {
+        await storage.createEmail({
+          from: process.env.GMAIL_USER || 'noreply@h-group.org.il',
+          to: recipientEmail,
+          subject: emailData.subject,
+          body: emailContent,
+          isHtml: true,
+          status: 'failed',
+          candidateId,
+          sentBy: req.user.claims.sub,
+          errorMessage: result.error,
+        });
+        
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Error sending candidate profile:", error);
+      res.status(500).json({ message: "Failed to send candidate profile" });
+    }
+  });
+
   app.get('/api/emails', isAuthenticated, async (req: any, res) => {
     try {
       const emails = await storage.getEmails();
