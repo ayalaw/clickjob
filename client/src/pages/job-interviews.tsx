@@ -25,7 +25,8 @@ import {
   Download,
   ArrowRight,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  Eye
 } from "lucide-react";
 import type { JobApplicationWithDetails, JobApplication, JobWithClient } from "@shared/schema";
 
@@ -504,18 +505,68 @@ export default function JobInterviews() {
               <CardContent>
                 {currentApplication.candidate.cvPath ? (
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b flex items-center justify-between">
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        תצוגה מקדימה של קורות החיים - {currentApplication.candidate.firstName} {currentApplication.candidate.lastName}
+                        קורות חיים - {currentApplication.candidate.firstName} {currentApplication.candidate.lastName}
                       </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank')}
+                          data-testid="button-view-cv"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          פתח בחלון חדש
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = `/api/candidates/${currentApplication.candidate.id}/cv`;
+                            link.download = `CV-${currentApplication.candidate.firstName}-${currentApplication.candidate.lastName}.pdf`;
+                            link.click();
+                          }}
+                          data-testid="button-download-cv"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          הורד
+                        </Button>
+                      </div>
                     </div>
-                    <iframe
-                      src={`/api/candidates/${currentApplication.candidate.id}/cv`}
-                      className="w-full border-0 bg-white"
-                      title="תצוגה מקדימה של קורות החיים"
-                      style={{ height: 'calc(100vh - 250px)', minHeight: '800px' }}
-                      sandbox="allow-same-origin allow-scripts"
-                    />
+                    <div className="p-6 text-center" style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}>
+                      <div className="flex flex-col items-center justify-center h-full space-y-4">
+                        <FileText className="h-24 w-24 text-blue-500" />
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                          קובץ קורות החיים זמין לצפייה
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-300 text-center max-w-md">
+                          לצפייה בקורות החיים לחץ על "פתח בחלון חדש" או הורד את הקובץ למחשב
+                        </p>
+                        <div className="flex gap-3 mt-6">
+                          <Button
+                            onClick={() => window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank')}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            צפה בקורות החיים
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `/api/candidates/${currentApplication.candidate.id}/cv`;
+                              link.download = `CV-${currentApplication.candidate.firstName}-${currentApplication.candidate.lastName}.pdf`;
+                              link.click();
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            הורד קובץ
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
