@@ -34,7 +34,7 @@ export default function UserManagement() {
   // Assign role mutation
   const assignRoleMutation = useMutation({
     mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
-      await apiRequest(`/api/users/${userId}/roles`, 'POST', { roleId });
+      await apiRequest('POST', `/api/users/${userId}/roles`, { roleId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
@@ -59,7 +59,7 @@ export default function UserManagement() {
   // Remove role mutation
   const removeRoleMutation = useMutation({
     mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
-      await apiRequest(`/api/users/${userId}/roles/${roleId}`, 'DELETE');
+      await apiRequest('DELETE', `/api/users/${userId}/roles/${roleId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
@@ -81,7 +81,7 @@ export default function UserManagement() {
   // Add user mutation
   const addUserMutation = useMutation({
     mutationFn: async (userData: { email: string; firstName?: string; lastName?: string; roleId?: string }) => {
-      const response = await apiRequest('/api/users', 'POST', userData);
+      const response = await apiRequest('POST', '/api/users', userData);
       return response;
     },
     onSuccess: () => {
