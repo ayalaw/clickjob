@@ -251,24 +251,25 @@ export default function Candidates() {
           ) : (
             <>
               {candidatesData?.candidates && candidatesData.candidates.length > 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 dark:bg-gray-900">
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שם המועמד</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">עיר</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">עדכון אחרון</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מתעניין במשרה אחרון</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מקור גיוס נוכחי</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">טלפון</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">מס' מועמד</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">דוא״ל</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">אירוע ידני אחרון</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">הפניה אחרונה</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">שינוי סטטוס אחרון</TableHead>
-                        <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">פעולות</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+                  <div className="min-w-[1400px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-900">
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[160px]">שם המועמד</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">עיר</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">עדכון אחרון</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[150px]">מתעניין במשרה אחרון</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">מקור גיוס נוכחי</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[130px]">טלפון</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">מס' מועמד</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[200px]">דוא״ל</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">אירוע ידני אחרון</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">הפניה אחרונה</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">שינוי סטטוס אחרון</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">פעולות</TableHead>
+                        </TableRow>
+                      </TableHeader>
                     <TableBody>
                       {candidatesData.candidates.map((candidate: Candidate) => (
                         <TableRow 
@@ -390,8 +391,9 @@ export default function Candidates() {
                           </TableCell>
                         </TableRow>
                       ))}
-                    </TableBody>
-                  </Table>
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-12">
