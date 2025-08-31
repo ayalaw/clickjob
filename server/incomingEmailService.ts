@@ -92,9 +92,9 @@ function parseCV(text: string): any {
     result.nationalId = idMatch[1];
   }
   
-  // חילוץ עיר מגורים
+  // חילוץ עיר מגורים - עם תמיכה בתווים מיוחדים
   const cityKeywords = ['עיר', 'מגורים', 'כתובת', 'מקום', 'city', 'address'];
-  const cityPattern = new RegExp(`(?:${cityKeywords.join('|')})\\s*:?\\s*([א-ת\\s]{2,20})`, 'i');
+  const cityPattern = new RegExp(`(?:${cityKeywords.join('|')})[\\s\\u200E\\u200F]*:?[\\s\\u200E\\u200F]*([א-ת\\s]{2,30})`, 'i');
   const cityMatch = text.match(cityPattern);
   if (cityMatch) {
     result.city = cityMatch[1].trim();
