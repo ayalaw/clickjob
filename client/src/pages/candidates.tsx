@@ -15,7 +15,7 @@ import CandidateForm from "@/components/forms/candidate-form";
 import SearchFilter from "@/components/search-filter";
 import { EmailDialog } from "@/components/email-dialog";
 import { Plus, Search, Phone, Mail, FileText, Edit, Trash2, Send, Users } from "lucide-react";
-import type { Candidate } from "@shared/schema";
+import type { Candidate, EnrichedCandidate } from "@shared/schema";
 
 export default function Candidates() {
   const { toast } = useToast();
@@ -52,7 +52,7 @@ export default function Candidates() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: any[]; total: number }>({
+  const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: EnrichedCandidate[]; total: number }>({
     queryKey: ["/api/candidates/enriched", { search, dateFilter }],
     enabled: isAuthenticated,
   });
@@ -289,7 +289,7 @@ export default function Candidates() {
                         </TableRow>
                       </TableHeader>
                     <TableBody>
-                      {candidatesData.candidates.map((candidate: Candidate) => (
+                      {candidatesData.candidates.map((candidate: EnrichedCandidate) => (
                         <TableRow 
                           key={candidate.id} 
                           className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" 

@@ -571,3 +571,12 @@ export type JobApplicationWithDetails = JobApplication & { candidate: Candidate;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
 export type TaskWithDetails = Task & { candidate?: Candidate; job?: JobWithClient; client?: Client };
+
+// Enhanced candidate type with computed enriched data
+export type EnrichedCandidate = Candidate & {
+  lastJobTitle?: string | null;
+  lastAppliedAt?: Date | null;
+  lastReferralDate?: Date | null;
+  lastStatusChange?: Date | null;
+  lastStatusDescription?: string | null;
+};
