@@ -78,6 +78,14 @@ export default function JobInterviews() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      
+      // Also invalidate specific candidate data if available
+      if (currentApplication?.candidateId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/candidates/${currentApplication.candidateId}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/candidates/${currentApplication.candidateId}/events`] });
+      }
+      
       setReviewerFeedback("");
       
       // Move to next candidate if available
