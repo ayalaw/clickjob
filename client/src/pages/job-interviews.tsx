@@ -215,8 +215,11 @@ export default function JobInterviews() {
       });
 
       // Send candidate profile to employer via email (only if email is configured)
-      try {
-        if (jobData?.client?.email) {
+      let emailSent = false;
+      let emailError = null;
+      
+      if (jobData?.client?.email) {
+        try {
           await apiRequest("POST", "/api/send-candidate-profile", {
             candidateId: currentApplication.candidateId,
             jobId: currentApplication.jobId,
@@ -224,16 +227,32 @@ export default function JobInterviews() {
             recipientEmail: jobData.client.email,
             recipientName: jobData.client.contactName,
           });
+          emailSent = true;
+        } catch (error) {
+          console.error('Email sending failed:', error);
+          emailError = error;
+          emailSent = false;
         }
-      } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-        // Don't throw error - the candidate was still approved successfully
       }
       
-      toast({
-        title: "מועמד אושר בהצלחה! ✅",
-        description: jobData?.client?.email ? "המועמד נשלח למעסיק עם חוות הדעת שלך" : "המועמד אושר והתווסף לרשימת המועמדים המאושרים",
-      });
+      // Show accurate success/error message
+      if (emailSent) {
+        toast({
+          title: "מועמד נשלח למעסיק! ✅",
+          description: "המועמד נשלח למעסיק בהצלחה עם חוות הדעת שלך",
+        });
+      } else if (jobData?.client?.email && emailError) {
+        toast({
+          title: "מועמד אושר אבל המייל נכשל! ⚠️",
+          description: "המועמד אושר במערכת אבל לא ניתן לשלוח מייל למעסיק. אנא צור קשר ידני.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "מועמד אושר בהצלחה! ✅",
+          description: "המועמד אושר והתווסף לרשימת המועמדים המאושרים",
+        });
+      }
 
       // Move to next candidate automatically
       setTimeout(() => {
