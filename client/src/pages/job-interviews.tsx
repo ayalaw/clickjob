@@ -536,35 +536,14 @@ export default function JobInterviews() {
                       </div>
                     </div>
                     <div className="w-full bg-white dark:bg-gray-800">
-                      <object
-                        data={`/api/candidates/${currentApplication.candidate.id}/cv`}
-                        type="application/pdf"
+                      <iframe
+                        src={`/api/candidates/${currentApplication.candidate.id}/cv#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
                         className="w-full border-0"
+                        title={`קורות חיים - ${currentApplication.candidate.firstName} ${currentApplication.candidate.lastName}`}
                         style={{ height: 'calc(100vh - 250px)', minHeight: '700px' }}
-                      >
-                        <embed
-                          src={`/api/candidates/${currentApplication.candidate.id}/cv`}
-                          type="application/pdf"
-                          className="w-full border-0"
-                          style={{ height: 'calc(100vh - 250px)', minHeight: '700px' }}
-                        />
-                        <div className="p-6 text-center flex flex-col items-center justify-center h-full space-y-4">
-                          <FileText className="h-16 w-16 text-blue-500" />
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            הדפדפן לא תומך בתצוגה ישירה
-                          </h3>
-                          <p className="text-gray-600 dark:text-gray-300">
-                            לחץ על "פתח בחלון חדש" לצפייה בקורות החיים
-                          </p>
-                          <Button
-                            onClick={() => window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank')}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            פתח בחלון חדש
-                          </Button>
-                        </div>
-                      </object>
+                        allow="fullscreen"
+                        loading="lazy"
+                      />
                     </div>
                   </div>
                 ) : (
