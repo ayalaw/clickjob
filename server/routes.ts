@@ -2641,10 +2641,9 @@ ${recommendation}
       console.log(`📧 Attempting to send welcome email to: ${newUser.email}`);
       
       const emailSent = await sendWelcomeEmail({
-        to: newUser.email!,
+        email: newUser.email!,
         firstName: newUser.firstName || undefined,
         lastName: newUser.lastName || undefined,
-        email: newUser.email!,
         password: tempPassword,
         loginUrl,
       });

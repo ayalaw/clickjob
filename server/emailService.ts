@@ -217,7 +217,6 @@ export const emailTemplates = {
 };
 
 interface WelcomeEmailData {
-  to: string;
   firstName?: string;
   lastName?: string;
   email: string;
@@ -248,7 +247,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
 
     const mailOptions = {
       from: process.env.CPANEL_EMAIL_USER,
-      to: data.to,
+      to: data.email,
       subject: 'פרטי כניסה למערכת הגיוס - ברוכים הבאים!',
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
@@ -304,7 +303,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
     });
     
     const result = await transporter.sendMail(mailOptions);
-    console.log(`📧 Welcome email sent to ${data.to}`, {
+    console.log(`📧 Welcome email sent to ${data.email}`, {
       messageId: result.messageId,
       response: result.response
     });
