@@ -252,6 +252,21 @@ async function checkCpanelEmails(): Promise<void> {
                     return;
                   }
                   
+                  // **סימון המייל כנקרא מיד אחרי הקריאה - לפני כל עיבוד**
+                  try {
+                    if (messageUid) {
+                      imap.addFlags(messageUid, ['\\Seen'], (err: any) => {
+                        if (err) {
+                          console.error('❌ שגיאה בסימון מייל כנקרא:', err.message);
+                        } else {
+                          console.log(`🏷️ מייל ${messageUid} סומן כנקרא במערכת המייל`);
+                        }
+                      });
+                    }
+                  } catch (markError) {
+                    console.error('❌ שגיאה בסימון מייל:', markError);
+                  }
+                  
                   console.log(`📧 מייל מ: ${parsed.from?.text} | נושא: ${parsed.subject}`);
                   
                   // בדיקה אם זה מייל מועמדות לעבודה
