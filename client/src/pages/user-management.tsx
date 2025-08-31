@@ -110,6 +110,34 @@ export default function UserManagement() {
     },
   });
 
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest('DELETE', `/api/users/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
+      toast({
+        title: "המשתמש נמחק בהצלחה",
+        description: "המשתמש והתפקידים שלו הוסרו מהמערכת",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error deleting user:', error);
+      const errorMessage = error?.message?.includes('Cannot delete your own account') 
+        ? "לא ניתן למחוק את החשבון שלך"
+        : error?.message?.includes('Only Super Admin') 
+        ? "רק מנהל מערכת יכול למחוק משתמשים עם תפקידי מנהל"
+        : "לא ניתן היה למחוק את המשתמש";
+      
+      toast({
+        title: "שגיאה",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!canManageUsers) {
     return (
       <div className="container mx-auto p-4" dir="rtl">
@@ -289,6 +317,22 @@ export default function UserManagement() {
                   <CardDescription>{user.email}</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  {canManageUsers && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => {
+                        if (window.confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}?`)) {
+                          deleteUserMutation.mutate(user.id);
+                        }
+                      }}
+                      disabled={deleteUserMutation.isPending}
+                      data-testid={`button-delete-user-${user.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 ml-2" />
+                      {deleteUserMutation.isPending ? "מוחק..." : "מחק"}
+                    </Button>
+                  )}
                   {canManageRoles && (
                     <Dialog open={isRoleDialogOpen && selectedUser?.id === user.id} onOpenChange={(open) => {
                       setIsRoleDialogOpen(open);

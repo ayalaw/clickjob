@@ -64,6 +64,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: { email: string; firstName?: string | null; lastName?: string | null; password?: string }): Promise<User>;
+  deleteUser(id: string): Promise<void>;
 
   // Candidate operations
   getCandidates(limit?: number, offset?: number, search?: string): Promise<{ candidates: Candidate[]; total: number }>;
@@ -219,6 +220,10 @@ export class DatabaseStorage implements IStorage {
       .values(userData_with_password)
       .returning();
     return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // Candidate operations

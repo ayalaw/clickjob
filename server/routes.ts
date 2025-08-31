@@ -2661,6 +2661,58 @@ ${recommendation}
     }
   });
 
+  // Delete user (Admin and Super Admin only)
+  app.delete('/api/users/:userId', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const sessionUserId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(sessionUserId, 'admin') || await storage.hasRole(sessionUserId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
+
+    try {
+      const { userId } = req.params;
+      
+      // Prevent users from deleting themselves
+      if (userId === sessionUserId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      // Get user to check if they exist and what roles they have
+      const userToDelete = await storage.getUserWithRoles(userId);
+      if (!userToDelete) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only Super Admin can delete users with super_admin or admin roles
+      const hasAdminOrSuperAdminRole = userToDelete.userRoles.some(ur => 
+        ur.role.type === 'super_admin' || ur.role.type === 'admin'
+      );
+      
+      if (hasAdminOrSuperAdminRole) {
+        const isSuperAdmin = await storage.hasRole(sessionUserId, 'super_admin');
+        if (!isSuperAdmin) {
+          return res.status(403).json({ message: "Only Super Admin can delete users with admin or super admin roles" });
+        }
+      }
+
+      // First remove all user roles
+      for (const userRole of userToDelete.userRoles) {
+        await storage.removeUserRole(userId, userRole.roleId);
+      }
+
+      // Then delete the user
+      await storage.deleteUser(userId);
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Get user with roles and permissions
   app.get('/api/users/:id/roles', isAuthenticated, injectUserPermissions, async (req, res) => {
     try {
