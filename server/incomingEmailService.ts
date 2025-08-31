@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 let processedEmails = new Set<string>();
 let lastResetDate = new Date().toDateString();
 
-// איפוס ידני לבדיקה
+// איפוס ידני לבדיקה - מאפס כל יום ומאפשר עיבוד מחדש של מיילים שלא הצליחו
 processedEmails.clear();
 
 // דפוסי זיהוי מידע במיילים נכנסים
@@ -189,11 +189,34 @@ async function checkCpanelEmails(): Promise<void> {
 
         console.log(`📧 נמצאו ${box.messages.total} מיילים בתיבה`);
         
-        // חיפוש רק מיילים שלא נקראו
+        // חיפוש מיילים שלא נקראו, ואם אין - מיילים מהיומיים האחרונים שלא עובדו
         imap.search(['UNSEEN'], (err: any, results: any) => {
           if (err) {
-            console.error('❌ שגיאה בחיפוש מיילים:', err.message);
-            reject(err);
+            console.error('❌ שגיאה בחיפוש מיילים לא נקראו:', err.message);
+            
+            // נסה לחפש מיילים מהיומיים האחרונים כרגיעה
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+            const searchDate = twoDaysAgo.toISOString().split('T')[0].replace(/-/g, '-');
+            
+            console.log('🔍 מחפש מיילים מהיומיים האחרונים לעיבוד מחדש...');
+            imap.search(['SINCE', searchDate], (err2: any, fallbackResults: any) => {
+              if (err2) {
+                console.error('❌ שגיאה בחיפוש מיילים מהיומיים האחרונים:', err2.message);
+                reject(err2);
+                return;
+              }
+              
+              const unprocessedResults = fallbackResults ? fallbackResults.filter((id: any) => !processedEmails.has(id.toString())) : [];
+              console.log(`📧 נמצאו ${unprocessedResults.length} מיילים לא מעובדים מהיומיים האחרונים`);
+              
+              if (unprocessedResults.length > 0) {
+                processBatchEmails(imap, unprocessedResults, resolve, reject);
+              } else {
+                console.log('✅ אין מיילים לעיבוד');
+                resolve();
+              }
+            });
             return;
           }
 
@@ -478,13 +501,37 @@ function parseCandidate(subject: string, body: string, from: string): ParsedCand
   const jobCodeMatch = fullText.match(EMAIL_PATTERNS.jobCode);
   const jobCode = jobCodeMatch ? (jobCodeMatch[1] || jobCodeMatch[2]) : undefined;
   
-  // לא נחלץ פרטים מהמייל - רק מקורות החיים!
-  // כל הפרטים ייחלצו מהקובץ המצורף בלבד
+  // חילוץ אימייל מהשולח (fallback אם לא נמצא בקורות חיים)
+  const emailMatch = from.match(/<([^>]+)>/) || from.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  const emailFromSender = emailMatch ? emailMatch[1] || emailMatch[0] : from;
+  
+  // חילוץ שם מהשולח (fallback אם לא נמצא בקורות חיים)
+  const nameFromSender = from.replace(/<[^>]+>/, '').replace(/['"]/g, '').trim();
+  const nameParts = nameFromSender.split(' ').filter(part => part.length > 0);
+  
+  // ניסיון לחלץ שם מהנושא (אם יש בעברית)
+  const subjectNames = subject.match(/([א-ת]+[\s-][א-ת]+)/g);
+  const nameFromSubject = subjectNames ? subjectNames[0] : '';
+  
+  // קביעת שם ראשון ואחרון
+  let firstName = undefined;
+  let lastName = undefined;
+  
+  if (nameFromSubject) {
+    const subjectParts = nameFromSubject.split(/[\s-]/);
+    firstName = subjectParts[0];
+    lastName = subjectParts[1] || '';
+  } else if (nameParts.length >= 2) {
+    firstName = nameParts[0];
+    lastName = nameParts.slice(1).join(' ');
+  } else if (nameParts.length === 1) {
+    firstName = nameParts[0];
+  }
   
   return {
-    firstName: undefined, // רק מקורות החיים
-    lastName: undefined, // רק מקורות החיים  
-    email: undefined, // רק מקורות החיים - לא מהשולח!
+    firstName,
+    lastName, 
+    email: emailFromSender,
     phone: undefined, // רק מקורות החיים
     jobCode,
     originalSubject: subject,
