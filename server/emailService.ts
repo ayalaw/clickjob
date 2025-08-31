@@ -227,14 +227,20 @@ interface WelcomeEmailData {
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
   try {
+    console.log('🔄 Starting welcome email send process...');
+    
     if (!emailConfigLoaded) {
+      console.log('📧 Email config not loaded, loading now...');
       await loadEmailConfig();
     }
 
     if (!transporter) {
-      console.error('Email configuration not available');
+      console.error('❌ Email configuration not available - transporter is null');
+      console.log('📊 Email config status:', { emailConfigLoaded, transporterExists: !!transporter });
       return false;
     }
+
+    console.log('✅ Email configuration is available, proceeding with send...');
 
     const userName = data.firstName && data.lastName 
       ? `${data.firstName} ${data.lastName}` 
