@@ -535,15 +535,35 @@ export default function JobInterviews() {
                         </Button>
                       </div>
                     </div>
-                    <div className="w-full bg-white dark:bg-gray-800">
-                      <iframe
-                        src={`/api/candidates/${currentApplication.candidate.id}/cv#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
-                        className="w-full border-0"
-                        title={`קורות חיים - ${currentApplication.candidate.firstName} ${currentApplication.candidate.lastName}`}
-                        style={{ height: 'calc(100vh - 250px)', minHeight: '700px' }}
-                        allow="fullscreen"
-                        loading="lazy"
-                      />
+                    <div className="h-full flex flex-col">
+                      {/* File info */}
+                      <div className="flex justify-center p-3 bg-gray-50 dark:bg-gray-700 rounded mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                          <FileText className="w-4 h-4" />
+                          קובץ קורות חיים - {currentApplication.candidate.cvPath?.split('/').pop()}
+                        </div>
+                      </div>
+                      
+                      {/* CV Display */}
+                      <div className="flex-1 bg-white rounded border overflow-hidden">
+                        {currentApplication.candidate.cvPath?.toLowerCase().includes('.pdf') ? (
+                          <iframe
+                            src={`/uploads/${currentApplication.candidate.cvPath?.replace('uploads/', '')}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : currentApplication.candidate.cvPath?.toLowerCase().includes('.doc') ? (
+                          <iframe
+                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + currentApplication.candidate.cvPath?.replace('uploads/', ''))}`}
+                            className="w-full h-full border-0"
+                            title="קורות חיים"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <p className="text-gray-500 dark:text-gray-400">תצוגה מקדימה לא זמינה</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
