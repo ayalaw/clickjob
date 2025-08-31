@@ -174,6 +174,13 @@ async function checkCpanelEmails(): Promise<void> {
         host: imapHost!.value,
         port: parseInt(imapPort?.value || '993'),
         tls: imapSecure?.value === 'true',
+        authTimeout: 15000,
+        connTimeout: 15000,
+        keepalive: {
+          interval: 10000,
+          idleInterval: 300000,
+          forceNoop: true
+        },
         tlsOptions: { rejectUnauthorized: false }
       });
 
@@ -365,20 +372,52 @@ async function checkCpanelEmails(): Promise<void> {
       });
     });
 
+      let isResolved = false;
+      
       imap.once('error', (err: any) => {
-        console.error('❌ שגיאת חיבור IMAP:', err.message);
-        console.log('💡 המערכת תמשיך לעבוד ללא מעקב מיילים');
-        // Don't reject on IMAP errors - just resolve to avoid crashing the app
-        resolve();
+        if (!isResolved) {
+          console.error('❌ שגיאת חיבור IMAP:', err.message);
+          console.log('💡 המערכת תמשיך לעבוד ללא מעקב מיילים');
+          isResolved = true;
+          resolve();
+        }
       });
+
+      imap.once('end', () => {
+        if (!isResolved) {
+          console.log('📪 חיבור IMAP הסתיים');
+          isResolved = true;
+          resolve();
+        }
+      });
+
+      // Overall timeout for the entire operation
+      const overallTimeout = setTimeout(() => {
+        if (!isResolved) {
+          console.error('❌ timeout בחיבור IMAP - עברו 20 שניות');
+          isResolved = true;
+          try {
+            imap.end();
+          } catch (e) {
+            // Ignore errors when ending connection
+          }
+          resolve();
+        }
+      }, 20000); // 20 seconds timeout
 
       // Wrap the connection in a timeout to prevent hanging
       setTimeout(() => {
         try {
-          imap.connect();
+          if (!isResolved) {
+            imap.connect();
+          }
         } catch (connectError) {
-          console.error('❌ שגיאה בחיבור IMAP:', connectError);
-          resolve();
+          if (!isResolved) {
+            console.error('❌ שגיאה בחיבור IMAP:', connectError);
+            isResolved = true;
+            clearTimeout(overallTimeout);
+            resolve();
+          }
         }
       }, 1000);
     } catch (error) {
@@ -791,8 +830,37 @@ export function startEmailMonitoring(): void {
   console.log('✅ מעקב מיילים נכנסים פעיל - מיילים יסומנו כנקראו אוטומטית');
   
   // בדיקה כל דקה
-  setInterval(async () => {
-    await checkIncomingEmails();
+  // בדיקת מיילים עם retry logic
+  let consecutiveFailures = 0;
+  const maxFailures = 5;
+
+  const emailCheckInterval = setInterval(async () => {
+    try {
+      await checkIncomingEmails();
+      consecutiveFailures = 0; // Reset on success
+    } catch (error) {
+      consecutiveFailures++;
+      console.log(`❌ כשל ${consecutiveFailures}/${maxFailures} בבדיקת מיילים`);
+      
+      if (consecutiveFailures >= maxFailures) {
+        console.log(`🚫 הופסקה בדיקת מיילים זמנית לאחר ${maxFailures} כשלים רצופים`);
+        console.log('🔄 הבדיקה תתחדש בעוד 10 דקות');
+        
+        clearInterval(emailCheckInterval);
+        
+        // חזרה לבדיקה אחרי 10 דקות
+        setTimeout(() => {
+          consecutiveFailures = 0;
+          console.log('🔄 חידוש בדיקת מיילים...');
+          
+          setInterval(async () => {
+            await checkIncomingEmails();
+          }, 60 * 1000);
+          
+          checkIncomingEmails();
+        }, 10 * 60 * 1000); // 10 minutes
+      }
+    }
   }, 60 * 1000);
   
   // בדיקה ראשונית
