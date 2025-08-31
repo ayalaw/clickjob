@@ -26,6 +26,14 @@ import type { JobWithClient } from "@shared/schema";
 export default function Interviews() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  
+  // State for candidate details modal
+  const [selectedJobDetails, setSelectedJobDetails] = useState<{
+    jobId: string;
+    jobTitle: string;
+    status: string;
+    candidates: any[];
+  } | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -59,6 +67,14 @@ export default function Interviews() {
 
   const applications = applicationsData?.applications || [];
 
+  // Fetch all candidates
+  const { data: candidatesData } = useQuery<{ candidates: any[] }>({
+    queryKey: ["/api/candidates/enriched"],
+    enabled: isAuthenticated,
+  });
+
+  const allCandidates = candidatesData?.candidates || [];
+
   const getJobStats = (jobId: string) => {
     const jobApplications = applications.filter(app => app.jobId === jobId);
     return {
@@ -68,6 +84,53 @@ export default function Interviews() {
       rejected: jobApplications.filter(app => app.status === 'rejected').length,
       waitingForInterview: jobApplications.filter(app => app.status === 'invited_to_interview').length,
     };
+  };
+
+  // Function to get candidates for a specific job and status
+  const getCandidatesForJobAndStatus = (jobId: string, statusType: string) => {
+    const jobApplications = applications.filter(app => app.jobId === jobId);
+    let candidateIds: string[] = [];
+    
+    switch (statusType) {
+      case 'all':
+        candidateIds = jobApplications.map(app => app.candidateId);
+        break;
+      case 'submitted':
+        candidateIds = jobApplications.filter(app => app.status === 'submitted').map(app => app.candidateId);
+        break;
+      case 'interview':
+        candidateIds = jobApplications.filter(app => app.status === 'interview').map(app => app.candidateId);
+        break;
+      case 'rejected':
+        candidateIds = jobApplications.filter(app => app.status === 'rejected').map(app => app.candidateId);
+        break;
+      case 'waitingForInterview':
+        candidateIds = jobApplications.filter(app => app.status === 'invited_to_interview').map(app => app.candidateId);
+        break;
+    }
+    
+    return allCandidates.filter(candidate => candidateIds.includes(candidate.id));
+  };
+
+  // Function to handle clicking on a status number
+  const handleStatusClick = (jobId: string, jobTitle: string, statusType: string) => {
+    const candidates = getCandidatesForJobAndStatus(jobId, statusType);
+    let statusText = '';
+    
+    switch (statusType) {
+      case 'all': statusText = 'כל המועמדים'; break;
+      case 'submitted': statusText = 'ממתינים לראיון'; break;
+      case 'interview': statusText = 'נשלחו למעסיק'; break;
+      case 'rejected': statusText = 'נפסלו'; break;
+      case 'waitingForInterview': statusText = 'מחכים לראיון'; break;
+    }
+    
+    setSelectedJobDetails({
+      jobId,
+      jobTitle,
+      status: statusText,
+      candidates
+    });
   };
 
   const getStatusBadge = (status: string | null) => {
@@ -221,27 +284,52 @@ export default function Interviews() {
                             </TableCell>
                             <TableCell>
                               <div className="text-center">
-                                <span className="text-lg font-bold text-blue-600">{stats.total}</span>
+                                <button 
+                                  onClick={() => handleStatusClick(job.id, job.title, 'all')}
+                                  className="text-lg font-bold text-blue-600 hover:text-blue-800 cursor-pointer hover:underline transition-colors"
+                                >
+                                  {stats.total}
+                                </button>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-center">
-                                <span className="text-lg font-bold text-yellow-600">{stats.submitted}</span>
+                                <button 
+                                  onClick={() => handleStatusClick(job.id, job.title, 'submitted')}
+                                  className="text-lg font-bold text-yellow-600 hover:text-yellow-800 cursor-pointer hover:underline transition-colors"
+                                >
+                                  {stats.submitted}
+                                </button>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-center">
-                                <span className="text-lg font-bold text-orange-600">{stats.waitingForInterview}</span>
+                                <button 
+                                  onClick={() => handleStatusClick(job.id, job.title, 'waitingForInterview')}
+                                  className="text-lg font-bold text-orange-600 hover:text-orange-800 cursor-pointer hover:underline transition-colors"
+                                >
+                                  {stats.waitingForInterview}
+                                </button>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-center">
-                                <span className="text-lg font-bold text-green-600">{stats.interview}</span>
+                                <button 
+                                  onClick={() => handleStatusClick(job.id, job.title, 'interview')}
+                                  className="text-lg font-bold text-green-600 hover:text-green-800 cursor-pointer hover:underline transition-colors"
+                                >
+                                  {stats.interview}
+                                </button>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="text-center">
-                                <span className="text-lg font-bold text-red-600">{stats.rejected}</span>
+                                <button 
+                                  onClick={() => handleStatusClick(job.id, job.title, 'rejected')}
+                                  className="text-lg font-bold text-red-600 hover:text-red-800 cursor-pointer hover:underline transition-colors"
+                                >
+                                  {stats.rejected}
+                                </button>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -261,6 +349,94 @@ export default function Interviews() {
               )}
             </CardContent>
           </Card>
+
+          {/* Detailed Candidates Modal */}
+          {selectedJobDetails && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    {selectedJobDetails.status} - {selectedJobDetails.jobTitle}
+                  </div>
+                  <button 
+                    onClick={() => setSelectedJobDetails(null)}
+                    className="text-gray-500 hover:text-gray-700 text-sm px-3 py-1 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    סגור
+                  </button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedJobDetails.candidates.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    אין מועמדים בסטטוס זה למשרה
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>שם מועמד</TableHead>
+                          <TableHead>טלפון</TableHead>
+                          <TableHead>אימייל</TableHead>
+                          <TableHead>עיר</TableHead>
+                          <TableHead>מקצוע</TableHead>
+                          <TableHead>סטטוס נוכחי</TableHead>
+                          <TableHead>פעולות</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedJobDetails.candidates.map((candidate) => (
+                          <TableRow key={candidate.id} className="hover:bg-muted/50">
+                            <TableCell>
+                              <div className="font-medium">
+                                {candidate.firstName} {candidate.lastName}
+                              </div>
+                              {candidate.nationalId && (
+                                <div className="text-sm text-gray-500">
+                                  ת.ז: {candidate.nationalId}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{candidate.mobile || candidate.phone || 'לא הוגדר'}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{candidate.email}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{candidate.city || 'לא הוגדר'}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{candidate.profession || 'לא הוגדר'}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm px-2 py-1 bg-gray-100 rounded-md">
+                                {candidate.status === 'invited_to_interview' ? 'זומן לראיון' :
+                                 candidate.status === 'submitted' ? 'ממתין לסקירה' :
+                                 candidate.status === 'interview' ? 'נשלח למעסיק' :
+                                 candidate.status === 'rejected' ? 'נפסל' :
+                                 candidate.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Link href={`/candidates/${candidate.id}`}>
+                                <button className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer text-sm">
+                                  <Eye className="h-4 w-4" />
+                                  פרטים
+                                </button>
+                              </Link>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </main>
     </div>
   );
