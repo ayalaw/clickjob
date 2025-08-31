@@ -2355,7 +2355,15 @@ ${recommendation}
   // RBAC Routes - Role & Permission Management
   
   // Get all roles (Admin and Super Admin only)
-  app.get('/api/roles', isAuthenticated, requireRole('admin'), async (req, res) => {
+  app.get('/api/roles', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const userId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
     try {
       const roles = await storage.getRoles();
       res.json(roles);
@@ -2366,7 +2374,15 @@ ${recommendation}
   });
 
   // Get specific role (Admin and Super Admin only)
-  app.get('/api/roles/:id', isAuthenticated, requireRole('admin'), async (req, res) => {
+  app.get('/api/roles/:id', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const userId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
     try {
       const role = await storage.getRole(req.params.id);
       if (!role) {
@@ -2421,7 +2437,15 @@ ${recommendation}
   });
 
   // Get all permissions (Admin and Super Admin only)
-  app.get('/api/permissions', isAuthenticated, requireRole('admin'), async (req, res) => {
+  app.get('/api/permissions', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const userId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
     try {
       const permissions = await storage.getPermissions();
       res.json(permissions);
@@ -2521,7 +2545,15 @@ ${recommendation}
   });
 
   // Get all users with their roles (Admin and Super Admin only)
-  app.get('/api/users/all', isAuthenticated, requireRole('admin'), async (req, res) => {
+  app.get('/api/users/all', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const userId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
     try {
       const users = await storage.getAllUsers();
       const usersWithRoles = await Promise.all(
