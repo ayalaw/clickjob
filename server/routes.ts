@@ -873,7 +873,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "CV file not found" });
       }
       
-      const filePath = candidate.cvPath;
+      // Handle both full paths and filename-only paths
+      let filePath = candidate.cvPath;
+      if (!filePath.startsWith('uploads/')) {
+        filePath = `uploads/${filePath}`;
+      }
       
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ message: "CV file not found on disk" });
