@@ -2815,6 +2815,29 @@ ${recommendation}
     }
   });
 
+  // Test email function for debug
+  setTimeout(async () => {
+    console.log('🧪 שולח מייל בדיקה אוטומטי ל-h1700707114@gmail.com...');
+    try {
+      const emailData = {
+        email: 'h1700707114@gmail.com',
+        firstName: 'משתמש',
+        lastName: 'בדיקה',
+        password: 'test-password-123',
+        loginUrl: 'http://localhost:5000/api/login'
+      };
+      
+      const success = await sendWelcomeEmail(emailData);
+      if (success) {
+        console.log('✅ מייל בדיקה נשלח בהצלחה!');
+      } else {
+        console.log('❌ שליחת מייל בדיקה נכשלה');
+      }
+    } catch (error) {
+      console.error('❌ שגיאה בשליחת מייל בדיקה:', error);
+    }
+  }, 5000);
+
   const httpServer = createServer(app);
   return httpServer;
 }
