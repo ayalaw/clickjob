@@ -168,16 +168,6 @@ export default function JobInterviews() {
       }
       
       setReviewerFeedback("");
-      
-      // Move to next candidate if available
-      if (currentIndex < applications.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        toast({
-          title: "סיימת לבדוק את כל המועמדים! 🎉",
-          description: "כל המועמדויות למשרה זו נבדקו",
-        });
-      }
     },
     onError: (error: any) => {
       if (isUnauthorizedError(error)) {
@@ -235,6 +225,21 @@ export default function JobInterviews() {
         title: "מועמד נשלח למעסיק! ✅",
         description: "המועמד נשלח למעסיק עם חוות הדעת שלך",
       });
+
+      // Move to next candidate automatically
+      setTimeout(() => {
+        if (currentIndex < applications.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+          setReviewerFeedback("");
+          setWarningAlert(false);
+          setWarningMessage("");
+        } else {
+          toast({
+            title: "סיימת לבדוק את כל המועמדים! 🎉",
+            description: "כל המועמדויות למשרה זו נבדקו",
+          });
+        }
+      }, 1500);
     } catch (error) {
       console.error('Error approving candidate:', error);
       toast({
@@ -270,6 +275,21 @@ export default function JobInterviews() {
         title: "מועמד נפסל ❌",
         description: "המועמד סומן כנפסל והערותיך נשמרו",
       });
+
+      // Move to next candidate automatically
+      setTimeout(() => {
+        if (currentIndex < applications.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+          setReviewerFeedback("");
+          setWarningAlert(false);
+          setWarningMessage("");
+        } else {
+          toast({
+            title: "סיימת לבדוק את כל המועמדים! 🎉",
+            description: "כל המועמדויות למשרה זו נבדקו",
+          });
+        }
+      }, 1500);
     } catch (error) {
       console.error('Error rejecting candidate:', error);
       toast({
@@ -329,6 +349,21 @@ export default function JobInterviews() {
         title: "הודעת ווצאפ נשלחה! 📱",
         description: "המועמד הועבר לסוף הרשימה והסטטוס עודכן",
       });
+
+      // Move to next candidate automatically
+      setTimeout(() => {
+        if (currentIndex < applications.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+          setReviewerFeedback("");
+          setWarningAlert(false);
+          setWarningMessage("");
+        } else {
+          toast({
+            title: "סיימת לבדוק את כל המועמדים! 🎉",
+            description: "כל המועמדויות למשרה זו נבדקו",
+          });
+        }
+      }, 1500);
     } catch (error) {
       console.error('Error sending WhatsApp:', error);
       toast({
@@ -379,6 +414,21 @@ export default function JobInterviews() {
         title: "ראיון נוסף נקבע! 📅",
         description: `ראיון נקבע ל-${interviewDateTime.toLocaleDateString('he-IL')} בשעה ${interviewTime}`,
       });
+
+      // Move to next candidate automatically
+      setTimeout(() => {
+        if (currentIndex < applications.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+          setReviewerFeedback("");
+          setWarningAlert(false);
+          setWarningMessage("");
+        } else {
+          toast({
+            title: "סיימת לבדוק את כל המועמדים! 🎉",
+            description: "כל המועמדויות למשרה זו נבדקו",
+          });
+        }
+      }, 1500);
     } catch (error) {
       console.error('Error scheduling interview:', error);
       toast({
