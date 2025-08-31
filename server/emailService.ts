@@ -291,11 +291,25 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean>
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Welcome email sent to ${data.to}`);
+    console.log(`📤 Sending welcome email with options:`, {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject
+    });
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`📧 Welcome email sent to ${data.to}`, {
+      messageId: result.messageId,
+      response: result.response
+    });
     return true;
   } catch (error) {
     console.error('❌ Failed to send welcome email:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response
+    });
     return false;
   }
 }
