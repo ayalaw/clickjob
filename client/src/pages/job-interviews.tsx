@@ -516,7 +516,7 @@ export default function JobInterviews() {
                           onClick={() => window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank')}
                           data-testid="button-view-cv"
                         >
-                          <Eye className="h-4 w-4 mr-2" />
+                          <FileText className="h-4 w-4 mr-2" />
                           פתח בחלון חדש
                         </Button>
                         <Button
@@ -549,7 +549,7 @@ export default function JobInterviews() {
                             onClick={() => window.open(`/api/candidates/${currentApplication.candidate.id}/cv`, '_blank')}
                             className="bg-blue-600 hover:bg-blue-700"
                           >
-                            <Eye className="h-4 w-4 mr-2" />
+                            <FileText className="h-4 w-4 mr-2" />
                             צפה בקורות החיים
                           </Button>
                           <Button
