@@ -730,6 +730,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // בדיקת כפילויות לפני יצירת מועמד חדש
+      const existingCandidate = await storage.findCandidateByContactInfo(
+        candidateData.mobile,
+        candidateData.email,
+        candidateData.nationalId
+      );
+      
+      if (existingCandidate) {
+        return res.status(409).json({ 
+          message: "מועמד עם פרטי קשר זהים כבר קיים במערכת",
+          existingCandidate: {
+            id: existingCandidate.id,
+            firstName: existingCandidate.firstName,
+            lastName: existingCandidate.lastName,
+            email: existingCandidate.email,
+            mobile: existingCandidate.mobile,
+            nationalId: existingCandidate.nationalId
+          }
+        });
+      }
+
       // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
       if (!candidateData.recruitmentSource && (req.user as any)?.claims) {
         const userClaims = (req.user as any).claims;

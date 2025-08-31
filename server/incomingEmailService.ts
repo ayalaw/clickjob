@@ -653,9 +653,10 @@ async function saveAttachmentAndExtractData(attachment: any, email: string): Pro
 // עדכון פונקציית יצירת מועמד לכלול נתוני קורות חיים
 async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise<void> {
   try {
-    // בדיקה אם המועמד כבר קיים לפי נייד או ת.ז.
-    const existingCandidate = await storage.findCandidateByMobileOrId(
+    // בדיקה משופרת אם המועמד כבר קיים לפי נייד, אימייל או ת.ז.
+    const existingCandidate = await storage.findCandidateByContactInfo(
       candidateData.mobile || candidateData.phone,
+      candidateData.email,
       candidateData.nationalId
     );
     

@@ -73,6 +73,7 @@ export interface IStorage {
   updateCandidate(id: string, candidate: Partial<InsertCandidate>): Promise<Candidate>;
   deleteCandidate(id: string): Promise<void>;
   findCandidateByMobileOrId(mobile?: string, nationalId?: string): Promise<Candidate | undefined>;
+  findCandidateByContactInfo(mobile?: string, email?: string, nationalId?: string): Promise<Candidate | undefined>;
   addCandidateEvent(event: InsertCandidateEvent): Promise<CandidateEvent>;
   getCandidateEvents(candidateId: string): Promise<CandidateEvent[]>;
 
@@ -380,6 +381,41 @@ export class DatabaseStorage implements IStorage {
     } else if (nationalId) {
       whereCondition = eq(candidates.nationalId, nationalId);
     }
+    
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(whereCondition);
+    
+    return candidate;
+  }
+
+  async findCandidateByContactInfo(mobile?: string, email?: string, nationalId?: string): Promise<Candidate | undefined> {
+    if (!mobile && !email && !nationalId) return undefined;
+    
+    const conditions = [];
+    
+    // טלפון נייד - נקה מסימנים ובדוק
+    if (mobile) {
+      const cleanMobile = mobile.replace(/[-\s]/g, '');
+      conditions.push(sql`REPLACE(REPLACE(${candidates.mobile}, '-', ''), ' ', '') = ${cleanMobile}`);
+    }
+    
+    // אימייל - בדיקה מדויקת (case insensitive)
+    if (email && email !== '' && !email.includes('temp.local')) {
+      conditions.push(sql`LOWER(${candidates.email}) = LOWER(${email})`);
+    }
+    
+    // ת.ז - בדיקה מדויקת
+    if (nationalId) {
+      conditions.push(eq(candidates.nationalId, nationalId));
+    }
+    
+    if (conditions.length === 0) return undefined;
+    
+    const whereCondition = conditions.reduce((acc, condition) => 
+      acc ? sql`${acc} OR ${condition}` : condition
+    );
     
     const [candidate] = await db
       .select()
