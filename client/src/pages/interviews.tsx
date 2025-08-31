@@ -66,6 +66,7 @@ export default function Interviews() {
       submitted: jobApplications.filter(app => app.status === 'submitted').length,
       interview: jobApplications.filter(app => app.status === 'interview').length,
       rejected: jobApplications.filter(app => app.status === 'rejected').length,
+      waitingForInterview: jobApplications.filter(app => app.status === 'invited_to_interview').length,
     };
   };
 
@@ -170,6 +171,7 @@ export default function Interviews() {
                         <TableHead>סטטוס</TableHead>
                         <TableHead>סה״כ מועמדים למשרה</TableHead>
                         <TableHead>ממתינים לראיון</TableHead>
+                        <TableHead>מחכים לראיון</TableHead>
                         <TableHead>נשלחו למעסיק</TableHead>
                         <TableHead>נפסלו</TableHead>
                         <TableHead>פעולות</TableHead>
@@ -225,6 +227,11 @@ export default function Interviews() {
                             <TableCell>
                               <div className="text-center">
                                 <span className="text-lg font-bold text-yellow-600">{stats.submitted}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-center">
+                                <span className="text-lg font-bold text-orange-600">{stats.waitingForInterview}</span>
                               </div>
                             </TableCell>
                             <TableCell>
