@@ -33,11 +33,23 @@ async function loadEmailConfig() {
           },
           tls: {
             rejectUnauthorized: false
-          }
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 5000,
+          socketTimeout: 10000
         });
-        console.log("📧 Email configured with cPanel SMTP from database");
-        emailConfigLoaded = true;
-        return;
+        
+        // Test the connection
+        try {
+          await transporter.verify();
+          console.log("📧 Email configured with cPanel SMTP from database");
+          emailConfigLoaded = true;
+          return;
+        } catch (verifyError) {
+          console.error("❌ שגיאה באימות הגדרות SMTP:", verifyError);
+          console.log("🔄 ניסיון fallback ל-Gmail...");
+          transporter = null;
+        }
       } catch (transportError) {
         console.warn("❌ שגיאה ביצירת transporter עם הגדרות cPanel:", transportError);
       }
