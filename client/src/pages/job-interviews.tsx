@@ -228,7 +228,7 @@ export default function JobInterviews() {
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-2">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
             <Link href="/interviews" className="hover:text-blue-600">
-              סינון ראיונות
+              ראיונות
             </Link>
             <ArrowRight className="h-3 w-3" />
             <span className="font-medium">{jobData?.title}</span>
