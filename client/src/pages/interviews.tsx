@@ -191,10 +191,12 @@ export default function Interviews() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium flex items-center gap-1">
-                                  <Building2 className="h-3 w-3" />
-                                  {job.client.companyName}
-                                </div>
+                                <Link href={`/clients/${job.client.id}/edit`} className="hover:text-blue-600">
+                                  <div className="font-medium flex items-center gap-1 cursor-pointer hover:underline">
+                                    <Building2 className="h-3 w-3" />
+                                    {job.client.companyName}
+                                  </div>
+                                </Link>
                                 <div className="text-sm text-gray-500">
                                   {job.client.contactName}
                                 </div>
