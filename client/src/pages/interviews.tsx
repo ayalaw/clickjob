@@ -235,7 +235,7 @@ export default function Interviews() {
                               <Link href={`/interviews/${job.id}`}>
                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer text-sm">
                                   <Eye className="h-4 w-4" />
-                                  צפה בראיונות
+                                  התחל ראיונות
                                 </div>
                               </Link>
                             </TableCell>
