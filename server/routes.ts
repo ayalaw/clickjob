@@ -860,6 +860,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CV file serving endpoint
+  app.get('/api/candidates/:id/cv', isAuthenticated, async (req, res) => {
+    try {
+      const candidate = await storage.getCandidate(req.params.id);
+      
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+      
+      if (!candidate.cvPath) {
+        return res.status(404).json({ message: "CV file not found" });
+      }
+      
+      const filePath = candidate.cvPath;
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "CV file not found on disk" });
+      }
+      
+      const buffer = fs.readFileSync(filePath);
+      let mimeType = 'application/octet-stream';
+      
+      // Check for PDF signature
+      if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
+        mimeType = 'application/pdf';
+      }
+      // Check for ZIP/Office document signatures (DOCX, etc.)
+      else if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'PK') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
+      // Check for old DOC signature
+      else if (buffer.length >= 8 && buffer.readUInt32LE(0) === 0xE011CFD0) {
+        mimeType = 'application/msword';
+      }
+      
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', 'inline');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      res.send(buffer);
+      
+    } catch (error) {
+      console.error('Error serving CV file:', error);
+      res.status(500).json({ message: "Error serving CV file" });
+    }
+  });
+
   // CV Data Extraction endpoint
   app.post('/api/extract-cv-data', isAuthenticated, upload.single('cv'), async (req, res) => {
     console.log('🚀 CV extraction endpoint called!');

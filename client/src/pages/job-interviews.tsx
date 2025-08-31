@@ -503,12 +503,18 @@ export default function JobInterviews() {
               </CardHeader>
               <CardContent>
                 {currentApplication.candidate.cvPath ? (
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        תצוגה מקדימה של קורות החיים - {currentApplication.candidate.firstName} {currentApplication.candidate.lastName}
+                      </p>
+                    </div>
                     <iframe
                       src={`/api/candidates/${currentApplication.candidate.id}/cv`}
-                      className="w-full min-h-screen border-0"
+                      className="w-full border-0 bg-white"
                       title="תצוגה מקדימה של קורות החיים"
-                      style={{ height: 'calc(100vh - 200px)' }}
+                      style={{ height: 'calc(100vh - 250px)', minHeight: '800px' }}
+                      sandbox="allow-same-origin allow-scripts"
                     />
                   </div>
                 ) : (
