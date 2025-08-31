@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, UserPlus, Shield, Users, Plus } from "lucide-react";
+import { Trash2, UserPlus, Shield, Users, Plus, Mail } from "lucide-react";
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -110,6 +110,27 @@ export default function UserManagement() {
     },
   });
 
+  // Send test email mutation
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest('POST', `/api/test-email/${userId}`);
+      return response;
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "מייל בדיקה נשלח בהצלחה",
+        description: `נשלח ל-${data.email}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה בשליחת מייל בדיקה",
+        description: error.message || "אירעה שגיאה בעת שליחת המייל",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
@@ -188,6 +209,10 @@ export default function UserManagement() {
 
   const handleRemoveRole = (userId: string, roleId: string) => {
     removeRoleMutation.mutate({ userId, roleId });
+  };
+
+  const handleSendTestEmail = (userId: string) => {
+    sendTestEmailMutation.mutate(userId);
   };
 
   const resetAddUserForm = () => {
@@ -316,6 +341,16 @@ export default function UserManagement() {
                   <CardDescription>{user.email}</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSendTestEmail(user.id)}
+                    disabled={sendTestEmailMutation.isPending}
+                    data-testid={`button-send-test-email-${user.id}`}
+                  >
+                    <Mail className="h-4 w-4 ml-2" />
+                    {sendTestEmailMutation.isPending ? "שולח..." : "מייל בדיקה"}
+                  </Button>
                   {canManageUsers && (
                     <Button 
                       variant="destructive" 

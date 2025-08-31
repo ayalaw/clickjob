@@ -2767,6 +2767,47 @@ ${recommendation}
     }
   });
 
+  // Test email endpoint - Send test email to existing user
+  app.post('/api/test-email/:userId', isAuthenticated, injectUserPermissions, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Only admin or super admin can send test emails
+      const isAdmin = await req.userPermissions?.isAdmin();
+      const isSuperAdmin = await req.userPermissions?.isSuperAdmin();
+      
+      if (!isAdmin && !isSuperAdmin) {
+        return res.status(403).json({ message: "Access denied - admin privileges required" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Send test welcome email
+      const emailData = {
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        password: 'test-password-123',
+        loginUrl: `${req.protocol}://${req.get('host')}/api/login`
+      };
+
+      console.log('🧪 שולח מייל בדיקה למשתמש:', user.email);
+      const success = await sendWelcomeEmail(emailData);
+      
+      if (success) {
+        res.json({ message: "Test email sent successfully", email: user.email });
+      } else {
+        res.status(500).json({ message: "Failed to send test email" });
+      }
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      res.status(500).json({ message: "Failed to send test email" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
