@@ -233,7 +233,6 @@ export default function Interviews() {
                         <TableHead>מיקום</TableHead>
                         <TableHead>סטטוס</TableHead>
                         <TableHead>סה״כ מועמדים למשרה</TableHead>
-                        <TableHead>ממתינים לראיון</TableHead>
                         <TableHead>נשלחו למעסיק</TableHead>
                         <TableHead>נפסלו</TableHead>
                         <TableHead>מחכים לראיון</TableHead>
@@ -289,16 +288,6 @@ export default function Interviews() {
                                   className="text-lg font-bold text-blue-600 hover:text-blue-800 cursor-pointer hover:underline transition-colors"
                                 >
                                   {stats.total}
-                                </button>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-center">
-                                <button 
-                                  onClick={() => handleStatusClick(job.id, job.title, 'submitted')}
-                                  className="text-lg font-bold text-yellow-600 hover:text-yellow-800 cursor-pointer hover:underline transition-colors"
-                                >
-                                  {stats.submitted}
                                 </button>
                               </div>
                             </TableCell>
