@@ -31,6 +31,22 @@ export default function Candidates() {
       case 'hired': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
       case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'not_relevant': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'rejected_by_employer': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'invited_to_interview': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case 'whatsapp_sent': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'phone_contact_made': return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+      case 'waiting_employer_response': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'attended_interview': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'missed_interview': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'passed_interview': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'employment_ended': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'employed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'inactive': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'blacklisted': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'submitted': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'reviewed': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'interview': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'accepted': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
@@ -44,6 +60,22 @@ export default function Candidates() {
       case 'hired': return 'התקבל';
       case 'rejected': return 'נדחה';
       case 'not_relevant': return 'לא רלוונטי';
+      case 'rejected_by_employer': return 'נפסל ע״י מעסיק';
+      case 'invited_to_interview': return 'זומן לראיון';
+      case 'whatsapp_sent': return 'נשלחה הודעת ווצאפ';
+      case 'phone_contact_made': return 'נוצר קשר טלפוני';
+      case 'waiting_employer_response': return 'ממתין לתשובת מעסיק';
+      case 'attended_interview': return 'הגיע לראיון';
+      case 'missed_interview': return 'לא הגיע לראיון';
+      case 'passed_interview': return 'עבר ראיון';
+      case 'employment_ended': return 'סיים העסקה';
+      case 'employed': return 'מועסק';
+      case 'inactive': return 'לא פעיל';
+      case 'blacklisted': return 'ברשימה שחורה';
+      case 'submitted': return 'הוגש';
+      case 'reviewed': return 'נסקר';
+      case 'interview': return 'ראיון';
+      case 'accepted': return 'התקבל';
       default: return status;
     }
   };

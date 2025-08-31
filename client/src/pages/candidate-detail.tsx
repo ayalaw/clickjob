@@ -127,14 +127,20 @@ export default function CandidateDetail() {
       case 'sent_to_employer': return 'נשלח למעסיק';
       case 'whatsapp_sent': return 'נשלחה הודעת ווצאפ';
       case 'phone_contact_made': return 'נוצר קשר טלפוני';
-      case 'waiting_employer_response': return 'מועמד ממתין לתשובת מעסיק';
-      case 'invited_to_interview': return 'זומן לראיון אצל מעסיק';
-      case 'attended_interview': return 'הגיע לראיון אצל מעסיק';
+      case 'waiting_employer_response': return 'ממתין לתשובת מעסיק';
+      case 'invited_to_interview': return 'זומן לראיון';
+      case 'attended_interview': return 'הגיע לראיון';
       case 'missed_interview': return 'לא הגיע לראיון';
-      case 'passed_interview': return 'עבר ראיון אצל מעסיק';
-      case 'rejected_by_employer': return 'נפסל ע"י מעסיק';
+      case 'passed_interview': return 'עבר ראיון';
+      case 'rejected_by_employer': return 'נפסל ע״י מעסיק';
       case 'hired': return 'התקבל לעבודה';
       case 'employment_ended': return 'סיים העסקה';
+      case 'submitted': return 'הוגש';
+      case 'reviewed': return 'נסקר';
+      case 'interview': return 'ראיון';
+      case 'rejected': return 'נדחה';
+      case 'accepted': return 'התקבל';
+      case 'not_relevant': return 'לא רלוונטי';
       default: return status;
     }
   };
