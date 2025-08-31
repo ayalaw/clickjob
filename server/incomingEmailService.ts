@@ -204,7 +204,7 @@ async function checkCpanelEmails(): Promise<void> {
             return;
           }
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: false });
+          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
           
           fetch.on('message', (msg: any, seqno: any) => {
             console.log(`📩 עוסק במייל מספר ${seqno}`);
@@ -212,6 +212,8 @@ async function checkCpanelEmails(): Promise<void> {
             
             msg.once('attributes', (attrs: any) => {
               messageUid = attrs.uid;
+              // סימון המייל כנקרא מיד כשאנחנו מתחילים לעבד אותו
+              console.log(`📧 מייל ${messageUid} סומן כנקרא אוטומטית`);
             });
             
             msg.on('body', (stream: any, info: any) => {
@@ -299,22 +301,7 @@ async function checkCpanelEmails(): Promise<void> {
                       processedEmails.add(emailId);
                       console.log(`📝 מייל סומן כעובד במחסן הזיכרון`);
                       
-                      // סימון המייל כנקרא אחרי עיבוד מוצלח
-                      try {
-                        if (messageUid) {
-                          imap.addFlags(messageUid, ['\\Seen'], (err: any) => {
-                            if (err) {
-                              console.error('❌ שגיאה בסימון מייל כנקרא:', err.message);
-                            } else {
-                              console.log(`📧 מייל ${messageUid} סומן כנקרא`);
-                            }
-                          });
-                        } else {
-                          console.error('❌ לא נמצא UID למייל');
-                        }
-                      } catch (markError) {
-                        console.error('❌ שגיאה בסימון מייל:', markError);
-                      }
+                      // המייל כבר סומן כנקרא אוטומטית בתחילת העיבוד
                     } else {
                       console.log(`⚠️ לא נמצאו פרטי מועמד תקינים בקורות החיים`);
                     }
@@ -743,13 +730,13 @@ async function createCandidateFromEmail(candidateData: ParsedCandidate): Promise
 // פונקציה להפעלה תקופתית
 
 export function startEmailMonitoring(): void {
-  console.log('🛑 מעקב מיילים נכנסים מושבת זמנית (למניעת כפילויות)');
+  console.log('✅ מעקב מיילים נכנסים פעיל - מיילים יסומנו כנקראו אוטומטית');
   
-  // בדיקה כל דקה - מושבת זמנית
-  // setInterval(async () => {
-  //   await checkIncomingEmails();
-  // }, 60 * 1000);
+  // בדיקה כל דקה
+  setInterval(async () => {
+    await checkIncomingEmails();
+  }, 60 * 1000);
   
-  // בדיקה ראשונית - מושבת זמנית
-  // checkIncomingEmails();
+  // בדיקה ראשונית
+  checkIncomingEmails();
 }
