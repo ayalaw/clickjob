@@ -5,11 +5,12 @@ import { usePermissions, type UserWithRoles, type Role } from "@/hooks/usePermis
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, UserPlus, Shield, Users } from "lucide-react";
+import { Trash2, UserPlus, Shield, Users, Plus } from "lucide-react";
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -18,6 +19,11 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserFirstName, setNewUserFirstName] = useState("");
+  const [newUserLastName, setNewUserLastName] = useState("");
+  const [newUserRole, setNewUserRole] = useState<string>("");
 
   // Get all users with their roles
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithRoles[]>({
@@ -67,6 +73,31 @@ export default function UserManagement() {
       toast({
         title: "שגיאה",
         description: "לא ניתן היה להסיר את התפקיד",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add user mutation
+  const addUserMutation = useMutation({
+    mutationFn: async (userData: { email: string; firstName?: string; lastName?: string; roleId?: string }) => {
+      const response = await apiRequest('/api/users', 'POST', userData);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
+      setIsAddUserDialogOpen(false);
+      resetAddUserForm();
+      toast({
+        title: "המשתמש נוסף בהצלחה",
+        description: "המשתמש החדש נוצר במערכת",
+      });
+    },
+    onError: (error) => {
+      console.error('Error adding user:', error);
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן היה להוסיף את המשתמש",
         variant: "destructive",
       });
     },
@@ -124,6 +155,27 @@ export default function UserManagement() {
     removeRoleMutation.mutate({ userId, roleId });
   };
 
+  const resetAddUserForm = () => {
+    setNewUserEmail("");
+    setNewUserFirstName("");
+    setNewUserLastName("");
+    setNewUserRole("");
+  };
+
+  const handleAddUser = () => {
+    if (!newUserEmail.trim()) return;
+    
+    const userData: { email: string; firstName?: string; lastName?: string; roleId?: string } = {
+      email: newUserEmail.trim(),
+    };
+    
+    if (newUserFirstName.trim()) userData.firstName = newUserFirstName.trim();
+    if (newUserLastName.trim()) userData.lastName = newUserLastName.trim();
+    if (newUserRole) userData.roleId = newUserRole;
+    
+    addUserMutation.mutate(userData);
+  };
+
   return (
     <div className="container mx-auto p-4" dir="rtl">
       <div className="flex items-center justify-between mb-6">
@@ -131,7 +183,89 @@ export default function UserManagement() {
           <h1 className="text-3xl font-bold mb-2">ניהול משתמשים</h1>
           <p className="text-muted-foreground">נהל משתמשים ותפקידים במערכת</p>
         </div>
-        <Users className="h-8 w-8 text-muted-foreground" />
+        <div className="flex items-center gap-4">
+          <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-add-user">
+                <Plus className="h-4 w-4 ml-2" />
+                הוסף משתמש
+              </Button>
+            </DialogTrigger>
+            <DialogContent dir="rtl">
+              <DialogHeader>
+                <DialogTitle>הוספת משתמש חדש</DialogTitle>
+                <DialogDescription>
+                  הוסף משתמש חדש למערכת והקצה לו תפקיד
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="email">כתובת מייל (חובה)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="example@domain.com"
+                    data-testid="input-new-user-email"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="firstName">שם פרטי (אופציונלי)</Label>
+                  <Input
+                    id="firstName"
+                    value={newUserFirstName}
+                    onChange={(e) => setNewUserFirstName(e.target.value)}
+                    placeholder="שם פרטי"
+                    data-testid="input-new-user-firstname"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">שם משפחה (אופציונלי)</Label>
+                  <Input
+                    id="lastName"
+                    value={newUserLastName}
+                    onChange={(e) => setNewUserLastName(e.target.value)}
+                    placeholder="שם משפחה"
+                    data-testid="input-new-user-lastname"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="role">תפקיד (אופציונלי)</Label>
+                  <Select value={newUserRole} onValueChange={setNewUserRole}>
+                    <SelectTrigger data-testid="select-new-user-role">
+                      <SelectValue placeholder="בחר תפקיד" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">ללא תפקיד</SelectItem>
+                      {allRoles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => {
+                    setIsAddUserDialogOpen(false);
+                    resetAddUserForm();
+                  }}>
+                    ביטול
+                  </Button>
+                  <Button 
+                    onClick={handleAddUser}
+                    disabled={!newUserEmail.trim() || addUserMutation.isPending}
+                    data-testid="button-confirm-add-user"
+                  >
+                    {addUserMutation.isPending ? "מוסיף..." : "הוסף משתמש"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Users className="h-8 w-8 text-muted-foreground" />
+        </div>
       </div>
 
       <div className="grid gap-6">

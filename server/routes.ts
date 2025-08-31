@@ -2569,6 +2569,49 @@ ${recommendation}
     }
   });
 
+  // Add new user route
+  app.post('/api/users', isAuthenticated, async (req, res) => {
+    // Check if user has admin or super_admin role
+    const sessionUser = req.user as any;
+    const userId = sessionUser.claims.sub;
+    const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
+    
+    if (!hasAdminRole) {
+      return res.status(403).json({ message: "Forbidden - Required role: admin or super_admin" });
+    }
+
+    try {
+      const { email, firstName, lastName, roleId } = req.body;
+      
+      if (!email || !email.trim()) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+
+      // Create new user
+      const newUser = await storage.createUser({
+        email: email.trim(),
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+      });
+
+      // Assign role if provided
+      if (roleId) {
+        await storage.assignRole(newUser.id, roleId);
+      }
+
+      res.status(201).json(newUser);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get user with roles and permissions
   app.get('/api/users/:id/roles', isAuthenticated, injectUserPermissions, async (req, res) => {
     try {
