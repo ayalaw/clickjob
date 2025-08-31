@@ -169,7 +169,7 @@ export default function Interviews() {
                         <TableHead>מיקום</TableHead>
                         <TableHead>סטטוס</TableHead>
                         <TableHead>סה״כ מועמדים למשרה</TableHead>
-                        <TableHead>ממתינים</TableHead>
+                        <TableHead>ממתינים לראיון</TableHead>
                         <TableHead>בראיון</TableHead>
                         <TableHead>פעולות</TableHead>
                       </TableRow>
