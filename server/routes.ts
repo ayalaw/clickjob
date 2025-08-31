@@ -2630,7 +2630,7 @@ ${recommendation}
         await storage.assignUserRole({
           userId: newUser.id,
           roleId: roleId,
-          assignedBy: sessionUserId
+          assignedBy: userId
         });
       }
 
