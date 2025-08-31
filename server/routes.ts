@@ -2815,7 +2815,8 @@ ${recommendation}
     }
   });
 
-  // Test email function for debug
+  // Direct test email for debugging
+  console.log('🧪 מתכונן לשלוח מייל בדיקה ל-h1700707114@gmail.com...');
   setTimeout(async () => {
     console.log('🧪 שולח מייל בדיקה אוטומטי ל-h1700707114@gmail.com...');
     try {
@@ -2836,7 +2837,7 @@ ${recommendation}
     } catch (error) {
       console.error('❌ שגיאה בשליחת מייל בדיקה:', error);
     }
-  }, 5000);
+  }, 3000);
 
   const httpServer = createServer(app);
   return httpServer;
