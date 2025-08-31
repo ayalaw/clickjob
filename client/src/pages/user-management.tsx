@@ -84,20 +84,27 @@ export default function UserManagement() {
       const response = await apiRequest('POST', '/api/users', userData);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
       setIsAddUserDialogOpen(false);
       resetAddUserForm();
       toast({
         title: "המשתמש נוסף בהצלחה",
-        description: "המשתמש החדש נוצר במערכת",
+        description: response.emailSent 
+          ? "המשתמש החדש נוצר במערכת ומייל עם פרטי הכניסה נשלח"
+          : "המשתמש החדש נוצר במערכת (שליחת המייל נכשלה)",
+        variant: response.emailSent ? "default" : "destructive",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error adding user:', error);
+      const errorMessage = error?.message?.includes('already exists') 
+        ? "משתמש עם כתובת מייל זו כבר קיים במערכת"
+        : "לא ניתן היה להוסיף את המשתמש";
+      
       toast({
         title: "שגיאה",
-        description: "לא ניתן היה להוסיף את המשתמש",
+        description: errorMessage,
         variant: "destructive",
       });
     },

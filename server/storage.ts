@@ -1493,7 +1493,7 @@ export class DatabaseStorage implements IStorage {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       userRoles: result
-        .filter(r => r.userRole.id !== null)
+        .filter(r => r.userRole && r.userRole.id !== null && r.userRole.role && r.userRole.role.id !== null)
         .map(r => ({
           id: r.userRole.id!,
           userId: r.userRole.userId!,
