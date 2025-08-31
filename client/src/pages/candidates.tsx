@@ -52,8 +52,8 @@ export default function Candidates() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: Candidate[]; total: number }>({
-    queryKey: ["/api/candidates", { search, dateFilter }],
+  const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: any[]; total: number }>({
+    queryKey: ["/api/candidates/enriched", { search, dateFilter }],
     enabled: isAuthenticated,
   });
 
@@ -306,10 +306,10 @@ export default function Candidates() {
                             {candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString('he-IL') : "-"}
                           </TableCell>
                           <TableCell>
-                            -
+                            {candidate.lastJobTitle || "-"}
                           </TableCell>
                           <TableCell>
-                            -
+                            {candidate.recruitmentSource || "-"}
                           </TableCell>
                           <TableCell data-testid={`text-candidate-phone-${candidate.id}`}>
                             {candidate.phone ? (
@@ -331,10 +331,10 @@ export default function Candidates() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            -
+                            {candidate.lastReferralDate ? new Date(candidate.lastReferralDate).toLocaleDateString('he-IL') : "-"}
                           </TableCell>
                           <TableCell>
-                            -
+                            {candidate.lastStatusChange ? new Date(candidate.lastStatusChange).toLocaleDateString('he-IL') : "-"}
                           </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(candidate.status || 'available')}>

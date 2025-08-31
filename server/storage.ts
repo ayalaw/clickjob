@@ -55,7 +55,7 @@ import {
   type InsertRolePermission,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, ilike, sql, count } from "drizzle-orm";
+import { eq, and, desc, asc, like, ilike, sql, count, or } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -281,6 +281,81 @@ export class DatabaseStorage implements IStorage {
     return {
       candidates: candidateResults,
       total: totalResults[0].count
+    };
+  }
+
+  async getCandidatesEnriched(limit = 50, offset = 0, search?: string, dateFilter?: string): Promise<{ candidates: any[]; total: number }> {
+    // Get basic candidates data
+    const { candidates: basicCandidates, total } = await this.getCandidates(limit, offset, search, dateFilter);
+    
+    // Enrich each candidate with additional computed data
+    const enrichedCandidates = await Promise.all(
+      basicCandidates.map(async (candidate) => {
+        // Get latest job application
+        const latestJobApp = await db
+          .select({
+            jobTitle: jobs.title,
+            appliedAt: jobApplications.appliedAt,
+            status: jobApplications.status
+          })
+          .from(jobApplications)
+          .leftJoin(jobs, eq(jobApplications.jobId, jobs.id))
+          .where(eq(jobApplications.candidateId, candidate.id))
+          .orderBy(desc(jobApplications.appliedAt))
+          .limit(1);
+
+        // Get latest status change event
+        const latestStatusEvent = await db
+          .select({
+            eventType: candidateEvents.eventType,
+            description: candidateEvents.description,
+            createdAt: candidateEvents.createdAt
+          })
+          .from(candidateEvents)
+          .where(
+            and(
+              eq(candidateEvents.candidateId, candidate.id),
+              eq(candidateEvents.eventType, 'status_change')
+            )
+          )
+          .orderBy(desc(candidateEvents.createdAt))
+          .limit(1);
+
+        // Get latest referral event
+        const latestReferralEvent = await db
+          .select({
+            description: candidateEvents.description,
+            createdAt: candidateEvents.createdAt
+          })
+          .from(candidateEvents)
+          .where(
+            and(
+              eq(candidateEvents.candidateId, candidate.id),
+              or(
+                eq(candidateEvents.eventType, 'email_sent'),
+                eq(candidateEvents.eventType, 'cv_sent'),
+                eq(candidateEvents.eventType, 'job_application')
+              )
+            )
+          )
+          .orderBy(desc(candidateEvents.createdAt))
+          .limit(1);
+
+        return {
+          ...candidate,
+          lastJobTitle: latestJobApp[0]?.jobTitle || null,
+          lastAppliedAt: latestJobApp[0]?.appliedAt || null,
+          recruitmentSource: candidate.recruitmentSource || null,
+          lastReferralDate: latestReferralEvent[0]?.createdAt || null,
+          lastStatusChange: latestStatusEvent[0]?.createdAt || null,
+          lastStatusDescription: latestStatusEvent[0]?.description || null
+        };
+      })
+    );
+
+    return {
+      candidates: enrichedCandidates,
+      total
     };
   }
 

@@ -584,6 +584,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Candidate routes
+
+  // Get candidates with enriched data for table display (must come before /:id route)
+  app.get('/api/candidates/enriched', isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const search = req.query.search as string;
+      const dateFilter = req.query.dateFilter as string;
+      
+      const result = await storage.getCandidatesEnriched(limit, offset, search, dateFilter);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching enriched candidates:", error);
+      res.status(500).json({ message: "Failed to fetch enriched candidates" });
+    }
+  });
+
   app.get('/api/candidates', isAuthenticated, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
