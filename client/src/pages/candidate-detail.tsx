@@ -423,27 +423,38 @@ export default function CandidateDetail() {
   };
 
   const handleAddToInterview = async () => {
-    if (!selectedInterviewJobIds.length || !candidate) return;
+    console.log("🚀 התחיל handleAddToInterview");
+    if (!selectedInterviewJobIds.length || !candidate) {
+      console.log("❌ אין משרות נבחרות או מועמד");
+      return;
+    }
 
+    console.log(`📝 משרות נבחרות: ${selectedInterviewJobIds.length}`);
     setIsUpdatingStatus(true);
     try {
       // Update candidate status to waiting for interview
+      console.log("🔄 מעדכן סטטוס מועמד...");
       await apiRequest('PUT', `/api/candidates/${candidate.id}`, { status: 'invited_to_interview' });
 
       const successfulJobs: string[] = [];
       const errors: string[] = [];
+      console.log("📋 מתחיל לולאה על המשרות...");
 
       // Create job applications for all selected jobs
       for (const jobId of selectedInterviewJobIds) {
         try {
+          console.log(`📤 שולח בקשה למשרה ${jobId}...`);
           const result = await apiRequest('POST', '/api/job-applications', {
             candidateId: candidate.id,
             jobId: jobId,
             status: 'interview_scheduled'
           });
           
+          console.log(`📥 קיבל תגובה למשרה ${jobId}:`, result);
+          
           // בדיקה אם זו מועמדות קיימת שהתעדכנה
           if (result && ((result as any).alreadyExisted || (result as any).wasUpdated)) {
+            console.log("⚠️ זוהתה מועמדות קיימת!");
             const appliedDate = new Date((result as any).originalAppliedAt || (result as any).appliedAt).toLocaleDateString('he-IL', {
               year: 'numeric',
               month: 'long', 
@@ -460,6 +471,7 @@ export default function CandidateDetail() {
           }
           
           successfulJobs.push(jobId);
+          console.log(`✅ נוסף למערך הצלחות: ${jobId}`);
         } catch (appError: any) {
           console.error(`Error adding candidate to job ${jobId}:`, appError);
           
@@ -487,7 +499,10 @@ export default function CandidateDetail() {
       setSelectedInterviewJobIds([]);
       
       // הודעות מפורטות על התוצאות
+      console.log(`🎯 בודק תוצאות: successfulJobs=${successfulJobs.length}, errors=${errors.length}`);
+      
       if (successfulJobs.length > 0) {
+        console.log("✅ יש הצלחות - מציג הודעה ועובר לראיונות");
         if (errors.length === 0) {
           toast({
             title: "✅ הוסף לראיון בהצלחה!",
@@ -501,7 +516,9 @@ export default function CandidateDetail() {
         }
         
         // ניווט מיידי לעמוד הראיונות
+        console.log("🚀🚀🚀 מבצע ניווט עכשיו!");
         window.location.href = "/interviews";
+        console.log("✅ פקודת ניווט בוצעה");
         
       } else {
         toast({
