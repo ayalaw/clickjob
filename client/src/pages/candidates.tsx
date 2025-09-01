@@ -78,7 +78,7 @@ export default function Candidates() {
       case 'interview': return 'ראיון';
       case 'interview_scheduled': return 'זומן לראיון';
       case 'accepted': return 'התקבל';
-      default: return status;
+      default: return status || 'לא הוגדר';
     }
   };
 

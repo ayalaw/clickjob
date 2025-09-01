@@ -84,7 +84,7 @@ export default function Emails() {
       case "bounced":
         return "הוחזר";
       default:
-        return status;
+        return status || 'לא הוגדר';
     }
   };
 

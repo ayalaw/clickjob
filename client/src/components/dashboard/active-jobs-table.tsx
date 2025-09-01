@@ -29,7 +29,7 @@ export default function ActiveJobsTable() {
       case 'active': return 'פעילה';
       case 'paused': return 'מושהית';
       case 'closed': return 'סגורה';
-      default: return status;
+      default: return status || 'לא הוגדר';
     }
   };
 

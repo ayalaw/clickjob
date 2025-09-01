@@ -75,6 +75,22 @@ export default function Interviews() {
 
   const allCandidates = candidatesData?.candidates || [];
 
+  // Status translation function
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'פעילה';
+      case 'paused': return 'מושהית';
+      case 'closed': return 'סגורה';
+      case 'submitted': return 'הוגש';
+      case 'reviewed': return 'נסקר';
+      case 'interview': return 'ראיון';
+      case 'interview_scheduled': return 'זומן לראיון';
+      case 'rejected': return 'נדחה';
+      case 'accepted': return 'התקבל';
+      default: return status || 'לא הוגדר';
+    }
+  };
+
   const getJobStats = (jobId: string) => {
     const jobApplications = applications.filter(app => app.jobId === jobId);
     return {
@@ -142,7 +158,9 @@ export default function Interviews() {
       case 'closed':
         return <Badge variant="destructive">סגור</Badge>;
       default:
-        return <Badge variant="outline">{status || 'לא הוגדר'}</Badge>;
+        // Translate other statuses
+        const translatedStatus = getStatusText(status || '');
+        return <Badge variant="outline">{translatedStatus}</Badge>;
     }
   };
 

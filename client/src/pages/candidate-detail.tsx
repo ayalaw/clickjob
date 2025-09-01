@@ -147,7 +147,7 @@ export default function CandidateDetail() {
       case 'rejected': return 'נדחה';
       case 'accepted': return 'התקבל';
       case 'not_relevant': return 'לא רלוונטי';
-      default: return status;
+      default: return status || 'לא הוגדר';
     }
   };
 

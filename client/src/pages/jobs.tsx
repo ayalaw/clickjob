@@ -104,7 +104,7 @@ export default function Jobs() {
       case 'active': return 'פעילה';
       case 'paused': return 'מושהית';
       case 'closed': return 'סגורה';
-      default: return status;
+      default: return status || 'לא הוגדר';
     }
   };
 
@@ -122,7 +122,7 @@ export default function Jobs() {
       case 'high': return 'גבוהה';
       case 'medium': return 'בינונית';
       case 'low': return 'נמוכה';
-      default: return priority;
+      default: return priority || 'לא הוגדר';
     }
   };
 
