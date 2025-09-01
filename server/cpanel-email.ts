@@ -83,8 +83,30 @@ const CPANEL_CONFIGS = [
 export async function testCpanelImap(): Promise<boolean> {
   console.log('🔄 בדיקת חיבור cPanel IMAP...');
   
-  return new Promise((resolve) => {
-    const imap = new Imap(CPANEL_CONFIGS[0].imap);
+  return new Promise(async (resolve) => {
+    // Load IMAP settings from database
+    const { storage } = await import('./storage');
+    const imapHost = await storage.getSystemSetting('INCOMING_EMAIL_HOST');
+    const imapPort = await storage.getSystemSetting('INCOMING_EMAIL_PORT');
+    const imapSecure = await storage.getSystemSetting('INCOMING_EMAIL_SECURE');
+    const imapUser = await storage.getSystemSetting('INCOMING_EMAIL_USER');
+    const imapPass = await storage.getSystemSetting('INCOMING_EMAIL_PASS');
+
+    const imapConfig = {
+      user: imapUser?.value || 'dolev@h-group.org.il',
+      password: imapPass?.value || '',
+      host: imapHost?.value || 'mail.h-group.org.il',
+      port: parseInt(imapPort?.value || '993'),
+      tls: imapSecure?.value === 'true',
+      authTimeout: 60000,
+      connTimeout: 60000,
+      tlsOptions: { 
+        rejectUnauthorized: false,
+        servername: imapHost?.value || 'mail.h-group.org.il'
+      }
+    };
+
+    const imap = new Imap(imapConfig);
     let resolved = false;
 
     // Extended timeout for cPanel servers
@@ -146,7 +168,26 @@ export async function testCpanelSmtp(): Promise<boolean> {
   console.log('🔄 בדיקת חיבור cPanel SMTP...');
   
   try {
-    const transporter = nodemailer.createTransport(CPANEL_CONFIGS[0].smtp);
+    // Load SMTP settings from database
+    const { storage } = await import('./storage');
+    const smtpHost = await storage.getSystemSetting('OUTGOING_EMAIL_HOST');
+    const smtpPort = await storage.getSystemSetting('OUTGOING_EMAIL_PORT');
+    const smtpSecure = await storage.getSystemSetting('OUTGOING_EMAIL_SECURE');
+    const smtpUser = await storage.getSystemSetting('OUTGOING_EMAIL_USER');
+    const smtpPass = await storage.getSystemSetting('OUTGOING_EMAIL_PASS');
+
+    const smtpConfig = {
+      host: smtpHost?.value || 'mail.h-group.org.il',
+      port: parseInt(smtpPort?.value || '465'),
+      secure: smtpSecure?.value === 'true',
+      auth: {
+        user: smtpUser?.value || 'cv@h-group.org.il',
+        pass: smtpPass?.value || ''
+      },
+      tls: { rejectUnauthorized: false }
+    };
+
+    const transporter = nodemailer.createTransport(smtpConfig);
     
     // Verify connection
     await transporter.verify();
@@ -162,8 +203,37 @@ export async function testCpanelSmtp(): Promise<boolean> {
 export async function checkCpanelEmails(): Promise<void> {
   console.log('📧 בודק מיילים חדשים בcPanel...');
   
-  return new Promise((resolve) => {
-    const imap = new Imap(CPANEL_CONFIGS[0].imap);
+  return new Promise(async (resolve) => {
+    // Load IMAP settings from database
+    const { storage } = await import('./storage');
+    const imapHost = await storage.getSystemSetting('INCOMING_EMAIL_HOST');
+    const imapPort = await storage.getSystemSetting('INCOMING_EMAIL_PORT');
+    const imapSecure = await storage.getSystemSetting('INCOMING_EMAIL_SECURE');
+    const imapUser = await storage.getSystemSetting('INCOMING_EMAIL_USER');
+    const imapPass = await storage.getSystemSetting('INCOMING_EMAIL_PASS');
+
+    const imapConfig = {
+      user: imapUser?.value || 'dolev@h-group.org.il',
+      password: imapPass?.value || '',
+      host: imapHost?.value || 'mail.h-group.org.il',
+      port: parseInt(imapPort?.value || '993'),
+      tls: imapSecure?.value === 'true',
+      authTimeout: 60000,
+      connTimeout: 60000,
+      keepalive: {
+        interval: 10000,
+        idleInterval: 300000,
+        forceNoop: true
+      },
+      tlsOptions: { 
+        rejectUnauthorized: false,
+        servername: imapHost?.value || 'mail.h-group.org.il',
+        minVersion: 'TLSv1',
+        maxVersion: 'TLSv1.3'
+      }
+    };
+
+    const imap = new Imap(imapConfig);
     let resolved = false;
 
     const timeout = setTimeout(() => {
@@ -345,10 +415,29 @@ export async function sendCpanelEmail(to: string, subject: string, text: string,
   console.log(`📤 שולח מייל דרך cPanel ל-${to}`);
   
   try {
-    const transporter = nodemailer.createTransport(CPANEL_CONFIGS[0].smtp);
+    // Load SMTP settings from database
+    const { storage } = await import('./storage');
+    const smtpHost = await storage.getSystemSetting('OUTGOING_EMAIL_HOST');
+    const smtpPort = await storage.getSystemSetting('OUTGOING_EMAIL_PORT');
+    const smtpSecure = await storage.getSystemSetting('OUTGOING_EMAIL_SECURE');
+    const smtpUser = await storage.getSystemSetting('OUTGOING_EMAIL_USER');
+    const smtpPass = await storage.getSystemSetting('OUTGOING_EMAIL_PASS');
+
+    const smtpConfig = {
+      host: smtpHost?.value || 'mail.h-group.org.il',
+      port: parseInt(smtpPort?.value || '465'),
+      secure: smtpSecure?.value === 'true',
+      auth: {
+        user: smtpUser?.value || 'cv@h-group.org.il',
+        pass: smtpPass?.value || ''
+      },
+      tls: { rejectUnauthorized: false }
+    };
+
+    const transporter = nodemailer.createTransport(smtpConfig);
     
     const mailOptions = {
-      from: 'dolev@h-group.org.il',
+      from: smtpUser?.value || 'dolev@h-group.org.il',
       to,
       subject,
       text,
