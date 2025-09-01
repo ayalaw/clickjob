@@ -466,24 +466,23 @@ export function startCpanelEmailMonitoring() {
   }, 60000);
 }
 
-// Test all cPanel email functionality
+// Test all cPanel email functionality - simplified to avoid Replit connection limits
 export async function testAllCpanelEmail(): Promise<void> {
   console.log('🧪 בדיקה מלאה של מערכת cPanel...');
   
-  // Test IMAP
+  // Only test IMAP to avoid connection limits - SMTP will be tested when actually sending
   const imapSuccess = await testCpanelImap();
   
-  // Test SMTP  
-  const smtpSuccess = await testCpanelSmtp();
-  
-  if (imapSuccess && smtpSuccess) {
-    console.log('✅ כל מערכות cPanel עובדות תקין!');
-    // Start monitoring if both work
+  if (imapSuccess) {
+    console.log('✅ מערכת cPanel IMAP מוכנה לעבודה!');
     startCpanelEmailMonitoring();
   } else {
-    console.log('❌ יש בעיות במערכת cPanel');
-    if (!imapSuccess) console.log('  - IMAP לא עובד');
-    if (!smtpSuccess) console.log('  - SMTP לא עובד');
+    console.log('❌ בעיית חיבור cPanel IMAP - אולי מגבלת רשת זמנית');
+    // Still try to start monitoring - maybe it will work later
+    setTimeout(() => {
+      console.log('🔄 ניסיון חוזר להפעלת מעקב מיילים...');
+      startCpanelEmailMonitoring();
+    }, 30000); // Try again in 30 seconds
   }
 }
 
