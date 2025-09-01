@@ -348,18 +348,26 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 });
               } else {
                 toast({
-                  title: "מועמד קיים/דומה",
-                  description: `המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`,
+                  title: "מועמד דומה נמצא",
+                  description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לכרטיס המועמד`,
                   variant: "destructive",
+                  action: {
+                    altText: "מעבר למועמד",
+                    action: () => window.location.href = `/candidates`
+                  }
                 });
               }
             }
           } catch (error) {
             console.error('Error finding existing candidate:', error);
             toast({
-              title: "מועמד קיים/דומה",
-              description: `המועמד ${data.firstName} ${data.lastName} כבר רשום במערכת`,
+              title: "מועמד דומה נמצא",
+              description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לרשימת המועמדים`,
               variant: "destructive",
+              action: {
+                altText: "מעבר למועמדים",
+                action: () => window.location.href = `/candidates`
+              }
             });
           }
           return; // Don't fill the form if candidate exists
@@ -671,20 +679,41 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       placeholder="הכנס שם משפחה"
                     />
                   </div>
-                  <div className="flex flex-row-reverse justify-between items-center">
-                    <span className="text-base font-medium">דוא״ל:</span>
-                    <Input
-                      value={candidate ? fieldValues.email || '' : form.watch('email') || ''}
-                      onChange={(e) => {
-                        if (candidate) {
-                          updateFieldValue('email', e.target.value);
-                        } else {
-                          form.setValue('email', e.target.value);
-                        }
-                      }}
-                      className="w-48 text-base"
-                      placeholder="הכנס דוא״ל"
-                    />
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">דוא״ל:</span>
+                      <Input
+                        value={candidate ? fieldValues.email || '' : form.watch('email') || ''}
+                        onChange={(e) => {
+                          if (candidate) {
+                            updateFieldValue('email', e.target.value);
+                          } else {
+                            form.setValue('email', e.target.value);
+                          }
+                        }}
+                        className={`w-48 text-base ${duplicateWarning.email ? 'border-red-500 bg-red-50' : ''}`}
+                        placeholder="הכנס דוא״ל"
+                      />
+                    </div>
+                    {duplicateWarning.email && duplicateWarning.existing && (
+                      <div className="text-red-600 text-sm font-bold bg-red-100 p-3 rounded border-2 border-red-400 shadow-lg">
+                        ⚠️⚠️⚠️ דוא״ל זה כבר קיים במערכת! ⚠️⚠️⚠️<br />
+                        <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
+                        נייד: {duplicateWarning.existing.mobile}<br />
+                        <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/candidates/${duplicateWarning.existing.id}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="button-go-to-duplicate-email-candidate"
+                          >
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                            מעבר לכרטיס המועמד
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-row-reverse justify-between items-center">
@@ -708,6 +737,17 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                         <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
                         אימייל: {duplicateWarning.existing.email}<br />
                         <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/candidates/${duplicateWarning.existing.id}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="button-go-to-duplicate-candidate"
+                          >
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                            מעבר לכרטיס המועמד
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -741,20 +781,42 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       placeholder="הכנס טלפון 2"
                     />
                   </div>
-                  <div className="flex flex-row-reverse justify-between items-center">
-                    <span className="text-base font-medium">תעודת זהות:</span>
-                    <Input
-                      value={candidate ? fieldValues.nationalId || '' : form.watch('nationalId') || ''}
-                      onChange={(e) => {
-                        if (candidate) {
-                          updateFieldValue('nationalId', e.target.value);
-                        } else {
-                          form.setValue('nationalId', e.target.value);
-                        }
-                      }}
-                      className="w-48 text-base"
-                      placeholder="הכנס ת.ז."
-                    />
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">תעודת זהות:</span>
+                      <Input
+                        value={candidate ? fieldValues.nationalId || '' : form.watch('nationalId') || ''}
+                        onChange={(e) => {
+                          if (candidate) {
+                            updateFieldValue('nationalId', e.target.value);
+                          } else {
+                            form.setValue('nationalId', e.target.value);
+                          }
+                        }}
+                        className={`w-48 text-base ${duplicateWarning.nationalId ? 'border-red-500 bg-red-50' : ''}`}
+                        placeholder="הכנס ת.ז."
+                      />
+                    </div>
+                    {duplicateWarning.nationalId && duplicateWarning.existing && (
+                      <div className="text-red-600 text-sm font-bold bg-red-100 p-3 rounded border-2 border-red-400 shadow-lg">
+                        ⚠️⚠️⚠️ תעודת זהות זו כבר קיימת במערכת! ⚠️⚠️⚠️<br />
+                        <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
+                        דוא״ל: {duplicateWarning.existing.email}<br />
+                        נייד: {duplicateWarning.existing.mobile}<br />
+                        <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/candidates/${duplicateWarning.existing.id}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="button-go-to-duplicate-nationalid-candidate"
+                          >
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                            מעבר לכרטיס המועמד
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">עיר:</span>
