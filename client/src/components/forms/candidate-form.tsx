@@ -47,6 +47,8 @@ import {
   Trash2
 } from "lucide-react";
 
+import { FileViewer } from "@/components/file-viewer";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -601,43 +603,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - Show actual file content */}
+                    {/* CV Display - Show actual file content using FileViewer */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile?.name?.toLowerCase().includes('.pdf') ? (
-                        <iframe
-                          src={selectedFile.url}
-                          className="w-full h-full border-0"
-                          title="קורות חיים"
-                        />
-                      ) : selectedFile?.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
-                        <img
-                          src={selectedFile.url}
-                          alt={selectedFile.name}
-                          className="w-full h-full object-contain"
-                        />
-                      ) : selectedFile?.name?.toLowerCase().includes('.doc') || 
-                           selectedFile?.type?.includes('word') || 
-                           selectedFile?.type?.includes('document') ||
-                           selectedFile?.type?.includes('officedocument') ? (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                            <p className="text-sm text-gray-600 mb-2">{selectedFile?.name}</p>
-                            <p className="text-xs text-gray-500 mb-4">קובץ Word - נתונים חולצו אוטומטית</p>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = selectedFile.url;
-                                link.download = selectedFile.name;
-                                link.click();
-                              }}
-                            >
-                              הורד קובץ
-                            </Button>
-                          </div>
-                        </div>
+                      {selectedFile?.file ? (
+                        <FileViewer file={selectedFile.file} />
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
