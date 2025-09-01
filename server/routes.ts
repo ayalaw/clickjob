@@ -2034,6 +2034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Test separated email connections
   app.post('/api/email/test-separated', isAuthenticated, async (req: any, res) => {
+    console.log('🌐 התקבלה בקשה לבדיקת חיבור נפרד');
     try {
       const { incoming, outgoing } = req.body;
       console.log('🔍 בדיקת חיבור - נתונים שהתקבלו:');
@@ -2144,7 +2145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      console.error("Error testing separated email connections:", error);
+      console.error("❌ שגיאה בבדיקת חיבורים נפרדים:", error);
       res.status(500).json({ message: "בדיקת החיבורים נכשלה", error: error.message });
     }
   });
