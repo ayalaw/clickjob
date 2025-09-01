@@ -2050,35 +2050,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           tls: {
             rejectUnauthorized: false
-          }
+          },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 5000
         });
         
         await testTransporter.verify();
         results.outgoing = true;
         console.log('✅ תיבת דואר יוצא עובדת');
       } catch (outgoingError: any) {
-        const errorMsg = `שגיאה בתיבת דואר יוצא: ${outgoingError.message || 'שגיאה לא ידועה'}`;
+        let errorMsg = '';
+        const errorMessage = outgoingError.message || '';
+        
+        if (errorMessage.includes('Greeting never received')) {
+          errorMsg = 'שגיאה בתיבת דואר יוצא: השרת לא מגיב - בדוק כתובת השרת והפורט';
+        } else if (errorMessage.includes('Invalid login') || errorMessage.includes('535')) {
+          errorMsg = 'שגיאה בתיבת דואר יוצא: שגיאת אימות - בדוק שם משתמש וסיסמה';
+        } else if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('getaddrinfo')) {
+          errorMsg = 'שגיאה בתיבת דואר יוצא: לא ניתן למצוא את השרת - בדוק כתובת השרת';
+        } else if (errorMessage.includes('ECONNREFUSED')) {
+          errorMsg = 'שגיאה בתיבת דואר יוצא: השרת דחה את החיבור - בדוק פורט ואבטחה';
+        } else {
+          errorMsg = `שגיאה בתיבת דואר יוצא: ${errorMessage}`;
+        }
+        
         results.errors.push(errorMsg);
         console.log('❌ תיבת דואר יוצא לא עובדת:', outgoingError.message);
       }
       
       // Test incoming (IMAP) connection - simplified test
       try {
-        const Imap = require('imap');
+        const { default: Imap } = await import('imap');
         const imap = new Imap({
           user: incoming.user,
           password: incoming.pass,
           host: incoming.host,
           port: parseInt(incoming.port),
           tls: incoming.secure === true,
-          tlsOptions: { rejectUnauthorized: false }
+          tlsOptions: { rejectUnauthorized: false },
+          connTimeout: 5000,
+          authTimeout: 5000
         });
         
         await new Promise((resolve, reject) => {
           const timeout = setTimeout(() => {
             try { imap.end(); } catch {}
-            reject(new Error('החיבור לתיבת הדואר הנכנס נכשל - בדוק את פרטי ההתחברות'));
-          }, 8000);
+            reject(new Error('החיבור לתיבת הדואר הנכנס נכשל - בדוק את פרטי ההתחברות (שרת, פורט, שם משתמש וסיסמה)'));
+          }, 5000);
           
           imap.once('ready', () => {
             clearTimeout(timeout);
@@ -2088,7 +2107,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           imap.once('error', (err: any) => {
             clearTimeout(timeout);
-            reject(err);
+            const errorMessage = err.message;
+            if (errorMessage.includes('Authentication failed') || errorMessage.includes('Invalid credentials')) {
+              reject(new Error('שגיאת אימות - בדוק שם משתמש וסיסמה'));
+            } else if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('getaddrinfo')) {
+              reject(new Error('לא ניתן למצוא את השרת - בדוק כתובת השרת'));
+            } else if (errorMessage.includes('ECONNREFUSED')) {
+              reject(new Error('השרת דחה את החיבור - בדוק פורט ואבטחה'));
+            } else {
+              reject(err);
+            }
           });
           
           imap.connect();
