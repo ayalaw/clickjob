@@ -82,6 +82,27 @@ const israeliCities = [
 ];
 
 // פונקציה לחילוץ נתונים מטקסט
+// פונקציה לנירמול מספרי טלפון ישראליים
+function normalizeIsraeliPhone(phone: string): string {
+  // הסרת כל הרווחים, קווים ומקפים
+  let normalized = phone.replace(/[-\s()]/g, '');
+  
+  // טיפול בקידומת +972
+  if (normalized.startsWith('+972')) {
+    normalized = '0' + normalized.substring(4);
+  } else if (normalized.startsWith('972')) {
+    normalized = '0' + normalized.substring(3);
+  }
+  
+  // וידוא שהמספר מתחיל ב-0 ויש לו 10 ספרות
+  if (normalized.length === 9 && !normalized.startsWith('0')) {
+    normalized = '0' + normalized;
+  }
+  
+  console.log(`📞 נירמול טלפון: "${phone}" → "${normalized}"`);
+  return normalized;
+}
+
 function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
@@ -117,18 +138,44 @@ function extractDataFromText(text: string) {
     result.email = emailMatch[0];
   }
 
-  // חילוץ טלפון נייד (מתחיל ב-05)
-  const mobilePattern = /(05\d{1}[-\s]?\d{7}|05\d{8})/g;
-  const mobileMatch = upperThird.match(mobilePattern);
-  if (mobileMatch) {
-    result.mobile = mobileMatch[0].replace(/[-\s]/g, '');
-  }
+  // חילוץ טלפון עם תמיכה בפורמטים שונים כולל +972
+  const phonePatterns = [
+    // פורמט ישראלי רגיל
+    /(05\d{1}[-\s]?\d{7}|05\d{8})/g,
+    // פורמט עם +972
+    /(\+972[-\s]?5\d{1}[-\s]?\d{7}|\+972[-\s]?5\d{8})/g,
+    // פורמט עם 972 בלי +
+    /(972[-\s]?5\d{1}[-\s]?\d{7}|972[-\s]?5\d{8})/g,
+    // טלפון נייד בפורמט אחר
+    /(0\d{2}[-\s]?\d{7})/g
+  ];
 
-  // חילוץ טלפון רגיל (03, 04, 08, 09)
-  const phonePattern = /(0[3489][-\s]?\d{7})/g;
-  const phoneMatch = upperThird.match(phonePattern);
-  if (phoneMatch) {
-    result.phone = phoneMatch[0].replace(/[-\s]/g, '');
+  // חיפוש טלפון נייד
+  for (const pattern of phonePatterns) {
+    const matches = upperThird.match(pattern);
+    if (matches) {
+      for (const match of matches) {
+        const normalized = normalizeIsraeliPhone(match);
+        // בדיקה שזה טלפון נייד ישראלי (מתחיל ב-05)
+        if (normalized.startsWith('05') && normalized.length === 10) {
+          if (!result.mobile) {
+            result.mobile = normalized;
+            console.log(`📱 מצא נייד: ${normalized}`);
+          } else if (result.mobile !== normalized && !result.phone) {
+            result.phone = normalized;
+            console.log(`📞 מצא טלפון נוסף: ${normalized}`);
+          } else if (result.mobile !== normalized && result.phone !== normalized && !result.phone2) {
+            result.phone2 = normalized;
+            console.log(`📞 מצא טלפון שני: ${normalized}`);
+          }
+        }
+        // טלפונים רגילים (03, 04, 08, 09)
+        else if (normalized.match(/^0[3489]\d{7}$/) && !result.phone) {
+          result.phone = normalized;
+          console.log(`☎️ מצא טלפון קווי: ${normalized}`);
+        }
+      }
+    }
   }
 
   // חילוץ עיר מהרשימה
@@ -231,12 +278,7 @@ function extractDataFromText(text: string) {
     result.drivingLicense = "כן";
   }
 
-  // חילוץ טלפון נוסף (מחפש טלפון שני)
-  const phonePattern2 = /(0[2-9][-\s]?\d{7})/g;
-  const phoneMatches = upperThird.match(phonePattern2);
-  if (phoneMatches && phoneMatches.length > 1 && phoneMatches[1] !== result.phone) {
-    result.phone2 = phoneMatches[1].replace(/[-\s]/g, '');
-  }
+  // הקוד הישן למציאת טלפון נוסף הוזז למעלה והורחב לטפל בפורמטים שונים
 
   // חילוץ הישגים (חיפוש אחר מילות מפתח)
   const achievementKeywords = ['הישגים', 'פרסים', 'הכרה', 'הצטיינות', 'achievements', 'awards', 'recognition'];

@@ -405,15 +405,34 @@ export class DatabaseStorage implements IStorage {
     return candidate;
   }
 
+  // פונקציה לנירמול מספרי טלפון (זהה לזו שבroutes.ts)
+  private normalizePhone(phone: string): string {
+    let normalized = phone.replace(/[-\s()]/g, '');
+    
+    // טיפול בקידומת +972
+    if (normalized.startsWith('+972')) {
+      normalized = '0' + normalized.substring(4);
+    } else if (normalized.startsWith('972')) {
+      normalized = '0' + normalized.substring(3);
+    }
+    
+    // וידוא שהמספר מתחיל ב-0 ויש לו 10 ספרות
+    if (normalized.length === 9 && !normalized.startsWith('0')) {
+      normalized = '0' + normalized;
+    }
+    
+    return normalized;
+  }
+
   async findCandidateByContactInfo(mobile?: string, email?: string, nationalId?: string): Promise<Candidate | undefined> {
     if (!mobile && !email && !nationalId) return undefined;
     
     const conditions = [];
     
-    // טלפון נייד - נקה מסימנים ובדוק
+    // טלפון נייד - נירמול ובדיקה
     if (mobile) {
-      const cleanMobile = mobile.replace(/[-\s]/g, '');
-      conditions.push(sql`REPLACE(REPLACE(${candidates.mobile}, '-', ''), ' ', '') = ${cleanMobile}`);
+      const normalizedMobile = this.normalizePhone(mobile);
+      conditions.push(sql`REPLACE(REPLACE(REPLACE(${candidates.mobile}, '-', ''), ' ', ''), '+972', '0') = ${normalizedMobile}`);
     }
     
     // אימייל - בדיקה מדויקת (case insensitive)
