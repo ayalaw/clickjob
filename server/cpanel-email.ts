@@ -616,34 +616,26 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                     emailAddress = fromEmail;
                   }
                   
-                  // Create candidate record
-                  const candidateData = {
-                    email: emailAddress,
-                    name: extractNameFromEmail(emailAddress),
-                    phone: '',
-                    status: 'פעיל' as const,
-                    source: 'מייל',
-                    notes: `נוצר אוטומטית מהמייל: ${parsed.subject || 'ללא נושא'}`,
-                    cvPath: savedPath
-                  };
+                  // Extract email address only - no fake data
+                  const senderEmail = emailAddress || `candidate-${timestamp}@temp.local`;
                   
                   // Check if candidate already exists
                   const existingCandidates = await storage.getCandidates();
-                  const candidateExists = existingCandidates.candidates.some((c: any) => c.email === emailAddress);
+                  const candidateExists = existingCandidates.candidates.some((c: any) => c.email === senderEmail);
                   
                   if (!candidateExists) {
-                    // Create new candidate
+                    // Create new candidate with minimal data - no fake information
                     const newCandidate = await storage.createCandidate({
-        firstName: candidateData.name.split(' ')[0] || candidateData.name,
-        lastName: candidateData.name.split(' ').slice(1).join(' ') || '',
-        email: candidateData.email,
-        city: 'לא צוין',
-        mobile: candidateData.phone,
-        profession: 'ממתין לעיבוד קורות חיים',
+        firstName: '', // Leave empty - will be filled manually
+        lastName: '', // Leave empty - will be filled manually  
+        email: senderEmail,
+        city: '', // Leave empty
+        mobile: '', // Leave empty
+        profession: '', // Leave empty
         status: 'פעיל',
-        recruitmentSource: candidateData.source,
-        notes: candidateData.notes,
-        cvPath: candidateData.cvPath
+        recruitmentSource: 'מייל נכנס - קורות חיים',
+        notes: `מועמד שנוסף אוטומטית מהמייל. נושא המייל: "${parsed.subject || 'ללא נושא'}"`,
+        cvPath: `${timestamp}-${cleanFilename.toLowerCase().replace(/[^a-z0-9.-]/g, '')}`
       });
                     console.log(`👤 נוצר מועמד חדש: ${newCandidate.firstName} ${newCandidate.lastName} (${newCandidate.email})`);
                     
