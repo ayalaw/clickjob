@@ -2036,6 +2036,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/email/test-separated', isAuthenticated, async (req: any, res) => {
     try {
       const { incoming, outgoing } = req.body;
+      console.log('🔍 בדיקת חיבור - נתונים שהתקבלו:');
+      console.log('📥 תיבת דואר נכנס:', JSON.stringify(incoming, null, 2));
+      console.log('📤 תיבת דואר יוצא:', JSON.stringify(outgoing, null, 2));
       const results = { incoming: false, outgoing: false, errors: [] as string[] };
       
       // Test outgoing (SMTP) connection
