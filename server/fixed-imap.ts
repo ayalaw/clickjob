@@ -19,45 +19,28 @@ export async function checkEmailsSimple(): Promise<void> {
     return;
   }
   
-  // Try different IMAP configurations - cPanel servers can be tricky
-  const configs = [
-    {
-      name: 'Standard IMAP (port 143)',
-      user: imapUser.value,
-      password: imapPass.value,
-      host: imapHost.value,
-      port: parseInt(imapPort?.value || '143'),
-      tls: false,
-      authTimeout: 8000,
-      connTimeout: 8000,
-      tlsOptions: { rejectUnauthorized: false }
-    },
-    {
-      name: 'SSL IMAP (port 993)',
-      user: imapUser.value,
-      password: imapPass.value,
-      host: imapHost.value,
-      port: parseInt(imapPort?.value || '993'),
-      tls: true,
-      authTimeout: 8000,
-      connTimeout: 8000,
-      tlsOptions: { rejectUnauthorized: false }
-    }
-  ];
+  // Use IMAP configuration from database
+  const config = {
+    name: `IMAP (${imapHost.value}:${imapPort?.value})`,
+    user: imapUser.value,
+    password: imapPass.value,
+    host: imapHost.value,
+    port: parseInt(imapPort?.value || '993'),
+    tls: imapSecure?.value === 'true',
+    authTimeout: 30000,
+    connTimeout: 30000,
+    tlsOptions: { rejectUnauthorized: false }
+  };
 
-  console.log('🔄 מנסה עם הגדרות IMAP שונות...');
+  console.log(`🔄 מתחבר עם הגדרות: ${config.name}`);
+  console.log(`📧 משתמש: ${config.user}, שרת: ${config.host}:${config.port}, SSL: ${config.tls}`);
   
-  for (const config of configs) {
-    console.log(`🔧 בודק: ${config.name}`);
-    const success = await tryConnection(config);
-    if (success) {
-      console.log(`✅ הצליח עם: ${config.name}!`);
-      return;
-    }
-    console.log(`❌ נכשל עם: ${config.name}`);
+  const success = await tryConnection(config);
+  if (success) {
+    console.log(`✅ הצליח להתחבר למיילים נכנסים!`);
+    return;
   }
-  
-  console.log('❌ כל ההגדרות נכשלו');
+  console.log(`❌ כשל בהתחברות למיילים נכנסים`);
 }
 
 async function tryConnection(config: any): Promise<boolean> {
