@@ -507,9 +507,7 @@ export default function CandidateDetail() {
         
         // ניווט מיידי לעמוד הראיונות
         console.log("🚀🚀🚀 מבצע ניווט לעמוד הראיונות עכשיו!");
-        setTimeout(() => {
-          window.location.href = "/interviews";
-        }, 500);
+        window.location.assign("/interviews");
         
       } else if (successfulJobs.length > 0 && errors.length > 0) {
         console.log("⚠️ הצלחה חלקית - מציג הודעה ועובר לראיונות");
@@ -520,9 +518,7 @@ export default function CandidateDetail() {
         
         // ניווט גם במקרה של הצלחה חלקית
         console.log("🚀🚀🚀 מבצע ניווט לעמוד הראיונות (הצלחה חלקית)!");
-        setTimeout(() => {
-          window.location.href = "/interviews";
-        }, 500);
+        window.location.assign("/interviews");
         
       } else {
         toast({
