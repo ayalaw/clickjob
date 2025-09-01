@@ -69,10 +69,14 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     
     // Start cPanel email system after server starts
-    import('./cpanel-email').then(({ testAllCpanelEmail }) => {
-      setTimeout(() => {
+    import('./cpanel-email').then(async ({ testAllCpanelEmail, reloadCpanelConfig }) => {
+      setTimeout(async () => {
         console.log('🚀 מפעיל מערכת cPanel מלאה...');
-        testAllCpanelEmail();
+        console.log('🔄 טוען הגדרות cPanel מבסיס הנתונים...');
+        await reloadCpanelConfig();
+        setTimeout(() => {
+          testAllCpanelEmail();
+        }, 2000); // Give time for config to load
       }, 5000); // Wait 5 seconds after server start
     });
   });

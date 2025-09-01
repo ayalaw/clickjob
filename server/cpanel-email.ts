@@ -223,7 +223,7 @@ export async function checkCpanelEmails(): Promise<void> {
             // Process each new email
             const f = imap.fetch(results, {
               bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)', 'TEXT'],
-              markSeen: false // Don't mark as seen initially
+              markSeen: true // Mark as seen after processing
             });
 
             let processedCount = 0;
@@ -266,6 +266,7 @@ export async function checkCpanelEmails(): Promise<void> {
                     // Process CV attachment
                     try {
                       await processCVEmailAttachment(imap, seqno, headers, body);
+                      console.log(`✅ מייל ${seqno} עובד ומסומן כנקרא`);
                     } catch (cvError) {
                       console.error('❌ שגיאה בעיבוד קובץ CV:', cvError);
                     }
@@ -405,7 +406,7 @@ export async function reloadCpanelConfig() {
   
   try {
     // Reload cPanel configurations from database
-    const { storage } = require('./storage');
+    const { storage } = await import('./storage');
     const smtpHost = await storage.getSystemSetting('CPANEL_SMTP_HOST');
     const smtpPort = await storage.getSystemSetting('CPANEL_SMTP_PORT');
     const smtpSecure = await storage.getSystemSetting('CPANEL_SMTP_SECURE');
