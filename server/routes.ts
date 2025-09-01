@@ -2050,103 +2050,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📤 תיבת דואר יוצא:', JSON.stringify(outgoing, null, 2));
       const results = { incoming: false, outgoing: false, errors: [] as string[] };
       
-      // Test outgoing (SMTP) connection with fallback ports
-      const smtpAttempts = [
-        { port: parseInt(outgoing.port), secure: parseInt(outgoing.port) === 465 },
-        { port: 587, secure: false },  // Standard SMTP with STARTTLS
-        { port: 25, secure: false }    // Basic SMTP
-      ];
-      
-      let smtpSuccess = false;
-      for (const attempt of smtpAttempts) {
-        try {
-          console.log(`📤 בודק SMTP: ${outgoing.host}:${attempt.port}, secure: ${attempt.secure}`);
-          
-          const testTransporter = nodemailer.createTransport({
-            host: outgoing.host,
-            port: attempt.port,
-            secure: attempt.secure,
-            auth: {
-              user: outgoing.user,
-              pass: outgoing.pass,
-            },
-            tls: {
-              rejectUnauthorized: false
-            },
-            connectionTimeout: 3000,
-            greetingTimeout: 3000,
-            socketTimeout: 3000
-          });
-          
-          await testTransporter.verify();
-          console.log(`✅ SMTP הצליח עם פורט ${attempt.port}`);
-          smtpSuccess = true;
-          results.outgoing = true;
-          break;
-        } catch (attemptError: any) {
-          console.log(`❌ SMTP נכשל עם פורט ${attempt.port}: ${attemptError.message}`);
-        }
+      // Test outgoing (SMTP) connection - EXACTLY as before
+      try {
+        console.log(`📤 בודק SMTP: ${outgoing.host}:${outgoing.port}, secure: ${outgoing.secure}`);
+        
+        const testTransporter = nodemailer.createTransporter({
+          host: outgoing.host,
+          port: parseInt(outgoing.port),
+          secure: outgoing.secure === true || outgoing.secure === 'true',
+          auth: {
+            user: outgoing.user,
+            pass: outgoing.pass,
+          },
+          tls: {
+            rejectUnauthorized: false
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000
+        });
+        
+        await testTransporter.verify();
+        results.outgoing = true;
+        console.log('✅ תיבת דואר יוצא עובדת');
+      } catch (outgoingError: any) {
+        let errorMsg = `שגיאה בתיבת דואר יוצא: ${outgoingError.message || 'בעיה בחיבור לשרת SMTP'}`;
+        results.errors.push(errorMsg);
+        console.log('❌ תיבת דואר יוצא לא עובדת:', outgoingError.message);
       }
       
-      if (!smtpSuccess) {
-        results.errors.push('שגיאה בתיבת דואר יוצא: לא ניתן להתחבר לשרת SMTP באף פורט');
-      }
-      
-      // Test incoming (IMAP) connection with fallback ports
-      const imapAttempts = [
-        { port: parseInt(incoming.port), secure: parseInt(incoming.port) === 993 },
-        { port: 143, secure: false },  // Standard IMAP
-        { port: 993, secure: true }    // IMAP over SSL
-      ];
-      
-      let imapSuccess = false;
-      for (const attempt of imapAttempts) {
-        try {
-          console.log(`📥 בודק IMAP: ${incoming.host}:${attempt.port}, secure: ${attempt.secure}`);
+      // Test incoming (IMAP) connection - EXACTLY as before
+      try {
+        console.log(`📥 בודק IMAP: ${incoming.host}:${incoming.port}, secure: ${incoming.secure}`);
+        
+        const { default: Imap } = await import('imap');
+        const imap = new Imap({
+          user: incoming.user,
+          password: incoming.pass,
+          host: incoming.host,
+          port: parseInt(incoming.port),
+          tls: incoming.secure === true || incoming.secure === 'true',
+          tlsOptions: { rejectUnauthorized: false },
+          connTimeout: 10000,
+          authTimeout: 10000
+        });
+        
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            try { imap.end(); } catch {}
+            reject(new Error('החיבור לתיבת הדואר הנכנס נכשל - בדוק את פרטי ההתחברות (שרת, פורט, שם משתמש וסיסמה)'));
+          }, 10000);
           
-          const { default: Imap } = await import('imap');
-          const imap = new Imap({
-            user: incoming.user,
-            password: incoming.pass,
-            host: incoming.host,
-            port: attempt.port,
-            tls: attempt.secure,
-            tlsOptions: { rejectUnauthorized: false },
-            connTimeout: 3000,
-            authTimeout: 3000
+          imap.once('ready', () => {
+            clearTimeout(timeout);
+            try { imap.end(); } catch {}
+            resolve(true);
           });
           
-          await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              try { imap.end(); } catch {}
-              reject(new Error('Timeout'));
-            }, 3000);
-            
-            imap.once('ready', () => {
-              clearTimeout(timeout);
-              try { imap.end(); } catch {}
-              resolve(true);
-            });
-            
-            imap.once('error', (err: any) => {
-              clearTimeout(timeout);
-              reject(err);
-            });
-            
-            imap.connect();
+          imap.once('error', (err: any) => {
+            clearTimeout(timeout);
+            reject(err);
           });
           
-          console.log(`✅ IMAP הצליח עם פורט ${attempt.port}`);
-          imapSuccess = true;
-          results.incoming = true;
-          break;
-        } catch (attemptError: any) {
-          console.log(`❌ IMAP נכשל עם פורט ${attempt.port}: ${attemptError.message}`);
-        }
-      }
-      
-      if (!imapSuccess) {
-        results.errors.push('שגיאה בתיבת דואר נכנס: לא ניתן להתחבר לשרת IMAP באף פורט');
+          imap.connect();
+        });
+        
+        results.incoming = true;
+        console.log('✅ תיבת דואר נכנס עובדת');
+      } catch (incomingError: any) {
+        const errorMsg = `שגיאה בתיבת דואר נכנס: ${incomingError.message || 'בעיה בחיבור לשרת IMAP'}`;
+        results.errors.push(errorMsg);
+        console.log('❌ תיבת דואר נכנס לא עובדת:', incomingError.message);
       }
       
       if (results.incoming && results.outgoing) {
