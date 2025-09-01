@@ -2052,10 +2052,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Test outgoing (SMTP) connection
       try {
+        // Auto-detect secure connection based on port
+        const port = parseInt(outgoing.port);
+        const isSecure = port === 465 || port === 993 || outgoing.secure === true;
+        
+        console.log(`📤 בודק SMTP: ${outgoing.host}:${port}, secure: ${isSecure}`);
+        
         const testTransporter = nodemailer.createTransport({
           host: outgoing.host,
-          port: parseInt(outgoing.port),
-          secure: outgoing.secure === true,
+          port: port,
+          secure: isSecure,
           auth: {
             user: outgoing.user,
             pass: outgoing.pass,
@@ -2094,12 +2100,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Test incoming (IMAP) connection - simplified test
       try {
         const { default: Imap } = await import('imap');
+        
+        // Auto-detect secure connection based on port
+        const port = parseInt(incoming.port);
+        const isSecure = port === 993 || incoming.secure === true;
+        
+        console.log(`📥 בודק IMAP: ${incoming.host}:${port}, secure: ${isSecure}`);
+        
         const imap = new Imap({
           user: incoming.user,
           password: incoming.pass,
           host: incoming.host,
-          port: parseInt(incoming.port),
-          tls: incoming.secure === true,
+          port: port,
+          tls: isSecure,
           tlsOptions: { rejectUnauthorized: false },
           connTimeout: 5000,
           authTimeout: 5000
