@@ -422,6 +422,14 @@ export default function CandidateDetail() {
     }
   };
 
+  // פונקציית בדיקת ניווט
+  const testNavigate = () => {
+    console.log("🧪 בודק ניווט...");
+    alert("בודק ניווט לראיונות");
+    navigate("/interviews");
+    console.log("🧪 ניווט הושלם");
+  };
+
   const handleAddToInterview = async () => {
     console.log("🚀 התחיל handleAddToInterview");
     if (!selectedInterviewJobIds.length || !candidate) {
@@ -934,6 +942,15 @@ export default function CandidateDetail() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              {/* כפתור בדיקת ניווט - זמני */}
+              <Button
+                variant="outline"
+                onClick={testNavigate}
+                className="flex items-center gap-2 text-blue-600 border-blue-200"
+              >
+                🧪 בדוק ניווט
+              </Button>
 
               <Dialog open={interviewDialogOpen} onOpenChange={(open) => {
                 setInterviewDialogOpen(open);
