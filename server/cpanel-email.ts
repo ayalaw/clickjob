@@ -616,8 +616,8 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                     emailAddress = fromEmail;
                   }
                   
-                  // Extract email address only - no fake data
-                  const senderEmail = emailAddress || '';
+                  // Extract email address only - no fake data, leave null if empty
+                  const senderEmail = emailAddress && emailAddress.trim() !== '' ? emailAddress.trim() : null;
                   
                   // Check if candidate already exists (only if we have a valid email)
                   const existingCandidates = await storage.getCandidates();
@@ -628,7 +628,7 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                     const newCandidate = await storage.createCandidate({
         firstName: '', // Leave empty - will be filled manually
         lastName: '', // Leave empty - will be filled manually  
-        email: senderEmail,
+        email: senderEmail, // Will be null if no valid email found
         city: '', // Leave empty
         mobile: '', // Leave empty
         profession: '', // Leave empty
