@@ -459,11 +459,23 @@ export default function CandidateDetail() {
           title: "✅ הוסף לראיון בהצלחה!",
           description: `המועמד נוסף לראיון ב-${successfulJobs.length} משרות בהצלחה`,
         });
+        
+        // ניווט אוטומטי לעמוד הראיונות
+        setTimeout(() => {
+          navigate("/interviews");
+        }, 1000); // חכה שניה אחת כדי שהמשתמש יראה את ההודעה
+        
       } else if (successfulJobs.length > 0 && errors.length > 0) {
         toast({
           title: "⚠️ הוסף חלקית",
           description: `הוסף ל-${successfulJobs.length} משרות, ${errors.length} נכשלו`,
         });
+        
+        // ניווט גם במקרה של הצלחה חלקית
+        setTimeout(() => {
+          navigate("/interviews");
+        }, 1500);
+        
       } else {
         toast({
           title: "❌ נכשל",
