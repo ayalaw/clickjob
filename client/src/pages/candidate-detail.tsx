@@ -517,10 +517,19 @@ export default function CandidateDetail() {
         
         // ניווט מיידי לעמוד הראיונות
         console.log("🚀🚀🚀 מבצע ניווט עכשיו!");
-        window.location.href = "/interviews";
-        console.log("✅ פקודת ניווט בוצעה");
+        setTimeout(() => {
+          console.log("⏰ עובר לעמוד ראיונות...");
+          try {
+            window.location.assign("/interviews");
+            console.log("✅ ניווט הושלם בהצלחה");
+          } catch (navError) {
+            console.error("❌ שגיאת ניווט:", navError);
+            window.location.href = "/interviews";
+          }
+        }, 500);
         
       } else {
+        console.log("❌ אין הצלחות - מציג שגיאה");
         toast({
           title: "❌ נכשל",
           description: `לא ניתן להוסיף לאף משרה: ${errors.join(', ')}`,
@@ -528,13 +537,14 @@ export default function CandidateDetail() {
         });
       }
     } catch (error: any) {
-      console.error('Error adding to interview:', error);
+      console.error('💥 שגיאה במערכת:', error);
       toast({
         title: "שגיאה חמורה",
         description: `שגיאה במערכת: ${error.message || 'שגיאה לא ידועה'}`,
         variant: "destructive",
       });
     } finally {
+      console.log("🏁 סיום handleAddToInterview");
       setIsUpdatingStatus(false);
     }
   };
