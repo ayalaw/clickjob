@@ -838,17 +838,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const candidate = await storage.updateCandidate(req.params.id, candidateData);
       
-      // Add event for candidate profile update
-      await storage.addCandidateEvent({
-        candidateId: req.params.id,
-        eventType: 'profile_updated',
-        description: `פרטי המועמד עודכנו`,
-        metadata: {
-          updatedFields: Object.keys(candidateData),
-          cvUpdated: !!candidateData.cvPath,
-          timestamp: new Date().toISOString()
-        }
-      });
+      // Add detailed events for specific field changes
+      const fieldChanges = [];
+      
+      // Track name changes
+      if (candidateData.firstName && currentCandidate?.firstName !== candidateData.firstName) {
+        fieldChanges.push(`שם פרטי השתנה מ-"${currentCandidate?.firstName || 'ריק'}" ל-"${candidateData.firstName}"`);
+      }
+      if (candidateData.lastName && currentCandidate?.lastName !== candidateData.lastName) {
+        fieldChanges.push(`שם משפחה השתנה מ-"${currentCandidate?.lastName || 'ריק'}" ל-"${candidateData.lastName}"`);
+      }
+      
+      // Track contact changes
+      if (candidateData.email !== undefined && currentCandidate?.email !== candidateData.email) {
+        fieldChanges.push(`מייל השתנה מ-"${currentCandidate?.email || 'ריק'}" ל-"${candidateData.email || 'ריק'}"`);
+      }
+      if (candidateData.mobile && currentCandidate?.mobile !== candidateData.mobile) {
+        fieldChanges.push(`נייד השתנה מ-"${currentCandidate?.mobile || 'ריק'}" ל-"${candidateData.mobile}"`);
+      }
+      if (candidateData.phone && currentCandidate?.phone !== candidateData.phone) {
+        fieldChanges.push(`טלפון השתנה מ-"${currentCandidate?.phone || 'ריק'}" ל-"${candidateData.phone}"`);
+      }
+      if (candidateData.phone2 && currentCandidate?.phone2 !== candidateData.phone2) {
+        fieldChanges.push(`טלפון נוסף השתנה מ-"${currentCandidate?.phone2 || 'ריק'}" ל-"${candidateData.phone2}"`);
+      }
+      if (candidateData.nationalId && currentCandidate?.nationalId !== candidateData.nationalId) {
+        fieldChanges.push(`תעודת זהות השתנתה מ-"${currentCandidate?.nationalId || 'ריק'}" ל-"${candidateData.nationalId}"`);
+      }
+      
+      // Track location changes
+      if (candidateData.city && currentCandidate?.city !== candidateData.city) {
+        fieldChanges.push(`עיר השתנתה מ-"${currentCandidate?.city || 'ריק'}" ל-"${candidateData.city}"`);
+      }
+      if (candidateData.street && currentCandidate?.street !== candidateData.street) {
+        fieldChanges.push(`רחוב השתנה מ-"${currentCandidate?.street || 'ריק'}" ל-"${candidateData.street}"`);
+      }
+      
+      // Track professional changes
+      if (candidateData.profession && currentCandidate?.profession !== candidateData.profession) {
+        fieldChanges.push(`מקצוע השתנה מ-"${currentCandidate?.profession || 'ריק'}" ל-"${candidateData.profession}"`);
+      }
+      if (candidateData.expectedSalary && currentCandidate?.expectedSalary !== candidateData.expectedSalary) {
+        fieldChanges.push(`שכר צפוי השתנה מ-"${currentCandidate?.expectedSalary || 'ריק'}" ל-"${candidateData.expectedSalary}"`);
+      }
+      
+      // Add CV update event
+      if (candidateData.cvPath) {
+        fieldChanges.push(`קורות חיים עודכנו - קובץ חדש הועלה`);
+      }
+      
+      // Add general update event with specific changes
+      if (fieldChanges.length > 0) {
+        await storage.addCandidateEvent({
+          candidateId: req.params.id,
+          eventType: 'profile_updated',
+          description: `פרטי המועמד עודכנו: ${fieldChanges.join(', ')}`,
+          metadata: {
+            updatedFields: Object.keys(candidateData),
+            changes: fieldChanges,
+            cvUpdated: !!candidateData.cvPath,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
       
       // Check if status was manually changed and add specific event
       if (candidateData.status && currentCandidate?.status !== candidateData.status) {

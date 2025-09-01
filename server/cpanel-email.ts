@@ -637,7 +637,21 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
         notes: `מועמד שנוסף אוטומטית מהמייל. נושא המייל: "${parsed.subject || 'ללא נושא'}"`,
         cvPath: `${timestamp}-${cleanFilename.toLowerCase().replace(/[^a-z0-9.-]/g, '')}`
       });
-                    console.log(`👤 נוצר מועמד חדש: ${newCandidate.firstName} ${newCandidate.lastName} (${newCandidate.email})`);
+                    console.log(`👤 נוצר מועמד חדש: מס' ${newCandidate.candidateNumber} (${newCandidate.email || 'ללא מייל'})`);
+                    
+                    // Add creation event
+                    await storage.addCandidateEvent({
+                      candidateId: newCandidate.id,
+                      eventType: 'candidate_created',
+                      description: `מועמד נוצר אוטומטית ממייל נכנס. מס' מועמד: ${newCandidate.candidateNumber}${senderEmail ? `, מייל: ${senderEmail}` : ', ללא מייל'}`,
+                      metadata: {
+                        source: 'email_import',
+                        emailSubject: parsed.subject || 'ללא נושא',
+                        cvFileName: cleanFilename,
+                        senderEmail: senderEmail || 'לא זוהה',
+                        timestamp: new Date().toISOString()
+                      }
+                    });
                     
                     // Check if there's a job code in the subject for automatic application
                     const jobCodeMatch = parsed.subject?.match(/(\d{4,})/);
