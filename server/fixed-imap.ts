@@ -1,17 +1,32 @@
 import Imap from 'imap';
+import { storage } from './storage';
 
 // Simple working IMAP email checker
 export async function checkEmailsSimple(): Promise<void> {
   console.log('🔍 בודק מיילים נכנסים...');
   
+  // Get storage instance
+  
+  // Get IMAP settings from database - for incoming emails
+  const imapHost = await storage.getSystemSetting('INCOMING_EMAIL_HOST');
+  const imapPort = await storage.getSystemSetting('INCOMING_EMAIL_PORT');
+  const imapSecure = await storage.getSystemSetting('INCOMING_EMAIL_SECURE');
+  const imapUser = await storage.getSystemSetting('INCOMING_EMAIL_USER');
+  const imapPass = await storage.getSystemSetting('INCOMING_EMAIL_PASS');
+  
+  if (!imapHost?.value || !imapUser?.value || !imapPass?.value) {
+    console.log('❌ חסרות הגדרות IMAP - עבור להגדרות מייל');
+    return;
+  }
+  
   // Try different IMAP configurations - cPanel servers can be tricky
   const configs = [
     {
       name: 'Standard IMAP (port 143)',
-      user: 'dolev@h-group.org.il',
-      password: 'hpm_7HqToCSs[H7,',
-      host: 'mail.h-group.org.il',
-      port: 143,
+      user: imapUser.value,
+      password: imapPass.value,
+      host: imapHost.value,
+      port: parseInt(imapPort?.value || '143'),
       tls: false,
       authTimeout: 8000,
       connTimeout: 8000,
@@ -19,24 +34,13 @@ export async function checkEmailsSimple(): Promise<void> {
     },
     {
       name: 'SSL IMAP (port 993)',
-      user: 'dolev@h-group.org.il',
-      password: 'hpm_7HqToCSs[H7,',
-      host: 'mail.h-group.org.il',
-      port: 993,
+      user: imapUser.value,
+      password: imapPass.value,
+      host: imapHost.value,
+      port: parseInt(imapPort?.value || '993'),
       tls: true,
       authTimeout: 8000,
       connTimeout: 8000,
-      tlsOptions: { rejectUnauthorized: false }
-    },
-    {
-      name: 'Alternative host',
-      user: 'dolev@h-group.org.il',
-      password: 'hpm_7HqToCSs[H7,',
-      host: 'h-group.org.il',
-      port: 143,
-      tls: false,
-      authTimeout: 6000,
-      connTimeout: 6000,
       tlsOptions: { rejectUnauthorized: false }
     }
   ];
@@ -185,11 +189,15 @@ async function tryConnection(config: any): Promise<boolean> {
 }
 
 // Start email monitoring with intervals
-export function startSimpleEmailMonitoring() {
+export async function startSimpleEmailMonitoring() {
   console.log('🚀 מפעיל מעקב מיילים פשוט');
   
   // Check immediately
-  checkEmailsSimple();
+  try {
+    await checkEmailsSimple();
+  } catch (err) {
+    console.error('שגיאה בבדיקה ראשונית של מיילים:', err);
+  }
   
   // Then check every 60 seconds
   setInterval(() => {
