@@ -140,39 +140,45 @@ function extractDataFromText(text: string) {
 
   // חילוץ טלפון עם תמיכה בפורמטים שונים כולל +972
   const phonePatterns = [
-    // פורמט ישראלי רגיל
+    // פורמט ישראלי רגיל - ניידים
     /(05\d{1}[-\s]?\d{7}|05\d{8})/g,
-    // פורמט עם +972
-    /(\+972[-\s]?5\d{1}[-\s]?\d{7}|\+972[-\s]?5\d{8})/g,
+    // פורמט ישראלי רגיל - קוויים
+    /(0[2-9][-\s]?\d{7}|0[2-9]\d{7})/g,
+    // פורמט עם +972 - כל הטלפונים
+    /(\+972[-\s]?[2-9]\d{1}[-\s]?\d{7}|\+972[-\s]?[2-9]\d{8})/g,
     // פורמט עם 972 בלי +
-    /(972[-\s]?5\d{1}[-\s]?\d{7}|972[-\s]?5\d{8})/g,
-    // טלפון נייד בפורמט אחר
-    /(0\d{2}[-\s]?\d{7})/g
+    /(972[-\s]?[2-9]\d{1}[-\s]?\d{7}|972[-\s]?[2-9]\d{8})/g
   ];
 
-  // חיפוש טלפון נייד
+  // חיפוש כל הטלפונים
   for (const pattern of phonePatterns) {
     const matches = upperThird.match(pattern);
     if (matches) {
       for (const match of matches) {
         const normalized = normalizeIsraeliPhone(match);
-        // בדיקה שזה טלפון נייד ישראלי (מתחיל ב-05)
+        
+        // טלפון נייד ישראלי (מתחיל ב-05)
         if (normalized.startsWith('05') && normalized.length === 10) {
           if (!result.mobile) {
             result.mobile = normalized;
-            console.log(`📱 מצא נייד: ${normalized}`);
+            console.log(`📱 מצא נייד: ${normalized} (מקור: ${match})`);
           } else if (result.mobile !== normalized && !result.phone) {
             result.phone = normalized;
-            console.log(`📞 מצא טלפון נוסף: ${normalized}`);
+            console.log(`📞 מצא נייד נוסף כטלפון: ${normalized} (מקור: ${match})`);
           } else if (result.mobile !== normalized && result.phone !== normalized && !result.phone2) {
             result.phone2 = normalized;
-            console.log(`📞 מצא טלפון שני: ${normalized}`);
+            console.log(`📞 מצא נייד שני: ${normalized} (מקור: ${match})`);
           }
         }
-        // טלפונים רגילים (03, 04, 08, 09)
-        else if (normalized.match(/^0[3489]\d{7}$/) && !result.phone) {
-          result.phone = normalized;
-          console.log(`☎️ מצא טלפון קווי: ${normalized}`);
+        // טלפונים קוויים (02, 03, 04, 08, 09)
+        else if (normalized.match(/^0[2-9]\d{7,8}$/) && normalized.length >= 9) {
+          if (!result.phone) {
+            result.phone = normalized;
+            console.log(`☎️ מצא טלפון קווי: ${normalized} (מקור: ${match})`);
+          } else if (result.phone !== normalized && !result.phone2) {
+            result.phone2 = normalized;
+            console.log(`☎️ מצא טלפון קווי נוסף: ${normalized} (מקור: ${match})`);
+          }
         }
       }
     }
