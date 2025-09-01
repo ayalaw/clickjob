@@ -100,7 +100,7 @@ export default function EmailSettings() {
     console.log('🔍 שולח בדיקה עם נתונים:', { incoming: incomingConfig, outgoing: outgoingConfig });
     
     try {
-      const response = await fetch('/api/email/test-separated-fixed', {
+      const response = await fetch('/api/email/test-separated', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
