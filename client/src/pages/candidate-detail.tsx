@@ -435,6 +435,7 @@ export default function CandidateDetail() {
 
       // Create job applications for all selected jobs
       for (const jobId of selectedInterviewJobIds) {
+        console.log(`🚀 מתחיל הוספה למשרה ${jobId}...`);
         try {
           const result = await apiRequest('POST', '/api/job-applications', {
             candidateId: candidate.id,
@@ -442,8 +443,11 @@ export default function CandidateDetail() {
             status: 'interview_scheduled'
           });
           
+          console.log(`📋 תגובה מהשרת למשרה ${jobId}:`, result);
+          
           // בדיקה אם זו מועמדות קיימת שהתעדכנה
           if (result.alreadyExisted) {
+            console.log(`⚠️ זוהתה מועמדות קיימת למשרה ${jobId}`);
             const appliedDate = new Date(result.originalAppliedAt).toLocaleDateString('he-IL', {
               year: 'numeric',
               month: 'long',
@@ -463,24 +467,19 @@ export default function CandidateDetail() {
           console.log(`✅ הוסף למשרה ${jobId} בהצלחה`);
         } catch (appError: any) {
           console.error(`❌ שגיאה בהוספה למשרה ${jobId}:`, appError);
+          console.log(`📋 פרטי השגיאה:`, { status: appError.status, message: appError.message, data: appError });
           
           // טיפול במועמדות כפולה
-          if (appError.status === 409 && appError.existingApplication) {
-            const appliedDate = new Date(appError.existingApplication.appliedAt).toLocaleDateString('he-IL', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
+          if (appError.status === 409) {
+            console.log(`⚠️ זוהתה שגיאת כפילות למשרה ${jobId}`);
             
+            // בכל מקרה של כפילות, נחשיב את זה הצלחה
             toast({
-              title: "⚠️ מועמד כבר נמצא בראיון",
-              description: `המועמד כבר נמצא בראיונות למשרה זו מתאריך ${appliedDate}`,
+              title: "⚠️ מועמד כבר נמצא בראיון", 
+              description: `המועמד כבר נמצא בראיונות למשרה זו`,
               variant: "destructive",
             });
             
-            // עדיין נחשיב את זה הצלחה כי המועמד כבר בראיון
             successfulJobs.push(jobId);
           } else {
             errors.push(`משרה ${jobId}: ${appError.message || 'שגיאה לא ידועה'}`);
