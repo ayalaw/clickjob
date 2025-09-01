@@ -364,7 +364,7 @@ export default function Interviews() {
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    {selectedJobDetails.status} - {selectedJobDetails.jobTitle}
+                    {getStatusText(selectedJobDetails.status)} - {selectedJobDetails.jobTitle}
                   </div>
                   <button 
                     onClick={() => setSelectedJobDetails(null)}
@@ -426,7 +426,7 @@ export default function Interviews() {
                                  candidate.status === 'submitted' ? 'ממתין לסקירה' :
                                  candidate.status === 'interview' ? 'נשלח למעסיק' :
                                  candidate.status === 'rejected' ? 'נפסל' :
-                                 candidate.status}
+                                 getStatusText(candidate.status || '')}
                               </span>
                             </TableCell>
                             <TableCell className="px-4 py-4 text-center">

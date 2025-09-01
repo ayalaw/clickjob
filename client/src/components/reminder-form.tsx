@@ -79,7 +79,7 @@ export function ReminderForm({ candidateId, jobId, clientId, onSuccess }: Remind
       case 'low': return 'נמוכה';
       case 'medium': return 'בינונית';
       case 'high': return 'גבוהה';
-      default: return priority;
+      default: return priority || 'לא הוגדר';
     }
   };
 

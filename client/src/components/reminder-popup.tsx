@@ -92,7 +92,7 @@ export function ReminderPopup() {
       case 'high': return 'גבוהה';
       case 'medium': return 'בינונית';
       case 'low': return 'נמוכה';
-      default: return priority;
+      default: return priority || 'לא הוגדר';
     }
   };
 

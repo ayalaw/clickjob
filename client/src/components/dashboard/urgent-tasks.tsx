@@ -72,7 +72,7 @@ export default function UrgentTasks() {
       case 'high': return 'דחוף';
       case 'medium': return 'בינוני';
       case 'low': return 'נמוך';
-      default: return priority;
+      default: return priority || 'לא הוגדר';
     }
   };
 
