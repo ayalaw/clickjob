@@ -47,7 +47,7 @@ async function loadEmailConfig() {
           return;
         } catch (verifyError) {
           console.error("❌ שגיאה באימות הגדרות SMTP:", verifyError);
-          console.log("🔄 ניסיון fallback ל-Gmail...");
+          console.log("🔄 ינסה הגדרות cPanel חלופיות...");
           transporter = null;
         }
       } catch (transportError) {
@@ -57,21 +57,46 @@ async function loadEmailConfig() {
       console.warn("❌ הגדרות cPanel לא תקינות - יש להגדיר סיסמה תקינה בהגדרות המערכת");
     }
 
-    // Fallback to environment variables if available
-    if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-      try {
-        transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_PASS,
-          },
-        });
-        console.log("📧 Email configured with Gmail fallback from environment");
-        emailConfigLoaded = true;
-        return;
-      } catch (gmailError) {
-        console.warn("❌ שגיאה בהגדרת Gmail fallback:", gmailError);
+    // Try alternative cPanel configurations if main config failed
+    if (smtpHost?.value && emailUser?.value && emailPass?.value) {
+      console.log("🔄 מנסה הגדרות cPanel חלופיות...");
+      
+      // Try different port and security combinations
+      const alternativeConfigs = [
+        { port: 587, secure: false, description: "Port 587 without SSL" },
+        { port: 25, secure: false, description: "Port 25 standard" },
+        { port: 2525, secure: false, description: "Port 2525 alternative" },
+        { port: 465, secure: true, description: "Port 465 with SSL" }
+      ];
+      
+      for (const config of alternativeConfigs) {
+        try {
+          console.log(`🔧 מנסה ${config.description}...`);
+          const altTransporter = nodemailer.createTransport({
+            host: smtpHost.value,
+            port: config.port,
+            secure: config.secure,
+            auth: {
+              user: emailUser.value,
+              pass: emailPass.value,
+            },
+            tls: {
+              rejectUnauthorized: false,
+              ciphers: 'SSLv3'
+            },
+            connectionTimeout: 5000,
+            greetingTimeout: 3000,
+            socketTimeout: 5000
+          });
+          
+          await altTransporter.verify();
+          transporter = altTransporter;
+          console.log(`✅ הצלחה עם ${config.description}!`);
+          emailConfigLoaded = true;
+          return;
+        } catch (altError) {
+          console.log(`❌ ${config.description} לא עובד:`, altError.message);
+        }
       }
     }
 
