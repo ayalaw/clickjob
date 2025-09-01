@@ -1855,10 +1855,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </div>
       `;
       
+      // Prepare attachments if CV exists
+      const attachments = [];
+      if (candidate.cvFile) {
+        const cvPath = path.join('uploads', candidate.cvFile);
+        if (fs.existsSync(cvPath)) {
+          attachments.push({
+            filename: `קורות_חיים_${candidate.firstName}_${candidate.lastName}.pdf`,
+            path: cvPath
+          });
+        }
+      }
+
       const emailData = {
         to: recipientEmail,
         subject: `המלצה על מועמד: ${candidate.firstName} ${candidate.lastName} - ${job.title}`,
         html: emailContent,
+        attachments: attachments
       };
 
       const result = await sendEmail(emailData);

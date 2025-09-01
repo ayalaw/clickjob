@@ -392,12 +392,6 @@ export default function CandidateDetail() {
           }
         });
 
-        // Send email to employer
-        await apiRequest('POST', '/api/job-referrals', {
-          candidateId: id,
-          jobId: jobId,
-          recommendation: recommendation
-        });
       }
 
       if (showEvents) {
@@ -705,15 +699,6 @@ export default function CandidateDetail() {
             </Button>
             
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setEmailDialogOpen(true)}
-                className="flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
-                data-testid="button-send-to-employer"
-              >
-                <Mail className="w-4 h-4" />
-                שלח למעסיק
-              </Button>
               
               <Button 
                 variant="outline" 
