@@ -2033,8 +2033,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test separated email connections
-  app.post('/api/email/test-separated', isAuthenticated, async (req: any, res) => {
+  app.post('/api/email/test-separated', async (req: any, res) => {
     console.log('🌐 התקבלה בקשה לבדיקת חיבור נפרד');
+    
+    // Check authentication manually
+    if (!req.user) {
+      console.log('❌ משתמש לא מחובר לבדיקת חיבור');
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    console.log('✅ משתמש מחובר:', req.user.email);
     try {
       const { incoming, outgoing } = req.body;
       console.log('🔍 בדיקת חיבור - נתונים שהתקבלו:');
