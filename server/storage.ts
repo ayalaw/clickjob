@@ -55,7 +55,7 @@ import {
   type InsertRolePermission,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, ilike, sql, count, or } from "drizzle-orm";
+import { eq, and, desc, asc, like, ilike, sql, count, or, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -366,7 +366,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCandidate(candidate: InsertCandidate): Promise<Candidate> {
-    const [newCandidate] = await db.insert(candidates).values(candidate).returning();
+    // Get the next candidate number
+    const lastCandidate = await db
+      .select({ candidateNumber: candidates.candidateNumber })
+      .from(candidates)
+      .where(isNotNull(candidates.candidateNumber))
+      .orderBy(desc(candidates.candidateNumber))
+      .limit(1);
+    
+    const nextNumber = lastCandidate.length > 0 ? (lastCandidate[0].candidateNumber || 99) + 1 : 100;
+    
+    const candidateWithNumber = {
+      ...candidate,
+      candidateNumber: nextNumber
+    };
+    
+    const [newCandidate] = await db.insert(candidates).values(candidateWithNumber).returning();
     return newCandidate;
   }
 

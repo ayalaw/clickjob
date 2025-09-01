@@ -317,8 +317,8 @@ export default function Candidates() {
                             ) : "-"}
                           </TableCell>
                           <TableCell>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {candidate.id.slice(0, 8)}
+                            <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                              {candidate.candidateNumber || "-"}
                             </span>
                           </TableCell>
                           <TableCell data-testid={`text-candidate-email-${candidate.id}`}>

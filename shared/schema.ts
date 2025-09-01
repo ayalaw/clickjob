@@ -105,6 +105,7 @@ export const systemSettings = pgTable("system_settings", {
 // Candidates table
 export const candidates = pgTable("candidates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  candidateNumber: integer("candidate_number").unique(),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   email: varchar("email").unique().notNull(),
