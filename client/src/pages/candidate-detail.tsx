@@ -453,6 +453,10 @@ export default function CandidateDetail() {
       await queryClient.invalidateQueries({ queryKey: ['/api/candidates', candidate.id, 'events'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/job-applications'] });
       
+      // סגירת הדיאלוג מיד
+      setInterviewDialogOpen(false);
+      setSelectedInterviewJobIds([]);
+      
       // הודעות מפורטות על התוצאות
       if (successfulJobs.length > 0 && errors.length === 0) {
         toast({
@@ -460,10 +464,9 @@ export default function CandidateDetail() {
           description: `המועמד נוסף לראיון ב-${successfulJobs.length} משרות בהצלחה`,
         });
         
-        // ניווט אוטומטי לעמוד הראיונות
-        setTimeout(() => {
-          navigate("/interviews");
-        }, 1000); // חכה שניה אחת כדי שהמשתמש יראה את ההודעה
+        // ניווט מיידי לעמוד הראיונות
+        console.log("🔄 עובר לעמוד הראיונות...");
+        navigate("/interviews");
         
       } else if (successfulJobs.length > 0 && errors.length > 0) {
         toast({
@@ -472,9 +475,8 @@ export default function CandidateDetail() {
         });
         
         // ניווט גם במקרה של הצלחה חלקית
-        setTimeout(() => {
-          navigate("/interviews");
-        }, 1500);
+        console.log("🔄 עובר לעמוד הראיונות (הצלחה חלקית)...");
+        navigate("/interviews");
         
       } else {
         toast({
@@ -483,9 +485,6 @@ export default function CandidateDetail() {
           variant: "destructive",
         });
       }
-      
-      setInterviewDialogOpen(false);
-      setSelectedInterviewJobIds([]);
     } catch (error: any) {
       console.error('Error adding to interview:', error);
       toast({
