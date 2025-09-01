@@ -98,11 +98,12 @@ export async function testCpanelImap(): Promise<boolean> {
       host: imapHost?.value || 'mail.h-group.org.il',
       port: parseInt(imapPort?.value || '993'),
       tls: imapSecure?.value === 'true',
-      authTimeout: 60000,
-      connTimeout: 60000,
+      authTimeout: 30000,
+      connTimeout: 30000,
+      socketTimeout: 30000,
       tlsOptions: { 
         rejectUnauthorized: false,
-        servername: imapHost?.value || 'mail.h-group.org.il'
+        ciphers: 'ALL'
       }
     };
 
@@ -226,10 +227,7 @@ export async function checkCpanelEmails(): Promise<void> {
         forceNoop: true
       },
       tlsOptions: { 
-        rejectUnauthorized: false,
-        servername: imapHost?.value || 'mail.h-group.org.il',
-        minVersion: 'TLSv1',
-        maxVersion: 'TLSv1.3'
+        rejectUnauthorized: false
       }
     };
 
@@ -532,16 +530,8 @@ export async function reloadCpanelConfig() {
           tls: imapSecure?.value === 'true',
           authTimeout: 60000,
           connTimeout: 60000,
-          keepalive: {
-            interval: 10000,
-            idleInterval: 300000,
-            forceNoop: true
-          },
           tlsOptions: { 
-            rejectUnauthorized: false,
-            servername: imapHost.value,
-            minVersion: 'TLSv1',
-            maxVersion: 'TLSv1.3'
+            rejectUnauthorized: false
           }
         }
       };
@@ -634,32 +624,43 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                     phone: '',
                     status: 'פעיל' as const,
                     source: 'מייל',
-                    notes: `נוצר אוטומטית מהמייל: ${parsed.subject || subject}`,
+                    notes: `נוצר אוטומטית מהמייל: ${parsed.subject || 'ללא נושא'}`,
                     cvPath: savedPath
                   };
                   
                   // Check if candidate already exists
                   const existingCandidates = await storage.getCandidates();
-                  const candidateExists = existingCandidates.some(c => c.email === emailAddress);
+                  const candidateExists = existingCandidates.candidates.some((c: any) => c.email === emailAddress);
                   
                   if (!candidateExists) {
                     // Create new candidate
-                    const newCandidate = await storage.createCandidate(candidateData);
-                    console.log(`👤 נוצר מועמד חדש: ${newCandidate.name} (${newCandidate.email})`);
+                    const newCandidate = await storage.createCandidate({
+        firstName: candidateData.name.split(' ')[0] || candidateData.name,
+        lastName: candidateData.name.split(' ').slice(1).join(' ') || '',
+        email: candidateData.email,
+        city: 'לא צוין',
+        mobile: candidateData.phone,
+        profession: 'ממתין לעיבוד קורות חיים',
+        status: 'פעיל',
+        recruitmentSource: candidateData.source,
+        notes: candidateData.notes,
+        cvPath: candidateData.cvPath
+      });
+                    console.log(`👤 נוצר מועמד חדש: ${newCandidate.firstName} ${newCandidate.lastName} (${newCandidate.email})`);
                     
                     // Check if there's a job code in the subject for automatic application
                     const jobCodeMatch = parsed.subject?.match(/(\d{4,})/);
                     if (jobCodeMatch) {
                       const jobCode = jobCodeMatch[1];
                       const jobs = await storage.getJobs();
-                      const matchingJob = jobs.find(j => j.id === jobCode || j.title.includes(jobCode));
+                      const matchingJob = jobs.jobs.find((j: any) => j.id === jobCode || j.title.includes(jobCode));
                       
                       if (matchingJob) {
                         // Create automatic job application
                         await storage.createJobApplication({
                           candidateId: newCandidate.id,
                           jobId: matchingJob.id,
-                          status: 'חדש',
+                          status: 'submitted',
                           notes: `הגיש מועמדות אוטומטית באמצעות מייל לקוד משרה: ${jobCode}`
                         });
                         console.log(`🎯 נוצרה הגשת מועמדות אוטומטית למשרה: ${matchingJob.title}`);
