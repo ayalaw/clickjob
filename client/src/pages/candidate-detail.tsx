@@ -445,14 +445,7 @@ export default function CandidateDetail() {
           console.log(`✅ הוסף למשרה ${jobId} בהצלחה`);
         } catch (appError: any) {
           console.error(`❌ שגיאה בהוספה למשרה ${jobId}:`, appError);
-          
-          // If application already exists, count as success
-          if (appError?.message?.includes('כבר הגיש') || appError?.message?.includes('already exists')) {
-            successfulJobs.push(jobId);
-            console.log(`ℹ️ מועמדות למשרה ${jobId} כבר קיימת - עדכון סטטוס בלבד`);
-          } else {
-            errors.push(`משרה ${jobId}: ${appError.message || 'שגיאה לא ידועה'}`);
-          }
+          errors.push(`משרה ${jobId}: ${appError.message || 'שגיאה לא ידועה'}`);
         }
       }
 

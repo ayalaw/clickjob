@@ -853,6 +853,23 @@ export class DatabaseStorage implements IStorage {
 
     if (existing.length > 0) {
       console.log(`⚠️ מועמדות כפולה זוהתה: מועמד ${application.candidateId} כבר הגיש למשרה ${application.jobId}`);
+      
+      // אם המועמדות קיימת ומבקשים להוסיף לראיון, נעדכן את הסטטוס
+      if (application.status === 'interview_scheduled') {
+        console.log(`🔄 מעדכן מועמדות קיימת לסטטוס ראיון`);
+        const [updatedApplication] = await db
+          .update(jobApplications)
+          .set({ 
+            status: 'interview_scheduled',
+            updatedAt: new Date()
+          })
+          .where(eq(jobApplications.id, existing[0].id))
+          .returning();
+        
+        console.log(`✅ סטטוס מועמדות עודכן לראיון: מועמד ${application.candidateId} למשרה ${application.jobId}`);
+        return updatedApplication;
+      }
+      
       throw new Error('המועמד כבר הגיש מועמדות למשרה זו');
     }
 

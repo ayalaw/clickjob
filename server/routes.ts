@@ -1453,12 +1453,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const applicationData = insertJobApplicationSchema.parse(req.body);
       const application = await storage.createJobApplication(applicationData);
       
-      // Add event for job application creation
+      // Add event for job application creation or update
       if (applicationData.candidateId) {
+        const eventDescription = applicationData.status === 'interview_scheduled' 
+          ? `זומן לראיון למשרה`
+          : `הופנה למשרה חדשה`;
+          
         await storage.addCandidateEvent({
           candidateId: applicationData.candidateId,
-          eventType: 'job_application',
-          description: `הופנה למשרה חדשה`,
+          eventType: applicationData.status === 'interview_scheduled' ? 'interview_scheduled' : 'job_application',
+          description: eventDescription,
           metadata: {
             jobId: applicationData.jobId,
             status: applicationData.status || 'submitted',
@@ -1467,8 +1471,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
         
-        // Update candidate status automatically when applying to a job
-        await storage.updateCandidate(applicationData.candidateId, { status: 'sent_to_employer' });
+        // Update candidate status automatically based on application status
+        if (applicationData.status === 'interview_scheduled') {
+          await storage.updateCandidate(applicationData.candidateId, { status: 'invited_to_interview' });
+        } else {
+          await storage.updateCandidate(applicationData.candidateId, { status: 'sent_to_employer' });
+        }
       }
       
       res.status(201).json(application);
