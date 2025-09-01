@@ -1,5 +1,10 @@
 import Imap from 'imap';
 import nodemailer from 'nodemailer';
+import { storage } from './storage';
+import { insertCandidateSchema } from '../shared/schema';
+import fs from 'fs';
+import path from 'path';
+import { simpleParser } from 'mailparser';
 
 // cPanel Email Configuration - Multiple attempts for different cPanel setups
 const CPANEL_CONFIGS = [
@@ -244,7 +249,7 @@ export async function checkCpanelEmails(): Promise<void> {
                 });
               });
 
-              msg.once('end', () => {
+              msg.once('end', async () => {
                 processedCount++;
                 console.log(`✅ מייל ${seqno} עובד (${processedCount}/${totalEmails})`);
                 
@@ -257,7 +262,13 @@ export async function checkCpanelEmails(): Promise<void> {
                   const subject = headers.subject[0].toLowerCase();
                   if (subject.includes('cv') || subject.includes('קורות') || subject.includes('resume')) {
                     console.log('🎯 נמצא מייל עם קורות חיים!');
-                    // TODO: Process CV attachment here
+                    
+                    // Process CV attachment
+                    try {
+                      await processCVEmailAttachment(imap, seqno, headers, body);
+                    } catch (cvError) {
+                      console.error('❌ שגיאה בעיבוד קובץ CV:', cvError);
+                    }
                   }
                 }
 
@@ -440,4 +451,142 @@ export async function reloadCpanelConfig() {
     console.error('❌ שגיאה ברענון הגדרות cPanel:', error);
     return false;
   }
+}
+
+// Process CV attachment from email
+async function processCVEmailAttachment(imap: any, seqno: number, headers: any, body: string): Promise<void> {
+  console.log('🔍 מעבד קובץ CV מהמייל...');
+  
+  try {
+    // Get the full email message with attachments
+    const f = imap.fetch(seqno, { 
+      bodies: '',
+      struct: true,
+      envelope: true
+    });
+
+    f.on('message', (msg: any) => {
+      msg.on('body', (stream: any) => {
+        let fullEmail = '';
+        
+        stream.on('data', (chunk: any) => {
+          fullEmail += chunk.toString();
+        });
+        
+        stream.once('end', async () => {
+          try {
+            // Parse the full email with mailparser to extract attachments
+            const parsed = await simpleParser(fullEmail);
+            
+            // Look for CV attachments
+            if (parsed.attachments && parsed.attachments.length > 0) {
+              console.log(`📎 נמצאו ${parsed.attachments.length} קבצים מצורפים`);
+              
+              for (const attachment of parsed.attachments) {
+                const filename = attachment.filename || '';
+                const isCV = filename.toLowerCase().includes('cv') || 
+                            filename.toLowerCase().includes('resume') ||
+                            filename.toLowerCase().includes('קורות') ||
+                            filename.endsWith('.pdf') ||
+                            filename.endsWith('.doc') ||
+                            filename.endsWith('.docx');
+                
+                if (isCV && attachment.content) {
+                  console.log(`💼 מעבד קובץ CV: ${filename}`);
+                  
+                  // Save the CV file
+                  const uploadsDir = path.join(process.cwd(), 'uploads');
+                  if (!fs.existsSync(uploadsDir)) {
+                    fs.mkdirSync(uploadsDir, { recursive: true });
+                  }
+                  
+                  const timestamp = Date.now();
+                  const cleanFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+                  const savedPath = path.join(uploadsDir, `${timestamp}_${cleanFilename}`);
+                  
+                  // Write the file
+                  fs.writeFileSync(savedPath, attachment.content);
+                  console.log(`💾 קובץ CV נשמר: ${savedPath}`);
+                  
+                  // Extract email address from sender
+                  const fromEmail = headers.from[0];
+                  let emailAddress = '';
+                  const emailMatch = fromEmail.match(/<([^>]+)>/);
+                  if (emailMatch) {
+                    emailAddress = emailMatch[1];
+                  } else {
+                    emailAddress = fromEmail;
+                  }
+                  
+                  // Create candidate record
+                  const candidateData = {
+                    email: emailAddress,
+                    name: extractNameFromEmail(emailAddress),
+                    phone: '',
+                    status: 'פעיל' as const,
+                    source: 'מייל',
+                    notes: `נוצר אוטומטית מהמייל: ${parsed.subject || subject}`,
+                    cvPath: savedPath
+                  };
+                  
+                  // Check if candidate already exists
+                  const existingCandidates = await storage.getCandidates();
+                  const candidateExists = existingCandidates.some(c => c.email === emailAddress);
+                  
+                  if (!candidateExists) {
+                    // Create new candidate
+                    const newCandidate = await storage.createCandidate(candidateData);
+                    console.log(`👤 נוצר מועמד חדש: ${newCandidate.name} (${newCandidate.email})`);
+                    
+                    // Check if there's a job code in the subject for automatic application
+                    const jobCodeMatch = parsed.subject?.match(/(\d{4,})/);
+                    if (jobCodeMatch) {
+                      const jobCode = jobCodeMatch[1];
+                      const jobs = await storage.getJobs();
+                      const matchingJob = jobs.find(j => j.id === jobCode || j.title.includes(jobCode));
+                      
+                      if (matchingJob) {
+                        // Create automatic job application
+                        await storage.createJobApplication({
+                          candidateId: newCandidate.id,
+                          jobId: matchingJob.id,
+                          status: 'חדש',
+                          notes: `הגיש מועמדות אוטומטית באמצעות מייל לקוד משרה: ${jobCode}`
+                        });
+                        console.log(`🎯 נוצרה הגשת מועמדות אוטומטית למשרה: ${matchingJob.title}`);
+                      }
+                    }
+                  } else {
+                    console.log(`ℹ️ מועמד כבר קיים במערכת: ${emailAddress}`);
+                  }
+                }
+              }
+            } else {
+              console.log('📧 המייל לא מכיל קבצים מצורפים');
+            }
+          } catch (parseError) {
+            console.error('❌ שגיאה בפענוח המייל:', parseError);
+          }
+        });
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ שגיאה בעיבוד קובץ CV מהמייל:', error);
+  }
+}
+
+// Extract name from email address
+function extractNameFromEmail(email: string): string {
+  const localPart = email.split('@')[0];
+  
+  // Replace common separators with spaces
+  let name = localPart.replace(/[._-]/g, ' ');
+  
+  // Capitalize first letter of each word
+  name = name.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  return name || 'מועמד חדש';
 }

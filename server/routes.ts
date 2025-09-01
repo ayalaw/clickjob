@@ -26,7 +26,7 @@ import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
 import { generateSecurePassword } from './passwordUtils';
-// import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService'; // Will restore this
+import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email';
 import nodemailer from 'nodemailer';
 
 // Configure multer for file uploads
@@ -1938,7 +1938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Manual check for incoming emails route
   app.post('/api/emails/check-incoming', isAuthenticated, async (req: any, res) => {
     try {
-      await checkEmailsSimple();
+      await checkCpanelEmails();
       res.json({ success: true, message: "בדיקת מיילים נכנסים הושלמה" });
     } catch (error) {
       console.error("Error checking incoming emails:", error);
@@ -2767,9 +2767,7 @@ ${recommendation}
 
   // Start automatic email monitoring 
   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-  startSimpleEmailMonitoring().catch(err => {
-    console.error('שגיאה בהפעלת מעקב מיילים:', err);
-  });
+  startCpanelEmailMonitoring();
 
   // RBAC Routes - Role & Permission Management
   
