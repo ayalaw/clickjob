@@ -11,33 +11,42 @@ export default function EmailSettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   
-  const [emailConfig, setEmailConfig] = useState({
-    smtpHost: '',
-    smtpPort: '587',
-    smtpSecure: false,
-    emailUser: '',
-    emailPass: '',
-    imapHost: '',
-    imapPort: '993',
-    imapSecure: true
+  const [incomingConfig, setIncomingConfig] = useState({
+    host: '',
+    port: '143',
+    secure: false,
+    user: '',
+    pass: ''
+  });
+
+  const [outgoingConfig, setOutgoingConfig] = useState({
+    host: '',
+    port: '587',
+    secure: false,
+    user: '',
+    pass: ''
   });
 
   // טעינת הגדרות קיימות
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await fetch('/api/system-settings/email');
+        const response = await fetch('/api/system-settings/email-separated');
         if (response.ok) {
           const settings = await response.json();
-          setEmailConfig({
-            smtpHost: settings.smtpHost || '',
-            smtpPort: settings.smtpPort || '587',
-            smtpSecure: settings.smtpSecure === 'true',
-            emailUser: settings.emailUser || '',
-            emailPass: settings.emailPass || '',
-            imapHost: settings.imapHost || '',
-            imapPort: settings.imapPort || '993',
-            imapSecure: settings.imapSecure === 'true'
+          setIncomingConfig({
+            host: settings.incomingHost || '',
+            port: settings.incomingPort || '143',
+            secure: settings.incomingSecure === 'true',
+            user: settings.incomingUser || '',
+            pass: settings.incomingPass || ''
+          });
+          setOutgoingConfig({
+            host: settings.outgoingHost || '',
+            port: settings.outgoingPort || '587',
+            secure: settings.outgoingSecure === 'true',
+            user: settings.outgoingUser || '',
+            pass: settings.outgoingPass || ''
           });
         }
       } catch (error) {
@@ -53,19 +62,22 @@ export default function EmailSettings() {
     setConnectionStatus('testing');
 
     try {
-      const response = await fetch('/api/email/configure', {
+      const response = await fetch('/api/email/configure-separated', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(emailConfig),
+        body: JSON.stringify({
+          incoming: incomingConfig,
+          outgoing: outgoingConfig
+        }),
       });
 
       if (response.ok) {
         setConnectionStatus('success');
         toast({
           title: "הגדרות מייל נשמרו",
-          description: "ההגדרות נשמרו בהצלחה והחיבור נבדק",
+          description: "הגדרות תיבות הדואר הנכנס והיוצא נשמרו בהצלחה",
         });
       } else {
         throw new Error('Failed to save settings');
@@ -86,19 +98,22 @@ export default function EmailSettings() {
     setConnectionStatus('testing');
     
     try {
-      const response = await fetch('/api/email/test', {
+      const response = await fetch('/api/email/test-separated', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(emailConfig),
+        body: JSON.stringify({
+          incoming: incomingConfig,
+          outgoing: outgoingConfig
+        }),
       });
 
       if (response.ok) {
         setConnectionStatus('success');
         toast({
-          title: "החיבור תקין",
-          description: "החיבור לשרת המייל פועל כראוי",
+          title: "החיבורים תקינים",
+          description: "החיבור לתיבות הדואר הנכנס והיוצא פועל כראוי",
         });
       } else {
         throw new Error('Connection test failed');
@@ -107,7 +122,7 @@ export default function EmailSettings() {
       setConnectionStatus('error');
       toast({
         title: "בעיית חיבור",
-        description: "לא ניתן להתחבר לשרת המייל",
+        description: "לא ניתן להתחבר לאחת מתיבות הדואר",
         variant: "destructive",
       });
     }
@@ -137,18 +152,17 @@ export default function EmailSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="w-5 h-5" />
-                  חיבור לתיבת דואר cPanel
+                  הגדרות תיבות דואר נפרדות
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4 text-sm text-gray-600">
-                  <p>להגדרת חיבור לתיבת הדואר שלך ב-cPanel, תזדקק לפרטים הבאים:</p>
+                  <p>המערכת תומכת בהפרדה בין תיבת דואר נכנס ותיבת דואר יוצא:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>כתובת שרת SMTP (לדוגמה: mail.yourdomain.com)</li>
-                    <li>פורט SMTP (בדרך כלל 587 או 465)</li>
-                    <li>כתובת שרת IMAP (לדוגמה: mail.yourdomain.com)</li>
-                    <li>פורט IMAP (בדרך כלל 993)</li>
-                    <li>כתובת המייל המלאה וסיסמה</li>
+                    <li><strong>תיבת דואר נכנס:</strong> רק לקבלת מיילים ועיבוד קורות חיים</li>
+                    <li><strong>תיבת דואר יוצא:</strong> לשליחת מיילים עם חתימת המשתמש</li>
+                    <li>ניתן להגדיר כתובות שרת שונות עבור כל תיבה</li>
+                    <li>כל תיבה יכולה לעבוד עם פורטים והגדרות אבטחה שונות</li>
                   </ul>
                 </div>
               </CardContent>
@@ -164,90 +178,113 @@ export default function EmailSettings() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   
-                  {/* SMTP Settings */}
-                  <div className="space-y-4">
-                    <h3 className="font-medium text-lg">הגדרות שליחה (SMTP)</h3>
+                  {/* Incoming Email Settings */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+                    <h3 className="font-medium text-lg text-blue-900">📥 תיבת דואר נכנס (IMAP)</h3>
+                    <p className="text-sm text-blue-700">לקבלת מיילים ועיבוד קורות חיים אוטומטי</p>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="smtpHost">שרת SMTP</Label>
+                        <Label htmlFor="incomingHost">שרת IMAP</Label>
                         <Input
-                          id="smtpHost"
+                          id="incomingHost"
                           type="text"
-                          placeholder="mail.yourdomain.com"
-                          value={emailConfig.smtpHost}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpHost: e.target.value }))}
+                          placeholder="mail.h-group.org.il"
+                          value={incomingConfig.host}
+                          onChange={(e) => setIncomingConfig(prev => ({ ...prev, host: e.target.value }))}
                           required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="smtpPort">פורט SMTP</Label>
+                        <Label htmlFor="incomingPort">פורט IMAP</Label>
                         <Input
-                          id="smtpPort"
+                          id="incomingPort"
                           type="number"
-                          value={emailConfig.smtpPort}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPort: e.target.value }))}
+                          value={incomingConfig.port}
+                          onChange={(e) => setIncomingConfig(prev => ({ ...prev, port: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="incomingUser">כתובת מייל נכנס</Label>
+                        <Input
+                          id="incomingUser"
+                          type="email"
+                          placeholder="incoming@h-group.org.il"
+                          value={incomingConfig.user}
+                          onChange={(e) => setIncomingConfig(prev => ({ ...prev, user: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="incomingPass">סיסמה</Label>
+                        <Input
+                          id="incomingPass"
+                          type="password"
+                          value={incomingConfig.pass}
+                          onChange={(e) => setIncomingConfig(prev => ({ ...prev, pass: e.target.value }))}
                           required
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* IMAP Settings */}
-                  <div className="space-y-4">
-                    <h3 className="font-medium text-lg">הגדרות קריאה (IMAP)</h3>
+                  {/* Outgoing Email Settings */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-green-50">
+                    <h3 className="font-medium text-lg text-green-900">📤 תיבת דואר יוצא (SMTP)</h3>
+                    <p className="text-sm text-green-700">לשליחת מיילים עם חתימת המשתמש</p>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="imapHost">שרת IMAP</Label>
+                        <Label htmlFor="outgoingHost">שרת SMTP</Label>
                         <Input
-                          id="imapHost"
+                          id="outgoingHost"
                           type="text"
-                          placeholder="mail.yourdomain.com"
-                          value={emailConfig.imapHost}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, imapHost: e.target.value }))}
+                          placeholder="mail.h-group.org.il"
+                          value={outgoingConfig.host}
+                          onChange={(e) => setOutgoingConfig(prev => ({ ...prev, host: e.target.value }))}
                           required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="imapPort">פורט IMAP</Label>
+                        <Label htmlFor="outgoingPort">פורט SMTP</Label>
                         <Input
-                          id="imapPort"
+                          id="outgoingPort"
                           type="number"
-                          value={emailConfig.imapPort}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, imapPort: e.target.value }))}
+                          value={outgoingConfig.port}
+                          onChange={(e) => setOutgoingConfig(prev => ({ ...prev, port: e.target.value }))}
                           required
                         />
                       </div>
                     </div>
-                  </div>
-
-                  {/* Authentication */}
-                  <div className="space-y-4">
-                    <h3 className="font-medium text-lg">פרטי זיהוי</h3>
                     
-                    <div>
-                      <Label htmlFor="emailUser">כתובת מייל</Label>
-                      <Input
-                        id="emailUser"
-                        type="email"
-                        placeholder="your-email@yourdomain.com"
-                        value={emailConfig.emailUser}
-                        onChange={(e) => setEmailConfig(prev => ({ ...prev, emailUser: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emailPass">סיסמה</Label>
-                      <Input
-                        id="emailPass"
-                        type="password"
-                        value={emailConfig.emailPass}
-                        onChange={(e) => setEmailConfig(prev => ({ ...prev, emailPass: e.target.value }))}
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="outgoingUser">כתובת מייל יוצא</Label>
+                        <Input
+                          id="outgoingUser"
+                          type="email"
+                          placeholder="outgoing@h-group.org.il"
+                          value={outgoingConfig.user}
+                          onChange={(e) => setOutgoingConfig(prev => ({ ...prev, user: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="outgoingPass">סיסמה</Label>
+                        <Input
+                          id="outgoingPass"
+                          type="password"
+                          value={outgoingConfig.pass}
+                          onChange={(e) => setOutgoingConfig(prev => ({ ...prev, pass: e.target.value }))}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 

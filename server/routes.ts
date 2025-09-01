@@ -1961,6 +1961,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get separated email settings (incoming/outgoing)
+  app.get('/api/system-settings/email-separated', isAuthenticated, async (req: any, res) => {
+    try {
+      const incomingHost = await storage.getSystemSetting('INCOMING_EMAIL_HOST');
+      const incomingPort = await storage.getSystemSetting('INCOMING_EMAIL_PORT');
+      const incomingSecure = await storage.getSystemSetting('INCOMING_EMAIL_SECURE');
+      const incomingUser = await storage.getSystemSetting('INCOMING_EMAIL_USER');
+      const incomingPass = await storage.getSystemSetting('INCOMING_EMAIL_PASS');
+      
+      const outgoingHost = await storage.getSystemSetting('OUTGOING_EMAIL_HOST');
+      const outgoingPort = await storage.getSystemSetting('OUTGOING_EMAIL_PORT');
+      const outgoingSecure = await storage.getSystemSetting('OUTGOING_EMAIL_SECURE');
+      const outgoingUser = await storage.getSystemSetting('OUTGOING_EMAIL_USER');
+      const outgoingPass = await storage.getSystemSetting('OUTGOING_EMAIL_PASS');
+
+      res.json({
+        incomingHost: incomingHost?.value || '',
+        incomingPort: incomingPort?.value || '143',
+        incomingSecure: incomingSecure?.value || 'false',
+        incomingUser: incomingUser?.value || '',
+        incomingPass: incomingPass?.value || '',
+        outgoingHost: outgoingHost?.value || '',
+        outgoingPort: outgoingPort?.value || '587',
+        outgoingSecure: outgoingSecure?.value || 'false',
+        outgoingUser: outgoingUser?.value || '',
+        outgoingPass: outgoingPass?.value || ''
+      });
+    } catch (error) {
+      console.error("Error getting separated email settings:", error);
+      res.status(500).json({ message: "Failed to get email settings" });
+    }
+  });
+
+  // Configure separated email settings
+  app.post('/api/email/configure-separated', isAuthenticated, async (req: any, res) => {
+    try {
+      const { incoming, outgoing } = req.body;
+      
+      // Store incoming email configuration
+      await storage.setSystemSetting('INCOMING_EMAIL_HOST', incoming.host, 'תיבת דואר נכנס - שרת');
+      await storage.setSystemSetting('INCOMING_EMAIL_PORT', incoming.port, 'תיבת דואר נכנס - פורט');
+      await storage.setSystemSetting('INCOMING_EMAIL_SECURE', incoming.secure.toString(), 'תיבת דואר נכנס - אבטחה');
+      await storage.setSystemSetting('INCOMING_EMAIL_USER', incoming.user, 'תיבת דואר נכנס - משתמש');
+      await storage.setSystemSetting('INCOMING_EMAIL_PASS', incoming.pass, 'תיבת דואר נכנס - סיסמה');
+      
+      // Store outgoing email configuration
+      await storage.setSystemSetting('OUTGOING_EMAIL_HOST', outgoing.host, 'תיבת דואר יוצא - שרת');
+      await storage.setSystemSetting('OUTGOING_EMAIL_PORT', outgoing.port, 'תיבת דואר יוצא - פורט');
+      await storage.setSystemSetting('OUTGOING_EMAIL_SECURE', outgoing.secure.toString(), 'תיבת דואר יוצא - אבטחה');
+      await storage.setSystemSetting('OUTGOING_EMAIL_USER', outgoing.user, 'תיבת דואר יוצא - משתמש');
+      await storage.setSystemSetting('OUTGOING_EMAIL_PASS', outgoing.pass, 'תיבת דואר יוצא - סיסמה');
+      
+      // Force reload email configuration
+      console.log('🔄 כפיית רענון הגדרות מייל נפרדות...');
+      try {
+        const { reloadEmailConfig } = require('./emailService');
+        const { reloadCpanelConfig } = require('./cpanel-email');
+        await reloadEmailConfig();
+        await reloadCpanelConfig();
+        console.log('✅ הגדרות מייל נפרדות נטענו מחדש');
+      } catch (reloadError) {
+        console.warn('⚠️ שגיאה ברענון הגדרות:', reloadError);
+      }
+      
+      res.json({ success: true, message: "הגדרות תיבות הדואר נשמרו בהצלחה" });
+    } catch (error) {
+      console.error("Error configuring separated email:", error);
+      res.status(500).json({ message: "Failed to configure email settings" });
+    }
+  });
+
+  // Test separated email connections
+  app.post('/api/email/test-separated', isAuthenticated, async (req: any, res) => {
+    try {
+      const { incoming, outgoing } = req.body;
+      const results = { incoming: false, outgoing: false, errors: [] };
+      
+      // Test outgoing (SMTP) connection
+      try {
+        const testTransporter = nodemailer.createTransporter({
+          host: outgoing.host,
+          port: parseInt(outgoing.port),
+          secure: outgoing.secure,
+          auth: {
+            user: outgoing.user,
+            pass: outgoing.pass,
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        
+        await testTransporter.verify();
+        results.outgoing = true;
+        console.log('✅ תיבת דואר יוצא עובדת');
+      } catch (outgoingError) {
+        results.errors.push(`תיבת דואר יוצא: ${outgoingError.message}`);
+        console.log('❌ תיבת דואר יוצא לא עובדת:', outgoingError.message);
+      }
+      
+      // Test incoming (IMAP) connection - simplified test
+      try {
+        const Imap = require('imap');
+        const imap = new Imap({
+          user: incoming.user,
+          password: incoming.pass,
+          host: incoming.host,
+          port: parseInt(incoming.port),
+          tls: incoming.secure,
+          tlsOptions: { rejectUnauthorized: false }
+        });
+        
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            imap.end();
+            reject(new Error('Connection timeout'));
+          }, 5000);
+          
+          imap.once('ready', () => {
+            clearTimeout(timeout);
+            imap.end();
+            resolve(true);
+          });
+          
+          imap.once('error', (err) => {
+            clearTimeout(timeout);
+            reject(err);
+          });
+          
+          imap.connect();
+        });
+        
+        results.incoming = true;
+        console.log('✅ תיבת דואר נכנס עובדת');
+      } catch (incomingError) {
+        results.errors.push(`תיבת דואר נכנס: ${incomingError.message}`);
+        console.log('❌ תיבת דואר נכנס לא עובדת:', incomingError.message);
+      }
+      
+      if (results.incoming && results.outgoing) {
+        res.json({ success: true, message: "כל החיבורים תקינים", results });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: "יש בעיות בחיבורים", 
+          results,
+          errors: results.errors 
+        });
+      }
+    } catch (error) {
+      console.error("Error testing separated email connections:", error);
+      res.status(500).json({ message: "בדיקת החיבורים נכשלה", error: error.message });
+    }
+  });
+
   // Configure email settings (cPanel)
   app.post('/api/email/configure', isAuthenticated, async (req: any, res) => {
     try {
