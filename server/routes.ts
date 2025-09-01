@@ -2032,8 +2032,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test separated email connections
-  app.post('/api/email/test-separated', async (req: any, res) => {
+  // Test separated email connections - debug  
+  app.post('/api/email/test-separated', (req: any, res, next) => {
+    console.log('🔥 נתיב /api/email/test-separated נטען!');
+    next();
+  }, async (req: any, res) => {
     console.log('🌐 התקבלה בקשה לבדיקת חיבור נפרד');
     
     // Check authentication manually
