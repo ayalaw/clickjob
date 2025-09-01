@@ -407,39 +407,57 @@ export async function reloadCpanelConfig() {
   try {
     // Reload cPanel configurations from database
     const { storage } = await import('./storage');
-    const smtpHost = await storage.getSystemSetting('CPANEL_SMTP_HOST');
-    const smtpPort = await storage.getSystemSetting('CPANEL_SMTP_PORT');
-    const smtpSecure = await storage.getSystemSetting('CPANEL_SMTP_SECURE');
-    const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
-    const emailPass = await storage.getSystemSetting('CPANEL_EMAIL_PASS');
-    const imapHost = await storage.getSystemSetting('CPANEL_IMAP_HOST');
-    const imapPort = await storage.getSystemSetting('CPANEL_IMAP_PORT');
-    const imapSecure = await storage.getSystemSetting('CPANEL_IMAP_SECURE');
+    
+    // Use INCOMING_EMAIL settings for IMAP (correct settings)
+    const imapHost = await storage.getSystemSetting('INCOMING_EMAIL_HOST');
+    const imapPort = await storage.getSystemSetting('INCOMING_EMAIL_PORT');
+    const imapSecure = await storage.getSystemSetting('INCOMING_EMAIL_SECURE');
+    const imapUser = await storage.getSystemSetting('INCOMING_EMAIL_USER');
+    const imapPass = await storage.getSystemSetting('INCOMING_EMAIL_PASS');
+    
+    // Use OUTGOING_EMAIL settings for SMTP
+    const smtpHost = await storage.getSystemSetting('OUTGOING_EMAIL_HOST');
+    const smtpPort = await storage.getSystemSetting('OUTGOING_EMAIL_PORT');
+    const smtpSecure = await storage.getSystemSetting('OUTGOING_EMAIL_SECURE');
+    const smtpUser = await storage.getSystemSetting('OUTGOING_EMAIL_USER');
+    const smtpPass = await storage.getSystemSetting('OUTGOING_EMAIL_PASS');
 
-    if (smtpHost?.value && emailUser?.value && emailPass?.value) {
-      // Update CPANEL_CONFIGS with new settings
+    if (imapHost?.value && imapUser?.value && imapPass?.value) {
+      // Update CPANEL_CONFIGS with correct INCOMING/OUTGOING settings
       CPANEL_CONFIGS[0] = {
         smtp: {
-          host: smtpHost.value,
-          port: parseInt(smtpPort?.value || '587'),
+          host: smtpHost?.value || 'mail.h-group.org.il',
+          port: parseInt(smtpPort?.value || '465'),
           secure: smtpSecure?.value === 'true',
           auth: {
-            user: emailUser.value,
-            pass: emailPass.value
+            user: smtpUser?.value || 'cv@h-group.org.il',
+            pass: smtpPass?.value || ''
           },
           tls: { rejectUnauthorized: false }
         },
         imap: {
-          user: emailUser.value,
-          password: emailPass.value,
-          host: imapHost?.value || smtpHost.value,
+          user: imapUser.value,
+          password: imapPass.value,
+          host: imapHost.value,
           port: parseInt(imapPort?.value || '993'),
-          tls: imapSecure?.value !== 'false',
-          tlsOptions: { rejectUnauthorized: false }
+          tls: imapSecure?.value === 'true',
+          authTimeout: 60000,
+          connTimeout: 60000,
+          keepalive: {
+            interval: 10000,
+            idleInterval: 300000,
+            forceNoop: true
+          },
+          tlsOptions: { 
+            rejectUnauthorized: false,
+            servername: imapHost.value,
+            minVersion: 'TLSv1',
+            maxVersion: 'TLSv1.3'
+          }
         }
       };
-      console.log('✅ הגדרות cPanel עודכנו מבסיס הנתונים');
-      console.log(`📧 IMAP: ${emailUser.value}@${imapHost?.value || smtpHost.value}:${imapPort?.value || '993'}`);
+      console.log('✅ הגדרות cPanel עודכנו עם הפרטים הנכונים');
+      console.log(`📧 IMAP: ${imapUser.value}@${imapHost.value}:${imapPort?.value || '993'} (SSL: ${imapSecure?.value})`);
       
       // Test the new configuration
       await testAllCpanelEmail();
