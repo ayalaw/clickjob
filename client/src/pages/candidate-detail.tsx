@@ -515,18 +515,19 @@ export default function CandidateDetail() {
           });
         }
         
-        // ניווט מיידי לעמוד הראיונות
-        console.log("🚀🚀🚀 מבצע ניווט עכשיו!");
+        // ניווט מיידי לעמוד הראיונות עם wouter
+        console.log("🚀🚀🚀 מבצע ניווט עם wouter עכשיו!");
         setTimeout(() => {
-          console.log("⏰ עובר לעמוד ראיונות...");
+          console.log("⏰ עובר לעמוד ראיונות עם navigate...");
           try {
-            window.location.assign("/interviews");
-            console.log("✅ ניווט הושלם בהצלחה");
+            navigate("/interviews");
+            console.log("✅ ניווט wouter הושלם בהצלחה");
           } catch (navError) {
-            console.error("❌ שגיאת ניווט:", navError);
+            console.error("❌ שגיאת ניווט wouter:", navError);
+            console.log("🔄 מנסה עם window.location...");
             window.location.href = "/interviews";
           }
-        }, 500);
+        }, 300);
         
       } else {
         console.log("❌ אין הצלחות - מציג שגיאה");
