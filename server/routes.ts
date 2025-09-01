@@ -981,33 +981,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          console.log('📑 PDF file detected - attempting basic text extraction');
+          console.log('📑 PDF file detected - attempting text extraction');
           try {
-            // ניסיון לחלץ טקסט בסיסי מ-PDF באמצעות strings
-            const stringsOutput = execSync(`strings "${req.file.path}"`, { encoding: 'utf8' });
+            // Convert to text and try to extract readable content
+            const textContent = fileBuffer.toString('utf8');
             
-            // ניקוי וחיבור השורות
-            const lines = stringsOutput.split('\n').filter(line => 
-              line.trim().length > 2 && 
-              /[\u0590-\u05FF]/.test(line) || // Hebrew characters
-              /@/.test(line) || // Email
-              /05\d/.test(line) // Mobile phone
-            );
+            // Look for email patterns and text
+            const emailMatch = textContent.match(/[\w\.-]+@[\w\.-]+\.\w+/g);
+            const phoneMatch = textContent.match(/05\d[\d\-\s]{7,}/g);
             
-            fileText = lines.join(' ');
-            console.log('📑 PDF basic text extracted, length:', fileText.length);
-            console.log('📑 PDF content preview:', fileText.substring(0, 300) + '...');
+            let extractedEmail = '';
+            let extractedPhone = '';
             
-            if (fileText.length < 10) {
-              console.log('📑 PDF - insufficient text extracted, returning empty data');
-              const extractedData = {
-                firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
-                nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
-                gender: "", maritalStatus: "", drivingLicense: "", profession: "",
-                experience: null, achievements: ""
-              };
-              return res.json({ extractedData });
+            if (emailMatch) {
+              extractedEmail = emailMatch[0];
             }
+            
+            if (phoneMatch) {
+              extractedPhone = phoneMatch[0].replace(/[\s\-]/g, '');
+            }
+            
+            console.log('📑 Email found:', extractedEmail);
+            console.log('📑 Phone found:', extractedPhone);
+            
+            fileText = textContent;
+            console.log('📑 PDF content processed, length:', fileText.length);
+            
           } catch (error) {
             console.log('❌ Error extracting PDF text:', error instanceof Error ? error.message : 'Unknown error');
             fileText = '';
@@ -3255,8 +3254,7 @@ ${recommendation}
   // Route לבדיקה ידנית של כל המיילים
   app.post('/api/check-all-emails', isAuthenticated, async (req, res) => {
     try {
-      const { checkAllEmails } = await import('./incomingEmailService');
-      await checkAllEmails();
+      await checkCpanelEmails();
       res.json({ message: 'בדיקה ידנית של כל המיילים הופעלה' });
     } catch (error) {
       console.error('שגיאה בבדיקה ידנית:', error);
