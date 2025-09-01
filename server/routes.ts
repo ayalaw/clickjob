@@ -2036,11 +2036,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/email/test-separated', isAuthenticated, async (req: any, res) => {
     try {
       const { incoming, outgoing } = req.body;
-      const results = { incoming: false, outgoing: false, errors: [] };
+      const results = { incoming: false, outgoing: false, errors: [] as string[] };
       
       // Test outgoing (SMTP) connection
       try {
-        const testTransporter = nodemailer.createTransporter({
+        const testTransporter = nodemailer.createTransport({
           host: outgoing.host,
           port: parseInt(outgoing.port),
           secure: outgoing.secure === true,
