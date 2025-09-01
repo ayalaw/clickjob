@@ -497,25 +497,33 @@ export default function CandidateDetail() {
       setSelectedInterviewJobIds([]);
       
       // הודעות מפורטות על התוצאות
+      console.log(`🔍 בדיקת תוצאות: ${successfulJobs.length} הצלחות, ${errors.length} שגיאות`);
+      
       if (successfulJobs.length > 0 && errors.length === 0) {
+        console.log("✅ הצלחה מלאה - מציג הודעה ועובר לראיונות");
         toast({
           title: "✅ הוסף לראיון בהצלחה!",
           description: `המועמד נוסף לראיון ב-${successfulJobs.length} משרות בהצלחה`,
         });
         
         // ניווט מיידי לעמוד הראיונות
-        console.log("🔄 עובר לעמוד הראיונות...");
-        window.location.href = "/interviews";
+        console.log("🚀🚀🚀 מבצע ניווט לעמוד הראיונות עכשיו!");
+        setTimeout(() => {
+          window.location.href = "/interviews";
+        }, 500);
         
       } else if (successfulJobs.length > 0 && errors.length > 0) {
+        console.log("⚠️ הצלחה חלקית - מציג הודעה ועובר לראיונות");
         toast({
           title: "⚠️ הוסף חלקית",
           description: `הוסף ל-${successfulJobs.length} משרות, ${errors.length} נכשלו`,
         });
         
         // ניווט גם במקרה של הצלחה חלקית
-        console.log("🔄 עובר לעמוד הראיונות (הצלחה חלקית)...");
-        window.location.href = "/interviews";
+        console.log("🚀🚀🚀 מבצע ניווט לעמוד הראיונות (הצלחה חלקית)!");
+        setTimeout(() => {
+          window.location.href = "/interviews";
+        }, 500);
         
       } else {
         toast({
