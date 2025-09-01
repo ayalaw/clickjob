@@ -1976,6 +1976,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.setSystemSetting('CPANEL_IMAP_PORT', imapPort, 'cPanel IMAP server port');
       await storage.setSystemSetting('CPANEL_IMAP_SECURE', imapSecure.toString(), 'cPanel IMAP secure connection');
       
+      // Force reload email configuration
+      console.log('🔄 כפיית רענון הגדרות מייל...');
+      try {
+        const { reloadEmailConfig } = require('./emailService');
+        const { reloadCpanelConfig } = require('./cpanel-email');
+        await reloadEmailConfig();
+        await reloadCpanelConfig();
+        console.log('✅ הגדרות מייל נטענו מחדש');
+      } catch (reloadError) {
+        console.warn('⚠️ שגיאה ברענון הגדרות:', reloadError);
+      }
+      
       res.json({ success: true, message: "הגדרות מייל נשמרו בהצלחה" });
     } catch (error) {
       console.error("Error configuring email:", error);

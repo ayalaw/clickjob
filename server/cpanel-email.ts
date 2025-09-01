@@ -387,3 +387,57 @@ export async function testAllCpanelEmail(): Promise<void> {
     if (!smtpSuccess) console.log('  - SMTP לא עובד');
   }
 }
+
+// Export function to reload cPanel configuration
+export async function reloadCpanelConfig() {
+  console.log('🔄 רענון הגדרות cPanel...');
+  
+  try {
+    // Reload cPanel configurations from database
+    const { storage } = require('./storage');
+    const smtpHost = await storage.getSystemSetting('CPANEL_SMTP_HOST');
+    const smtpPort = await storage.getSystemSetting('CPANEL_SMTP_PORT');
+    const smtpSecure = await storage.getSystemSetting('CPANEL_SMTP_SECURE');
+    const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
+    const emailPass = await storage.getSystemSetting('CPANEL_EMAIL_PASS');
+    const imapHost = await storage.getSystemSetting('CPANEL_IMAP_HOST');
+    const imapPort = await storage.getSystemSetting('CPANEL_IMAP_PORT');
+    const imapSecure = await storage.getSystemSetting('CPANEL_IMAP_SECURE');
+
+    if (smtpHost?.value && emailUser?.value && emailPass?.value) {
+      // Update CPANEL_CONFIGS with new settings
+      CPANEL_CONFIGS[0] = {
+        smtp: {
+          host: smtpHost.value,
+          port: parseInt(smtpPort?.value || '587'),
+          secure: smtpSecure?.value === 'true',
+          auth: {
+            user: emailUser.value,
+            pass: emailPass.value
+          },
+          tls: { rejectUnauthorized: false }
+        },
+        imap: {
+          user: emailUser.value,
+          password: emailPass.value,
+          host: imapHost?.value || smtpHost.value,
+          port: parseInt(imapPort?.value || '993'),
+          tls: imapSecure?.value !== 'false',
+          tlsOptions: { rejectUnauthorized: false }
+        }
+      };
+      console.log('✅ הגדרות cPanel עודכנו מבסיס הנתונים');
+      
+      // Test the new configuration
+      await testAllCpanelEmail();
+      
+      return true;
+    } else {
+      console.warn('⚠️ חסרים פרטי cPanel בבסיס הנתונים');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ שגיאה ברענון הגדרות cPanel:', error);
+    return false;
+  }
+}
