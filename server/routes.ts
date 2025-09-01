@@ -2054,7 +2054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log(`📤 בודק SMTP: ${outgoing.host}:${outgoing.port}, secure: ${outgoing.secure}`);
         
-        const testTransporter = nodemailer.createTransporter({
+        const testTransporter = nodemailer.createTransport({
           host: outgoing.host,
           port: parseInt(outgoing.port),
           secure: outgoing.secure === true || outgoing.secure === 'true',
