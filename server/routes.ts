@@ -1486,6 +1486,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       if (error.message && error.message.includes('already exists')) {
+        // אם זו שגיאת כפילות, נחזיר מידע על המועמדות הקיימת
+        if (error.existingApplication) {
+          return res.status(409).json({ 
+            message: error.message,
+            existingApplication: error.existingApplication
+          });
+        }
         return res.status(409).json({ message: error.message });
       }
       res.status(500).json({ message: error.message || "Failed to create job application" });

@@ -860,17 +860,31 @@ export class DatabaseStorage implements IStorage {
         const [updatedApplication] = await db
           .update(jobApplications)
           .set({ 
-            status: 'interview_scheduled',
-            updatedAt: new Date()
+            status: 'interview_scheduled'
           })
           .where(eq(jobApplications.id, existing[0].id))
           .returning();
         
         console.log(`✅ סטטוס מועמדות עודכן לראיון: מועמד ${application.candidateId} למשרה ${application.jobId}`);
-        return updatedApplication;
+        
+        // החזר מידע על המועמדות הקיימת כדי שהלקוח יוכל להציג פופ-אפ
+        const existingApplicationWithDetails = {
+          ...updatedApplication,
+          alreadyExisted: true,
+          originalAppliedAt: existing[0].appliedAt,
+          originalStatus: existing[0].status
+        };
+        
+        return existingApplicationWithDetails as any;
       }
       
-      throw new Error('המועמד כבר הגיש מועמדות למשרה זו');
+      // במקרה אחר, החזר מידע על המועמדות הקיימת
+      const duplicateError = new Error('המועמד כבר הגיש מועמדות למשרה זו') as any;
+      duplicateError.existingApplication = {
+        ...existing[0],
+        alreadyExisted: true
+      };
+      throw duplicateError;
     }
 
     const [newApplication] = await db.insert(jobApplications).values(application).returning();

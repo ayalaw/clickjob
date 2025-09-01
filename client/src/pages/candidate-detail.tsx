@@ -436,16 +436,55 @@ export default function CandidateDetail() {
       // Create job applications for all selected jobs
       for (const jobId of selectedInterviewJobIds) {
         try {
-          await apiRequest('POST', '/api/job-applications', {
+          const result = await apiRequest('POST', '/api/job-applications', {
             candidateId: candidate.id,
             jobId: jobId,
             status: 'interview_scheduled'
           });
+          
+          // בדיקה אם זו מועמדות קיימת שהתעדכנה
+          if (result.alreadyExisted) {
+            const appliedDate = new Date(result.originalAppliedAt).toLocaleDateString('he-IL', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            toast({
+              title: "⚠️ מועמד כבר נמצא בראיון",
+              description: `המועמד כבר נמצא בראיונות למשרה זו מתאריך ${appliedDate}. הסטטוס עודכן.`,
+              variant: "destructive",
+            });
+          }
+          
           successfulJobs.push(jobId);
           console.log(`✅ הוסף למשרה ${jobId} בהצלחה`);
         } catch (appError: any) {
           console.error(`❌ שגיאה בהוספה למשרה ${jobId}:`, appError);
-          errors.push(`משרה ${jobId}: ${appError.message || 'שגיאה לא ידועה'}`);
+          
+          // טיפול במועמדות כפולה
+          if (appError.status === 409 && appError.existingApplication) {
+            const appliedDate = new Date(appError.existingApplication.appliedAt).toLocaleDateString('he-IL', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            toast({
+              title: "⚠️ מועמד כבר נמצא בראיון",
+              description: `המועמד כבר נמצא בראיונות למשרה זו מתאריך ${appliedDate}`,
+              variant: "destructive",
+            });
+            
+            // עדיין נחשיב את זה הצלחה כי המועמד כבר בראיון
+            successfulJobs.push(jobId);
+          } else {
+            errors.push(`משרה ${jobId}: ${appError.message || 'שגיאה לא ידועה'}`);
+          }
         }
       }
 
