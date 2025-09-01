@@ -143,6 +143,7 @@ export default function CandidateDetail() {
       case 'submitted': return 'הוגש';
       case 'reviewed': return 'נסקר';
       case 'interview': return 'ראיון';
+      case 'interview_scheduled': return 'זומן לראיון';
       case 'rejected': return 'נדחה';
       case 'accepted': return 'התקבל';
       case 'not_relevant': return 'לא רלוונטי';

@@ -40,7 +40,7 @@ export const users = pgTable("users", {
 
 // Enums
 export const jobStatusEnum = pgEnum('job_status', ['active', 'paused', 'closed']);
-export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'rejected', 'accepted']);
+export const applicationStatusEnum = pgEnum('application_status', ['submitted', 'reviewed', 'interview', 'interview_scheduled', 'rejected', 'accepted']);
 export const rejectionReasonEnum = pgEnum('rejection_reason', ['lack_of_experience', 'geographic_mismatch', 'salary_demands', 'qualifications_mismatch', 'other']);
 export const emailStatusEnum = pgEnum('email_status', ['pending', 'sent', 'failed', 'delivered', 'bounced']);
 export const roleTypeEnum = pgEnum('role_type', ['super_admin', 'admin', 'user']);

@@ -46,6 +46,7 @@ export default function Candidates() {
       case 'submitted': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'reviewed': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
       case 'interview': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'interview_scheduled': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
       case 'accepted': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
@@ -75,6 +76,7 @@ export default function Candidates() {
       case 'submitted': return 'הוגש';
       case 'reviewed': return 'נסקר';
       case 'interview': return 'ראיון';
+      case 'interview_scheduled': return 'זומן לראיון';
       case 'accepted': return 'התקבל';
       default: return status;
     }
