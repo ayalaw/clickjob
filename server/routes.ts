@@ -26,7 +26,7 @@ import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
 import { generateSecurePassword } from './passwordUtils';
-import { checkEmailsSimple, startSimpleEmailMonitoring } from './fixed-imap';
+// import { checkIncomingEmails, startEmailMonitoring } from './incomingEmailService'; // Will restore this
 import nodemailer from 'nodemailer';
 
 // Configure multer for file uploads
