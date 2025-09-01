@@ -842,7 +842,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    // בדיקת כפילות - האם המועמד כבר הגיש מועמדות למשרה הזו
+    const existing = await db
+      .select()
+      .from(jobApplications)
+      .where(and(
+        eq(jobApplications.candidateId, application.candidateId),
+        eq(jobApplications.jobId, application.jobId)
+      ));
+
+    if (existing.length > 0) {
+      console.log(`⚠️ מועמדות כפולה זוהתה: מועמד ${application.candidateId} כבר הגיש למשרה ${application.jobId}`);
+      throw new Error('המועמד כבר הגיש מועמדות למשרה זו');
+    }
+
     const [newApplication] = await db.insert(jobApplications).values(application).returning();
+    console.log(`✅ נוצרה מועמדות חדשה: מועמד ${application.candidateId} למשרה ${application.jobId}`);
     return newApplication;
   }
 

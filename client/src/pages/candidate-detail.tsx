@@ -61,7 +61,7 @@ export default function CandidateDetail() {
   const [jobSearchTerm, setJobSearchTerm] = useState("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
-  const [selectedInterviewJobId, setSelectedInterviewJobId] = useState("");
+  const [selectedInterviewJobIds, setSelectedInterviewJobIds] = useState<string[]>([]);
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -421,34 +421,36 @@ export default function CandidateDetail() {
   };
 
   const handleAddToInterview = async () => {
-    if (!selectedInterviewJobId || !candidate) return;
+    if (!selectedInterviewJobIds.length || !candidate) return;
 
     setIsUpdatingStatus(true);
     try {
       // Update candidate status to waiting for interview
-      await apiRequest(`/api/candidates/${candidate.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'invited_to_interview' }),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      await apiRequest(`/api/candidates/${candidate.id}`, 'PUT', { status: 'invited_to_interview' });
 
-      // Create job application if doesn't exist
-      try {
-        await apiRequest('/api/job-applications', {
-          method: 'POST',
-          body: JSON.stringify({
+      const successfulJobs: string[] = [];
+      const errors: string[] = [];
+
+      // Create job applications for all selected jobs
+      for (const jobId of selectedInterviewJobIds) {
+        try {
+          await apiRequest('/api/job-applications', 'POST', {
             candidateId: candidate.id,
-            jobId: selectedInterviewJobId,
+            jobId: jobId,
             status: 'interview_scheduled'
-          }),
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } catch (appError: any) {
-        // If application already exists, just update status
-        if (appError?.message?.includes('already exists')) {
-          console.log('Application already exists, just updated candidate status');
-        } else {
-          throw appError;
+          });
+          successfulJobs.push(jobId);
+          console.log(`✅ הוסף למשרה ${jobId} בהצלחה`);
+        } catch (appError: any) {
+          console.error(`❌ שגיאה בהוספה למשרה ${jobId}:`, appError);
+          
+          // If application already exists, count as success
+          if (appError?.message?.includes('כבר הגיש') || appError?.message?.includes('already exists')) {
+            successfulJobs.push(jobId);
+            console.log(`ℹ️ מועמדות למשרה ${jobId} כבר קיימת - עדכון סטטוס בלבד`);
+          } else {
+            errors.push(`משרה ${jobId}: ${appError.message || 'שגיאה לא ידועה'}`);
+          }
         }
       }
 
@@ -456,18 +458,32 @@ export default function CandidateDetail() {
       await queryClient.invalidateQueries({ queryKey: ['/api/candidates', candidate.id, 'events'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/job-applications'] });
       
-      toast({
-        title: "נוסף לראיון",
-        description: `המועמד נוסף לרשימת המתינים לראיון בהצלחה`,
-      });
+      // הודעות מפורטות על התוצאות
+      if (successfulJobs.length > 0 && errors.length === 0) {
+        toast({
+          title: "✅ הוסף לראיון בהצלחה!",
+          description: `המועמד נוסף לראיון ב-${successfulJobs.length} משרות בהצלחה`,
+        });
+      } else if (successfulJobs.length > 0 && errors.length > 0) {
+        toast({
+          title: "⚠️ הוסף חלקית",
+          description: `הוסף ל-${successfulJobs.length} משרות, ${errors.length} נכשלו`,
+        });
+      } else {
+        toast({
+          title: "❌ נכשל",
+          description: `לא ניתן להוסיף לאף משרה: ${errors.join(', ')}`,
+          variant: "destructive",
+        });
+      }
       
       setInterviewDialogOpen(false);
-      setSelectedInterviewJobId("");
-    } catch (error) {
+      setSelectedInterviewJobIds([]);
+    } catch (error: any) {
       console.error('Error adding to interview:', error);
       toast({
-        title: "שגיאה",
-        description: "לא ניתן להוסיף לראיון",
+        title: "שגיאה חמורה",
+        description: `שגיאה במערכת: ${error.message || 'שגיאה לא ידועה'}`,
         variant: "destructive",
       });
     } finally {
@@ -872,7 +888,7 @@ export default function CandidateDetail() {
               <Dialog open={interviewDialogOpen} onOpenChange={(open) => {
                 setInterviewDialogOpen(open);
                 if (!open) {
-                  setSelectedInterviewJobId('');
+                  setSelectedInterviewJobIds([]);
                 }
               }}>
                 <DialogTrigger asChild>
@@ -890,37 +906,55 @@ export default function CandidateDetail() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">בחר משרה לראיון:</label>
-                      <Select value={selectedInterviewJobId} onValueChange={setSelectedInterviewJobId}>
-                        <SelectTrigger className="w-full mt-1" dir="rtl">
-                          <SelectValue placeholder="בחר משרה..." />
-                        </SelectTrigger>
-                        <SelectContent dir="rtl">
-                          {jobsLoading ? (
-                            <div className="text-center py-4">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-                              <p className="text-sm text-gray-500 mt-2">טוען משרות...</p>
-                            </div>
-                          ) : jobsError ? (
-                            <div className="text-red-500 text-sm text-center py-4">
-                              שגיאה בטעינת המשרות
-                            </div>
-                          ) : jobs.length === 0 ? (
-                            <div className="text-gray-500 text-sm text-center py-4">
-                              אין משרות זמינות
-                            </div>
-                          ) : (
-                            jobs.map((job: any) => (
-                              <SelectItem key={job.id} value={job.id}>
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-medium">{job.title}</span>
-                                  <span className="text-sm text-gray-500">{job.client?.companyName}</span>
+                      <label className="text-sm font-medium mb-3 block">בחר משרות לראיון:</label>
+                      <div className="text-xs text-muted-foreground mb-3">
+                        ניתן לבחור מספר משרות במקביל ✓
+                      </div>
+                      
+                      {jobsLoading ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                          <p className="text-sm text-gray-500 mt-2">טוען משרות...</p>
+                        </div>
+                      ) : jobsError ? (
+                        <div className="text-red-500 text-sm text-center py-4">
+                          שגיאה בטעינת המשרות
+                        </div>
+                      ) : jobs.length === 0 ? (
+                        <div className="text-gray-500 text-sm text-center py-4">
+                          אין משרות זמינות
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                          {jobs.map((job: any) => (
+                            <div key={job.id} className="flex items-start space-x-3 space-x-reverse border rounded-lg p-3 hover:bg-gray-50">
+                              <input
+                                type="checkbox"
+                                id={`job-${job.id}`}
+                                checked={selectedInterviewJobIds.includes(job.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedInterviewJobIds(prev => [...prev, job.id]);
+                                  } else {
+                                    setSelectedInterviewJobIds(prev => prev.filter(id => id !== job.id));
+                                  }
+                                }}
+                                className="w-4 h-4 mt-1"
+                                data-testid={`checkbox-job-${job.id}`}
+                              />
+                              <label htmlFor={`job-${job.id}`} className="text-right cursor-pointer flex-1">
+                                <div className="font-medium">{job.title}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {job.client?.companyName} • {job.location}
                                 </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                                <div className="text-xs text-green-600 mt-1">
+                                  {job.positions > 1 ? `${job.positions} משרות פתוחות` : 'משרה פתוחה'}
+                                </div>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex gap-2 justify-end">
@@ -932,9 +966,10 @@ export default function CandidateDetail() {
                       </Button>
                       <Button 
                         onClick={handleAddToInterview}
-                        disabled={!selectedInterviewJobId || isUpdatingStatus}
+                        disabled={!selectedInterviewJobIds.length || isUpdatingStatus}
+                        data-testid="button-confirm-add-to-interview"
                       >
-                        {isUpdatingStatus ? "מוסיף..." : "🎯 הוסף לראיון"}
+                        {isUpdatingStatus ? "מוסיף..." : `🎯 הוסף ל-${selectedInterviewJobIds.length || 0} משרות`}
                       </Button>
                     </div>
                   </div>
