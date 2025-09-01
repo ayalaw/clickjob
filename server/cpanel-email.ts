@@ -439,6 +439,7 @@ export async function reloadCpanelConfig() {
         }
       };
       console.log('✅ הגדרות cPanel עודכנו מבסיס הנתונים');
+      console.log(`📧 IMAP: ${emailUser.value}@${imapHost?.value || smtpHost.value}:${imapPort?.value || '993'}`);
       
       // Test the new configuration
       await testAllCpanelEmail();

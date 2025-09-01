@@ -1946,6 +1946,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test IMAP connection route
+  app.post('/api/emails/test-imap', async (req: any, res) => {
+    try {
+      const { testCpanelImap, reloadCpanelConfig } = require('./cpanel-email');
+      
+      console.log('🔄 טוען הגדרות cPanel מחדש לבדיקה...');
+      await reloadCpanelConfig();
+      
+      console.log('🧪 בודק חיבור IMAP...');
+      const result = await testCpanelImap();
+      
+      res.json({ 
+        success: result, 
+        message: result ? "חיבור IMAP הצליח!" : "חיבור IMAP נכשל" 
+      });
+    } catch (error) {
+      console.error("Error testing IMAP:", error);
+      res.status(500).json({ message: "בעיה בבדיקת IMAP", error: error.message });
+    }
+  });
+
   // Get email settings
   app.get('/api/system-settings/email', isAuthenticated, async (req: any, res) => {
     try {
