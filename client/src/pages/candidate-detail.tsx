@@ -466,7 +466,7 @@ export default function CandidateDetail() {
         
         // ניווט מיידי לעמוד הראיונות
         console.log("🔄 עובר לעמוד הראיונות...");
-        navigate("/interviews");
+        window.location.href = "/interviews";
         
       } else if (successfulJobs.length > 0 && errors.length > 0) {
         toast({
@@ -476,7 +476,7 @@ export default function CandidateDetail() {
         
         // ניווט גם במקרה של הצלחה חלקית
         console.log("🔄 עובר לעמוד הראיונות (הצלחה חלקית)...");
-        navigate("/interviews");
+        window.location.href = "/interviews";
         
       } else {
         toast({
