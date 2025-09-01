@@ -97,6 +97,8 @@ export default function EmailSettings() {
   const testConnection = async () => {
     setConnectionStatus('testing');
     
+    console.log('🔍 שולח בדיקה עם נתונים:', { incoming: incomingConfig, outgoing: outgoingConfig });
+    
     try {
       const response = await fetch('/api/email/test-separated', {
         method: 'POST',
