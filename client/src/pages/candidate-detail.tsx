@@ -515,19 +515,10 @@ export default function CandidateDetail() {
           });
         }
         
-        // ניווט מיידי לעמוד הראיונות עם wouter
-        console.log("🚀🚀🚀 מבצע ניווט עם wouter עכשיו!");
-        setTimeout(() => {
-          console.log("⏰ עובר לעמוד ראיונות עם navigate...");
-          try {
-            navigate("/interviews");
-            console.log("✅ ניווט wouter הושלם בהצלחה");
-          } catch (navError) {
-            console.error("❌ שגיאת ניווט wouter:", navError);
-            console.log("🔄 מנסה עם window.location...");
-            window.location.href = "/interviews";
-          }
-        }, 300);
+        // ניווט מיידי לעמוד הראיונות - ללא השהיה!
+        console.log("🚀🚀🚀 מבצע ניווט מיידי!");
+        navigate("/interviews");
+        console.log("✅ ניווט הושלם!");
         
       } else {
         console.log("❌ אין הצלחות - מציג שגיאה");
