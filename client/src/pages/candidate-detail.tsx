@@ -435,7 +435,6 @@ export default function CandidateDetail() {
 
       // Create job applications for all selected jobs
       for (const jobId of selectedInterviewJobIds) {
-        console.log(`🚀 מתחיל הוספה למשרה ${jobId}...`);
         try {
           const result = await apiRequest('POST', '/api/job-applications', {
             candidateId: candidate.id,
@@ -443,14 +442,11 @@ export default function CandidateDetail() {
             status: 'interview_scheduled'
           });
           
-          console.log(`📋 תגובה מהשרת למשרה ${jobId}:`, result);
-          
           // בדיקה אם זו מועמדות קיימת שהתעדכנה
-          if (result.alreadyExisted) {
-            console.log(`⚠️ זוהתה מועמדות קיימת למשרה ${jobId}`);
-            const appliedDate = new Date(result.originalAppliedAt).toLocaleDateString('he-IL', {
+          if (result && ((result as any).alreadyExisted || (result as any).wasUpdated)) {
+            const appliedDate = new Date((result as any).originalAppliedAt || (result as any).appliedAt).toLocaleDateString('he-IL', {
               year: 'numeric',
-              month: 'long',
+              month: 'long', 
               day: 'numeric',
               hour: '2-digit',
               minute: '2-digit'
@@ -458,26 +454,21 @@ export default function CandidateDetail() {
             
             toast({
               title: "⚠️ מועמד כבר נמצא בראיון",
-              description: `המועמד כבר נמצא בראיונות למשרה זו מתאריך ${appliedDate}. הסטטוס עודכן.`,
-              variant: "destructive",
+              description: `המועמד כבר נמצא בראיונות למשרה זו מתאריך ${appliedDate}`,
+              variant: "default",
             });
           }
           
           successfulJobs.push(jobId);
-          console.log(`✅ הוסף למשרה ${jobId} בהצלחה`);
         } catch (appError: any) {
-          console.error(`❌ שגיאה בהוספה למשרה ${jobId}:`, appError);
-          console.log(`📋 פרטי השגיאה:`, { status: appError.status, message: appError.message, data: appError });
+          console.error(`Error adding candidate to job ${jobId}:`, appError);
           
           // טיפול במועמדות כפולה
           if (appError.status === 409) {
-            console.log(`⚠️ זוהתה שגיאת כפילות למשרה ${jobId}`);
-            
-            // בכל מקרה של כפילות, נחשיב את זה הצלחה
             toast({
               title: "⚠️ מועמד כבר נמצא בראיון", 
               description: `המועמד כבר נמצא בראיונות למשרה זו`,
-              variant: "destructive",
+              variant: "default",
             });
             
             successfulJobs.push(jobId);
@@ -496,29 +487,21 @@ export default function CandidateDetail() {
       setSelectedInterviewJobIds([]);
       
       // הודעות מפורטות על התוצאות
-      console.log(`🔍 בדיקת תוצאות: ${successfulJobs.length} הצלחות, ${errors.length} שגיאות`);
-      
-      if (successfulJobs.length > 0 && errors.length === 0) {
-        console.log("✅ הצלחה מלאה - מציג הודעה ועובר לראיונות");
-        toast({
-          title: "✅ הוסף לראיון בהצלחה!",
-          description: `המועמד נוסף לראיון ב-${successfulJobs.length} משרות בהצלחה`,
-        });
+      if (successfulJobs.length > 0) {
+        if (errors.length === 0) {
+          toast({
+            title: "✅ הוסף לראיון בהצלחה!",
+            description: `המועמד נוסף לראיון ב-${successfulJobs.length} משרות בהצלחה`,
+          });
+        } else {
+          toast({
+            title: "⚠️ הוסף חלקית",
+            description: `הוסף ל-${successfulJobs.length} משרות, ${errors.length} נכשלו`,
+          });
+        }
         
         // ניווט מיידי לעמוד הראיונות
-        console.log("🚀🚀🚀 מבצע ניווט לעמוד הראיונות עכשיו!");
-        window.location.assign("/interviews");
-        
-      } else if (successfulJobs.length > 0 && errors.length > 0) {
-        console.log("⚠️ הצלחה חלקית - מציג הודעה ועובר לראיונות");
-        toast({
-          title: "⚠️ הוסף חלקית",
-          description: `הוסף ל-${successfulJobs.length} משרות, ${errors.length} נכשלו`,
-        });
-        
-        // ניווט גם במקרה של הצלחה חלקית
-        console.log("🚀🚀🚀 מבצע ניווט לעמוד הראיונות (הצלחה חלקית)!");
-        window.location.assign("/interviews");
+        window.location.href = "/interviews";
         
       } else {
         toast({

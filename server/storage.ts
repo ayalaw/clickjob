@@ -872,10 +872,12 @@ export class DatabaseStorage implements IStorage {
           ...updatedApplication,
           alreadyExisted: true,
           originalAppliedAt: existing[0].appliedAt,
-          originalStatus: existing[0].status
+          originalStatus: existing[0].status,
+          wasUpdated: true
         };
         
-        return existingApplicationWithDetails as any;
+        console.log(`📤 מחזיר מידע על מועמדות קיימת:`, existingApplicationWithDetails);
+        return existingApplicationWithDetails;
       }
       
       // במקרה אחר, החזר מידע על המועמדות הקיימת
