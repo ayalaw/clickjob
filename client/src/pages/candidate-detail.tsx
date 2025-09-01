@@ -62,6 +62,7 @@ export default function CandidateDetail() {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
   const [selectedInterviewJobIds, setSelectedInterviewJobIds] = useState<string[]>([]);
+  const [jobSearchQuery, setJobSearchQuery] = useState("");
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -426,7 +427,7 @@ export default function CandidateDetail() {
     setIsUpdatingStatus(true);
     try {
       // Update candidate status to waiting for interview
-      await apiRequest(`/api/candidates/${candidate.id}`, 'PUT', { status: 'invited_to_interview' });
+      await apiRequest('PUT', `/api/candidates/${candidate.id}`, { status: 'invited_to_interview' });
 
       const successfulJobs: string[] = [];
       const errors: string[] = [];
@@ -434,7 +435,7 @@ export default function CandidateDetail() {
       // Create job applications for all selected jobs
       for (const jobId of selectedInterviewJobIds) {
         try {
-          await apiRequest('/api/job-applications', 'POST', {
+          await apiRequest('POST', '/api/job-applications', {
             candidateId: candidate.id,
             jobId: jobId,
             status: 'interview_scheduled'
@@ -889,6 +890,7 @@ export default function CandidateDetail() {
                 setInterviewDialogOpen(open);
                 if (!open) {
                   setSelectedInterviewJobIds([]);
+                  setJobSearchQuery("");
                 }
               }}>
                 <DialogTrigger asChild>
@@ -911,6 +913,24 @@ export default function CandidateDetail() {
                         ניתן לבחור מספר משרות במקביל ✓
                       </div>
                       
+                      {/* שדה חיפוש */}
+                      <div className="mb-4">
+                        <input
+                          type="text"
+                          placeholder="חיפוש משרות לפי תפקיד, חברה או מיקום..."
+                          value={jobSearchQuery}
+                          onChange={(e) => setJobSearchQuery(e.target.value)}
+                          className="w-full px-3 py-2 border rounded-md text-sm"
+                          dir="rtl"
+                          data-testid="input-job-search"
+                        />
+                        {jobSearchQuery && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            מציג משרות המכילות: "{jobSearchQuery}"
+                          </div>
+                        )}
+                      </div>
+                      
                       {jobsLoading ? (
                         <div className="text-center py-4">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
@@ -926,33 +946,60 @@ export default function CandidateDetail() {
                         </div>
                       ) : (
                         <div className="space-y-3 max-h-60 overflow-y-auto">
-                          {jobs.map((job: any) => (
-                            <div key={job.id} className="flex items-start space-x-3 space-x-reverse border rounded-lg p-3 hover:bg-gray-50">
-                              <input
-                                type="checkbox"
-                                id={`job-${job.id}`}
-                                checked={selectedInterviewJobIds.includes(job.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedInterviewJobIds(prev => [...prev, job.id]);
-                                  } else {
-                                    setSelectedInterviewJobIds(prev => prev.filter(id => id !== job.id));
-                                  }
-                                }}
-                                className="w-4 h-4 mt-1"
-                                data-testid={`checkbox-job-${job.id}`}
-                              />
-                              <label htmlFor={`job-${job.id}`} className="text-right cursor-pointer flex-1">
-                                <div className="font-medium">{job.title}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {job.client?.companyName} • {job.location}
-                                </div>
-                                <div className="text-xs text-green-600 mt-1">
-                                  {job.positions > 1 ? `${job.positions} משרות פתוחות` : 'משרה פתוחה'}
-                                </div>
-                              </label>
+                          {jobs.filter((job: any) => {
+                            if (!jobSearchQuery) return true;
+                            const searchLower = jobSearchQuery.toLowerCase();
+                            return (
+                              job.title?.toLowerCase().includes(searchLower) ||
+                              job.client?.companyName?.toLowerCase().includes(searchLower) ||
+                              job.location?.toLowerCase().includes(searchLower) ||
+                              job.description?.toLowerCase().includes(searchLower) ||
+                              job.requirements?.toLowerCase().includes(searchLower)
+                            );
+                          }).length === 0 && jobSearchQuery ? (
+                            <div className="text-gray-500 text-sm text-center py-4">
+                              <div>לא נמצאו משרות המכילות "{jobSearchQuery}"</div>
+                              <div className="text-xs mt-1">נסה חיפוש אחר או נקה את השדה</div>
                             </div>
-                          ))}
+                          ) : (
+                            jobs.filter((job: any) => {
+                              if (!jobSearchQuery) return true;
+                              const searchLower = jobSearchQuery.toLowerCase();
+                              return (
+                                job.title?.toLowerCase().includes(searchLower) ||
+                                job.client?.companyName?.toLowerCase().includes(searchLower) ||
+                                job.location?.toLowerCase().includes(searchLower) ||
+                                job.description?.toLowerCase().includes(searchLower) ||
+                                job.requirements?.toLowerCase().includes(searchLower)
+                              );
+                            }).map((job: any) => (
+                              <div key={job.id} className="flex items-start space-x-3 space-x-reverse border rounded-lg p-3 hover:bg-gray-50">
+                                <input
+                                  type="checkbox"
+                                  id={`job-${job.id}`}
+                                  checked={selectedInterviewJobIds.includes(job.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedInterviewJobIds(prev => [...prev, job.id]);
+                                    } else {
+                                      setSelectedInterviewJobIds(prev => prev.filter(id => id !== job.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 mt-1"
+                                  data-testid={`checkbox-job-${job.id}`}
+                                />
+                                <label htmlFor={`job-${job.id}`} className="text-right cursor-pointer flex-1">
+                                  <div className="font-medium">{job.title}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {job.client?.companyName} • {job.location}
+                                  </div>
+                                  <div className="text-xs text-green-600 mt-1">
+                                    {job.positions > 1 ? `${job.positions} משרות פתוחות` : 'משרה פתוחה'}
+                                  </div>
+                                </label>
+                              </div>
+                            ))
+                          )}
                         </div>
                       )}
                     </div>
