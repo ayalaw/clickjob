@@ -617,11 +617,11 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                   }
                   
                   // Extract email address only - no fake data
-                  const senderEmail = emailAddress || `candidate-${timestamp}@temp.local`;
+                  const senderEmail = emailAddress || '';
                   
-                  // Check if candidate already exists
+                  // Check if candidate already exists (only if we have a valid email)
                   const existingCandidates = await storage.getCandidates();
-                  const candidateExists = existingCandidates.candidates.some((c: any) => c.email === senderEmail);
+                  const candidateExists = senderEmail ? existingCandidates.candidates.some((c: any) => c.email === senderEmail) : false;
                   
                   if (!candidateExists) {
                     // Create new candidate with minimal data - no fake information

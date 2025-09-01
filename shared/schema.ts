@@ -108,7 +108,7 @@ export const candidates = pgTable("candidates", {
   candidateNumber: integer("candidate_number").unique(),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
-  email: varchar("email").unique().notNull(),
+  email: varchar("email").unique(),
   mobile: varchar("mobile"), // נייד
   phone: varchar("phone"), // טלפון נ'
   phone2: varchar("phone2"), // טלפון נ' 2
