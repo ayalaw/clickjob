@@ -109,20 +109,33 @@ export default function EmailSettings() {
         }),
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         setConnectionStatus('success');
         toast({
-          title: "החיבורים תקינים",
+          title: "✅ החיבורים תקינים",
           description: "החיבור לתיבות הדואר הנכנס והיוצא פועל כראוי",
         });
       } else {
-        throw new Error('Connection test failed');
+        setConnectionStatus('error');
+        
+        // הצגת הודעת שגיאה מפורטת
+        const errorDetails = result.errors && result.errors.length > 0 
+          ? result.errors.join('\n') 
+          : result.message || "בעיה לא ידועה בחיבור";
+        
+        toast({
+          title: "❌ בעיות בחיבור לתיבות הדואר",
+          description: errorDetails,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       setConnectionStatus('error');
       toast({
-        title: "בעיית חיבור",
-        description: "לא ניתן להתחבר לאחת מתיבות הדואר",
+        title: "❌ שגיאה ברשת",
+        description: "לא ניתן לבדוק את החיבור - בעיית תקשורת עם השרת",
         variant: "destructive",
       });
     }

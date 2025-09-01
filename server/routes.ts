@@ -2016,10 +2016,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Force reload email configuration
       console.log('🔄 כפיית רענון הגדרות מייל נפרדות...');
       try {
-        const { reloadEmailConfig } = require('./emailService');
-        const { reloadCpanelConfig } = require('./cpanel-email');
-        await reloadEmailConfig();
-        await reloadCpanelConfig();
+        const emailService = await import('./emailService');
+        const cpanelEmail = await import('./cpanel-email');
+        if (emailService.reloadEmailConfig) await emailService.reloadEmailConfig();
+        if (cpanelEmail.reloadCpanelConfig) await cpanelEmail.reloadCpanelConfig();
         console.log('✅ הגדרות מייל נפרדות נטענו מחדש');
       } catch (reloadError) {
         console.warn('⚠️ שגיאה ברענון הגדרות:', reloadError);
@@ -2043,7 +2043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const testTransporter = nodemailer.createTransporter({
           host: outgoing.host,
           port: parseInt(outgoing.port),
-          secure: outgoing.secure,
+          secure: outgoing.secure === true,
           auth: {
             user: outgoing.user,
             pass: outgoing.pass,
@@ -2056,8 +2056,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await testTransporter.verify();
         results.outgoing = true;
         console.log('✅ תיבת דואר יוצא עובדת');
-      } catch (outgoingError) {
-        results.errors.push(`תיבת דואר יוצא: ${outgoingError.message}`);
+      } catch (outgoingError: any) {
+        const errorMsg = `שגיאה בתיבת דואר יוצא: ${outgoingError.message || 'שגיאה לא ידועה'}`;
+        results.errors.push(errorMsg);
         console.log('❌ תיבת דואר יוצא לא עובדת:', outgoingError.message);
       }
       
@@ -2069,23 +2070,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: incoming.pass,
           host: incoming.host,
           port: parseInt(incoming.port),
-          tls: incoming.secure,
+          tls: incoming.secure === true,
           tlsOptions: { rejectUnauthorized: false }
         });
         
         await new Promise((resolve, reject) => {
           const timeout = setTimeout(() => {
-            imap.end();
-            reject(new Error('Connection timeout'));
-          }, 5000);
+            try { imap.end(); } catch {}
+            reject(new Error('החיבור לתיבת הדואר הנכנס נכשל - בדוק את פרטי ההתחברות'));
+          }, 8000);
           
           imap.once('ready', () => {
             clearTimeout(timeout);
-            imap.end();
+            try { imap.end(); } catch {}
             resolve(true);
           });
           
-          imap.once('error', (err) => {
+          imap.once('error', (err: any) => {
             clearTimeout(timeout);
             reject(err);
           });
@@ -2095,8 +2096,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         results.incoming = true;
         console.log('✅ תיבת דואר נכנס עובדת');
-      } catch (incomingError) {
-        results.errors.push(`תיבת דואר נכנס: ${incomingError.message}`);
+      } catch (incomingError: any) {
+        const errorMsg = `שגיאה בתיבת דואר נכנס: ${incomingError.message || 'בעיה בחיבור לשרת IMAP'}`;
+        results.errors.push(errorMsg);
         console.log('❌ תיבת דואר נכנס לא עובדת:', incomingError.message);
       }
       
