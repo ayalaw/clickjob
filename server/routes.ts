@@ -178,16 +178,13 @@ function extractDataFromText(text: string) {
           if (!result.mobile) {
             result.mobile = normalized;
             console.log(`📱 מצא נייד: ${normalized} (מקור: ${match})`);
-          } else if (result.mobile !== normalized && !result.phone) {
-            result.phone = normalized;
-            console.log(`📞 מצא נייד נוסף כטלפון: ${normalized} (מקור: ${match})`);
-          } else if (result.mobile !== normalized && result.phone !== normalized && !result.phone2) {
+          } else if (result.mobile !== normalized && !result.phone2) {
             result.phone2 = normalized;
             console.log(`📞 מצא נייד שני: ${normalized} (מקור: ${match})`);
           }
         }
-        // טלפונים קוויים (02, 03, 04, 08, 09)
-        else if (normalized.match(/^0[2-9]\d{7,8}$/) && normalized.length >= 9) {
+        // טלפונים קוויים (02, 03, 04, 08, 09) - לא כולל 05x
+        else if (normalized.match(/^0[2-4,6-9]\d{7,8}$/) && normalized.length >= 9) {
           if (!result.phone) {
             result.phone = normalized;
             console.log(`☎️ מצא טלפון קווי: ${normalized} (מקור: ${match})`);
