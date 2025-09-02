@@ -137,7 +137,7 @@ export default function CVSearchPage() {
   const canSearch = positiveKeywords.length > 0;
 
   // פונקציה להדגשת מילות מפתח בטקסט
-  const highlightKeywords = (text: string, keywords: string[]) => {
+  const highlightKeywords = (text: string, keywords: string[], useGreenHighlight = false) => {
     if (!text || keywords.length === 0) return text;
     
     let highlightedText = text;
@@ -146,10 +146,14 @@ export default function CVSearchPage() {
     const uniqueKeywords = Array.from(new Set(keywords));
     const sortedKeywords = uniqueKeywords.sort((a, b) => b.length - a.length);
     
+    const highlightClass = useGreenHighlight 
+      ? 'bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100'
+      : 'bg-yellow-300 dark:bg-yellow-600';
+    
     sortedKeywords.forEach(keyword => {
       if (keyword.trim()) {
         const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-300 dark:bg-yellow-600 px-1 py-0.5 rounded font-semibold">$1</mark>');
+        highlightedText = highlightedText.replace(regex, `<mark class="${highlightClass} px-1 py-0.5 rounded font-bold shadow-sm">$1</mark>`);
       }
     });
     
@@ -407,8 +411,15 @@ export default function CVSearchPage() {
                   </TableHeader>
                   <TableBody>
                     {searchResults.map((result) => (
-                      <TableRow key={result.candidateId}>
-                        <TableCell>
+                      <TableRow 
+                        key={result.candidateId}
+                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        onClick={() => viewFullCV(result)}
+                        data-testid={`row-candidate-${result.candidateId}`}
+                      >
+                        <TableCell
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Checkbox
                             checked={selectedCandidates.includes(result.candidateId)}
                             onCheckedChange={() => toggleCandidateSelection(result.candidateId)}
@@ -463,21 +474,17 @@ export default function CVSearchPage() {
                         <TableCell className="text-sm text-gray-500">
                           {new Date(result.extractedAt).toLocaleDateString('he-IL')}
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => viewFullCV(result)}
-                              data-testid={`button-view-cv-${result.candidateId}`}
-                              title="צפה בקורות חיים מלא עם הדגשות"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(`/candidates/${result.candidateId}`, '_blank')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`/candidates/${result.candidateId}`, '_blank');
+                              }}
                               data-testid={`button-view-${result.candidateId}`}
                               title="פתח פרופיל מלא"
                             >
@@ -495,30 +502,36 @@ export default function CVSearchPage() {
         </Card>
       )}
 
-      {/* CV Viewer Modal */}
+      {/* CV Viewer Popup */}
       {selectedCandidateForCV && (
-        <Card className="mt-6">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  קורות חיים - {selectedCandidateForCV.firstName} {selectedCandidateForCV.lastName}
-                </CardTitle>
-                <CardDescription>
-                  מילות מפתח מודגשות: {selectedCandidateForCV.matchedKeywords.join(', ')}
-                </CardDescription>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedCandidateForCV(null)}>
+          <Card className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
+            <CardHeader className="border-b">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Eye className="h-5 w-5 text-green-600" />
+                    {selectedCandidateForCV.firstName} {selectedCandidateForCV.lastName}
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 mr-2">
+                      תוצאות חיפוש
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    <span className="text-green-700 font-medium">מילות מפתח מודגשות בירוק: </span>
+                    {selectedCandidateForCV.matchedKeywords.join(', ')}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedCandidateForCV(null)}
+                  data-testid="button-close-cv"
+                  className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedCandidateForCV(null)}
-                data-testid="button-close-cv"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
+            </CardHeader>
           
           <CardContent>
             <ScrollArea className="h-96 w-full border rounded-md p-4 bg-white dark:bg-gray-800">
@@ -527,7 +540,8 @@ export default function CVSearchPage() {
                 dangerouslySetInnerHTML={{
                   __html: highlightKeywords(
                     selectedCandidateForCV.cvPreview, 
-                    [...positiveKeywords, ...selectedCandidateForCV.matchedKeywords]
+                    [...positiveKeywords, ...selectedCandidateForCV.matchedKeywords],
+                    true // שימוש בהדגשות ירוקות בפופ-אפ
                   )
                 }}
                 data-testid="cv-content-highlighted"
@@ -557,6 +571,7 @@ export default function CVSearchPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       )}
     </div>
   );
