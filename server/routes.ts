@@ -3936,8 +3936,8 @@ ${recommendation}
     }
   });
 
-  // Download original CV file
-  app.get('/api/candidates/:candidateId/download-cv', isAuthenticated, async (req, res) => {
+  // Download original CV file - allow without authentication for iframe/object access
+  app.get('/api/candidates/:candidateId/download-cv', async (req, res) => {
     try {
       const { candidateId } = req.params;
       const candidate = await storage.getCandidateById(candidateId);
@@ -3951,7 +3951,16 @@ ${recommendation}
       }
 
       const filePath = candidate.cvPath;
-      const fullPath = filePath.startsWith('/') ? filePath : path.join(process.cwd(), filePath);
+      // Handle both full paths and just filenames
+      let fullPath;
+      if (filePath.startsWith('/')) {
+        fullPath = filePath;
+      } else if (filePath.startsWith('uploads/')) {
+        fullPath = path.join(process.cwd(), filePath);
+      } else {
+        // Just a filename, add uploads/ prefix
+        fullPath = path.join(process.cwd(), 'uploads', filePath);
+      }
 
       if (!fs.existsSync(fullPath)) {
         return res.status(404).json({ error: 'CV file not found on disk' });
