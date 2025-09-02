@@ -172,17 +172,17 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       street: candidate?.street || "",
       houseNumber: candidate?.houseNumber || "",
       zipCode: candidate?.zipCode || "",
-      gender: candidate?.gender,
-      maritalStatus: candidate?.maritalStatus,
-      drivingLicense: candidate?.drivingLicense || false,
+      gender: candidate?.gender as "male" | "female" | "other" | undefined,
+      maritalStatus: candidate?.maritalStatus as "single" | "married" | "divorced" | "widowed" | "other" | undefined,
+      drivingLicense: candidate?.drivingLicense ? true : false,
       address: candidate?.address || "",
       profession: candidate?.profession || "",
-      experience: candidate?.experience || "",
-      expectedSalary: candidate?.expectedSalary || "",
-      status: candidate?.status || "available",
-      rating: candidate?.rating,
+      experience: candidate?.experience?.toString() || "",
+      expectedSalary: candidate?.expectedSalary?.toString() || "",
+      status: (candidate?.status as "available" | "employed" | "inactive" | "blacklisted") || "available",
+      rating: candidate?.rating || undefined,
       notes: candidate?.notes || "",
-      tags: candidate?.tags || "",
+      tags: Array.isArray(candidate?.tags) ? candidate.tags.join(', ') : candidate?.tags || "",
       recruitmentSource: candidate?.recruitmentSource || "",
     },
   });
@@ -352,7 +352,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לכרטיס המועמד`,
                   variant: "destructive",
                   action: {
-                    altText: "מעבר למועמד",
                     action: () => window.location.href = `/candidates`
                   }
                 });
@@ -365,7 +364,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לרשימת המועמדים`,
               variant: "destructive",
               action: {
-                altText: "מעבר למועמדים",
                 action: () => window.location.href = `/candidates`
               }
             });
@@ -639,7 +637,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 <CardHeader className="pb-3">
                   <div className="flex justify-end">
                     <Button 
-                      onClick={candidate ? saveAllChanges : form.handleSubmit(onSubmit)} 
+                      onClick={candidate ? saveAllChanges : form.handleSubmit((data: FormData) => onSubmit(data))} 
                       disabled={candidate ? updateMutation.isPending : (createCandidate.isPending || updateCandidate.isPending)}
                       className="flex items-center gap-2"
                     >
