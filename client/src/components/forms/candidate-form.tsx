@@ -341,20 +341,26 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
         // Check if a duplicate candidate was found
         if (result.extractedData && result.extractedData.duplicateInfo && result.extractedData.duplicateInfo.exists) {
-          console.log('🚨 נמצא מועמד כפול! מציג פופ אפ');
+          console.log('🚨 נמצא מועמד כפול! לא נוצר מועמד חדש');
           const existingCandidate = result.extractedData.duplicateInfo.existingCandidate;
           
-          setDuplicateDialog({
-            open: true,
-            candidateData: data,
-            existingCandidateId: existingCandidate.id
+          toast({
+            title: "מועמד כפול זוהה!",
+            description: `המועמד ${existingCandidate.firstName} ${existingCandidate.lastName} כבר קיים במערכת. לא נוצר מועמד חדש.`,
+            variant: "destructive"
           });
           
-          toast({
-            title: "נמצא מועמד דומה!",
-            description: `המועמד ${existingCandidate.firstName} ${existingCandidate.lastName} כבר קיים במערכת. המועמד החדש נשמר בכל זאת.`,
-            variant: "default"
-          });
+          // מציע אפשרות לעבור למועמד הקיים
+          if (result.extractedData.existingCandidateId) {
+            setTimeout(() => {
+              const goToExisting = confirm(`האם תרצה לעבור לכרטיס המועמד הקיים?`);
+              if (goToExisting) {
+                navigate(`/candidates/${result.extractedData.existingCandidateId}`);
+              }
+            }, 2000);
+          }
+          
+          return; // לא ממשיך לעדכן טופס
         }
 
         // If candidate was created automatically, show success message

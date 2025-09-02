@@ -1415,19 +1415,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cleanMobile = extractedData.mobile?.trim() || '';
           const cleanNationalId = extractedData.nationalId?.trim() || '';
           
-          // בדיקת מועמדים כפולים (רק להתראה, לא למניעה)
+          // בדיקת מועמדים כפולים (מונעת יצירה כפולה!)
           let duplicateInfo = null;
           if (cleanEmail || cleanMobile || cleanNationalId) {
             console.log('🔍 בודק מועמדים כפולים לפני יצירה...');
             const existingCandidate = await storage.findCandidateByContactInfo(cleanMobile, cleanEmail, cleanNationalId);
             
             if (existingCandidate) {
-              console.log('⚠️⚠️⚠️ נמצא מועמד כפול! ממשיך ביצירה בכל זאת');
+              console.log('⚠️⚠️⚠️ נמצא מועמד כפול! לא יוצר מועמד חדש!');
               console.log(`🆔 מועמד קיים: ${existingCandidate.firstName} ${existingCandidate.lastName}`);
-              duplicateInfo = {
-                exists: true,
-                existingCandidate: existingCandidate
-              };
+              
+              // מחזיר את הנתונים החולצים אבל לא יוצר מועמד חדש
+              return res.json({
+                extractedData: {
+                  ...extractedData,
+                  candidateCreated: false,
+                  duplicateInfo: {
+                    exists: true,
+                    existingCandidate: existingCandidate
+                  },
+                  message: `מועמד כפול זוהה! מועמד ${existingCandidate.firstName} ${existingCandidate.lastName} כבר קיים במערכת.`,
+                  existingCandidateId: existingCandidate.id
+                }
+              });
             }
           }
 
