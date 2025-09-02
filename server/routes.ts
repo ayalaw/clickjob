@@ -3837,7 +3837,7 @@ ${recommendation}
   // CV Search Routes
   app.post('/api/search/search', isAuthenticated, async (req, res) => {
     try {
-      const { positiveKeywords = [], negativeKeywords = [] } = req.body;
+      const { positiveKeywords = [], negativeKeywords = [], includeNotes = false } = req.body;
 
       // Validate request
       if (!Array.isArray(positiveKeywords) || !Array.isArray(negativeKeywords)) {
@@ -3854,7 +3854,7 @@ ${recommendation}
       }
 
       const startTime = Date.now();
-      const results = await storage.searchCVs({ positiveKeywords, negativeKeywords });
+      const results = await storage.searchCVs({ positiveKeywords, negativeKeywords, includeNotes });
       const searchTime = Date.now() - startTime;
 
       res.status(200).json({

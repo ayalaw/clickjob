@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, X, Plus, Eye, Mail, Calendar, Loader2, Clock, Users } from 'lucide-react';
@@ -40,6 +41,7 @@ export default function CVSearchPage() {
   const [newNegativeKeyword, setNewNegativeKeyword] = useState('');
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [includeNotes, setIncludeNotes] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchStats, setSearchStats] = useState<{ totalCount: number; searchTime: number } | null>(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
@@ -88,6 +90,7 @@ export default function CVSearchPage() {
       const res = await apiRequest('POST', '/api/search/search', {
         positiveKeywords,
         negativeKeywords,
+        includeNotes,
       });
 
       const response = await res.json() as { success: boolean; data: SearchResponse };
@@ -285,6 +288,22 @@ export default function CVSearchPage() {
                 </Badge>
               ))}
             </div>
+          </div>
+
+          {/* Include Notes Option */}
+          <div className="flex items-center space-x-2 space-x-reverse">
+            <Switch
+              id="include-notes"
+              checked={includeNotes}
+              onCheckedChange={setIncludeNotes}
+              data-testid="switch-include-notes"
+            />
+            <label
+              htmlFor="include-notes"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              כלול גם הערות על מועמדים בחיפוש
+            </label>
           </div>
 
           {/* Search Button */}

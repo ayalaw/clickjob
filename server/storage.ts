@@ -566,13 +566,13 @@ export class DatabaseStorage implements IStorage {
     return candidate;
   }
 
-  async searchCVs(filters: { positiveKeywords: string[]; negativeKeywords: string[] }): Promise<SearchResult[]> {
+  async searchCVs(filters: { positiveKeywords: string[]; negativeKeywords: string[]; includeNotes?: boolean }): Promise<SearchResult[]> {
     try {
-      const { positiveKeywords = [], negativeKeywords = [] } = filters;
+      const { positiveKeywords = [], negativeKeywords = [], includeNotes = false } = filters;
 
-      console.log(`🔍 מחפש עם מילות מפתח: חיוביות [${positiveKeywords.join(', ')}], שליליות [${negativeKeywords.join(', ')}]`);
+      console.log(`🔍 מחפש עם מילות מפתח: חיוביות [${positiveKeywords.join(', ')}], שליליות [${negativeKeywords.join(', ')}]${includeNotes ? ', כולל הערות' : ''}`);
 
-      // שלב 1: קח את כל המועמדים 
+      // שלב 1: קח את כל המועמדים (כולל הערות אם נדרש)
       const allCandidates = await db
         .select({
           candidateId: candidates.id,
@@ -584,6 +584,7 @@ export class DatabaseStorage implements IStorage {
           profession: candidates.profession,
           cvContent: candidates.cvContent,
           cvPath: candidates.cvPath,
+          notes: candidates.notes,
           extractedAt: candidates.createdAt,
         })
         .from(candidates)
@@ -617,6 +618,28 @@ export class DatabaseStorage implements IStorage {
             }
           } catch (error) {
             console.error(`❌ שגיאה בחילוץ טקסט עבור ${candidate.candidateId}:`, error);
+          }
+        }
+
+        // אם נדרש חיפוש בהערות, הוסף הערות למועמד
+        if (includeNotes) {
+          // הוסף הערות ישירות מהמועמד
+          if (candidate.notes) {
+            candidateText += ' ' + candidate.notes;
+          }
+          
+          // הוסף הערות מאירועי המועמד
+          try {
+            const candidateEvents = await this.getCandidateEvents(candidate.candidateId);
+            const eventsText = candidateEvents
+              .map(event => event.description || '')
+              .filter(desc => desc.trim().length > 0)
+              .join(' ');
+            if (eventsText) {
+              candidateText += ' ' + eventsText;
+            }
+          } catch (error) {
+            console.error(`❌ שגיאה בקבלת אירועי מועמד ${candidate.candidateId}:`, error);
           }
         }
 
