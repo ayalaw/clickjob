@@ -431,6 +431,7 @@ export default function CandidateDetail() {
   };
 
   const handleAddToInterview = async () => {
+    alert("handleAddToInterview התחיל!");
     console.log("🚀 התחיל handleAddToInterview");
     if (!selectedInterviewJobIds.length || !candidate) {
       console.log("❌ אין משרות נבחרות או מועמד");
