@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -367,10 +367,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
             variant: "default"
           });
           
-          // Redirect to the new candidate's page
+          // Navigate to the new candidate's page without page refresh
           if (result.extractedData.candidateId) {
             setTimeout(() => {
-              window.location.href = `/candidates/${result.extractedData.candidateId}`;
+              navigate(`/candidates/${result.extractedData.candidateId}`);
             }, 2000);
             return; // Don't fill the form since candidate was created
           }
@@ -403,13 +403,15 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           form.setValue('email', data.email);
           console.log('אימייל עודכן:', data.email);
         }
+        // ★ תיקון: טלפון נייד צריך להיכנס לשדה mobile (למעלה)
         if (data.mobile) {
           form.setValue('mobile', data.mobile);
-          console.log('נייד עודכן:', data.mobile);
+          console.log('נייד עודכן בשדה העליון:', data.mobile);
         }
+        // טלפון בית/עבודה נכנס לשדה phone
         if (data.phone) {
           form.setValue('phone', data.phone);
-          console.log('טלפון עודכן:', data.phone);
+          console.log('טלפון נוסף עודכן:', data.phone);
         }
         if (data.nationalId) form.setValue('nationalId', data.nationalId);
         if (data.city) form.setValue('city', data.city);
