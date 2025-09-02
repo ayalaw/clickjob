@@ -3936,6 +3936,37 @@ ${recommendation}
     }
   });
 
+  // Download original CV file
+  app.get('/api/candidates/:candidateId/download-cv', isAuthenticated, async (req, res) => {
+    try {
+      const { candidateId } = req.params;
+      const candidate = await storage.getCandidateById(candidateId);
+      
+      if (!candidate) {
+        return res.status(404).json({ error: 'Candidate not found' });
+      }
+
+      if (!candidate.cvPath) {
+        return res.status(404).json({ error: 'CV file not found' });
+      }
+
+      const filePath = candidate.cvPath;
+      const fullPath = filePath.startsWith('/') ? filePath : path.join(process.cwd(), filePath);
+
+      if (!fs.existsSync(fullPath)) {
+        return res.status(404).json({ error: 'CV file not found on disk' });
+      }
+
+      // Send the file with proper headers
+      const fileName = `CV_${candidate.firstName}_${candidate.lastName}.${filePath.split('.').pop()}`;
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      res.sendFile(path.resolve(fullPath));
+    } catch (error) {
+      console.error('Download CV error:', error);
+      res.status(500).json({ error: 'Failed to download CV file' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

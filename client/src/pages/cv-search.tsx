@@ -413,7 +413,11 @@ export default function CVSearchPage() {
                     {searchResults.map((result) => (
                       <TableRow 
                         key={result.candidateId}
-                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className={`cursor-pointer transition-colors ${
+                          selectedCandidateForCV?.candidateId === result.candidateId
+                            ? 'bg-blue-50 dark:bg-blue-950 border-l-4 border-blue-500'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
                         onClick={() => viewFullCV(result)}
                         data-testid={`row-candidate-${result.candidateId}`}
                       >
@@ -561,13 +565,25 @@ export default function CVSearchPage() {
                   </Badge>
                 ))}
               </div>
-              <Button
-                variant="outline"
-                onClick={() => window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank')}
-                data-testid="button-open-full-profile"
-              >
-                פתח פרופיל מלא
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank')}
+                  data-testid="button-open-full-profile"
+                >
+                  פתח פרופיל מלא
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                  onClick={() => {
+                    window.open(`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`, '_blank');
+                  }}
+                  data-testid="button-view-original-file"
+                >
+                  📄 צפה בקובץ המקורי
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
