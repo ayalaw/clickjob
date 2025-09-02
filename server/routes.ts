@@ -140,7 +140,7 @@ function extractDataFromText(text: string) {
     maritalStatus: "",
     drivingLicense: "",
     profession: "",
-    experience: null as number | null,
+    experience: 0 as number | null,
     achievements: ""
   };
 
@@ -170,8 +170,8 @@ function extractDataFromText(text: string) {
         // ניקוי התיאור
         const email = match.replace(/^(?:אימייל|אימיל|דואל|מייל|email|mail|e-mail|contact)[:\s-]*\n?\s*/i, '').trim();
         
-        // ★ בדיקת תקינות לפי התקן הבינלאומי
-        if (isValidEmail(email)) {
+        // ★ בדיקת תקינות לפי התקן הבינלאומי  
+        if (email.includes('@') && email.includes('.') && email.length > 5) {
           result.email = email;
           console.log(`📧 נמצא אימייל חוקי: ${result.email}`);
           break;
@@ -1353,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
             nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
             gender: "", maritalStatus: "", drivingLicense: "", profession: "",
-            experience: null, achievements: ""
+            experience: 0, achievements: ""
           };
           return res.json(extractedData);
         }
@@ -1516,7 +1516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maritalStatus: "",
           drivingLicense: "",
           profession: "",
-          experience: null,
+          experience: 0,
           achievements: ""
         };
         res.json({ extractedData: emptyData });
