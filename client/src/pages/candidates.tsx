@@ -310,11 +310,11 @@ export default function Candidates() {
                           <TableCell>
                             {candidate.recruitmentSource || "-"}
                           </TableCell>
-                          <TableCell data-testid={`text-candidate-phone-${candidate.id}`}>
-                            {candidate.phone ? (
+                          <TableCell data-testid={`text-candidate-mobile-${candidate.id}`}>
+                            {candidate.mobile ? (
                               <div className="flex items-center">
                                 <Phone className="h-3 w-3 ml-1" />
-                                {candidate.phone}
+                                {candidate.mobile}
                               </div>
                             ) : "-"}
                           </TableCell>
