@@ -321,35 +321,54 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         const data = result.extractedData || result;
         
         // Check if we have enough data to check for duplicates
+        console.log('🔍 בודק מועמדים כפולים עבור:', { email: data.email, mobile: data.mobile, nationalId: data.nationalId });
+        
         if (data.email || data.mobile) {
           try {
+            const duplicatePayload = { 
+              email: data.email, 
+              mobile: data.mobile,
+              nationalId: data.nationalId 
+            };
+            console.log('📤 שולח בקשת בדיקה:', duplicatePayload);
+            
             const duplicateResponse = await fetch('/api/candidates/check-duplicate', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ 
-                email: data.email, 
-                mobile: data.mobile,
-                nationalId: data.nationalId 
-              }),
+              body: JSON.stringify(duplicatePayload),
             });
+            
+            console.log('📥 קיבל תשובה:', duplicateResponse.status);
             
             if (duplicateResponse.ok) {
               const duplicateResult = await duplicateResponse.json();
+              console.log('📋 תוצאת בדיקה:', duplicateResult);
+              
               if (duplicateResult.exists) {
-                console.log('Found existing candidate:', duplicateResult.candidate);
+                console.log('🚨 נמצא מועמד כפול! מציג פופ אפ');
                 setDuplicateDialog({
                   open: true,
                   candidateData: data,
                   existingCandidateId: duplicateResult.candidate.id
                 });
+                
+                toast({
+                  title: "נמצא מועמד דומה!",
+                  description: `המועמד ${duplicateResult.candidate.firstName} ${duplicateResult.candidate.lastName} כבר קיים במערכת`,
+                  variant: "destructive"
+                });
                 return; // Don't fill the form if candidate exists
+              } else {
+                console.log('✅ לא נמצא מועמד כפול - ממשיך במילוי הטופס');
               }
             }
           } catch (error) {
-            console.error('Error checking for duplicates:', error);
+            console.error('❌ שגיאה בבדיקת מועמדים כפולים:', error);
           }
+        } else {
+          console.log('⚠️ אין מספיק נתונים לבדיקת מועמדים כפולים');
         }
 
         // Check if there's an error indicating candidate creation failed
