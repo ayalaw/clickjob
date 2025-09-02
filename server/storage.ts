@@ -57,6 +57,10 @@ import {
 import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count, or, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import * as fs from 'fs';
+import * as path from 'path';
+import mammoth from 'mammoth';
+import { execSync } from 'child_process';
 
 // CV Search types
 export interface SearchResult {
@@ -69,6 +73,74 @@ export interface SearchResult {
   matchedKeywords: string[];
   cvPreview: string;
   extractedAt: Date;
+}
+
+// פונקציה לחילוץ טקסט מקובץ קורות חיים (PDF/DOCX)
+async function extractTextFromCVFile(cvPath: string): Promise<string> {
+  try {
+    // נתיב מלא לקובץ
+    const fullPath = cvPath.startsWith('uploads/') ? cvPath : path.join('uploads', cvPath);
+    
+    if (!fs.existsSync(fullPath)) {
+      console.log(`📄 קובץ לא קיים: ${fullPath}`);
+      return '';
+    }
+
+    const fileBuffer = fs.readFileSync(fullPath);
+    
+    // זיהוי סוג הקובץ לפי ההמצאות
+    const isPDF = fileBuffer.length >= 4 && fileBuffer.toString('ascii', 0, 4) === '%PDF';
+    const isDOCX = fileBuffer.length >= 2 && fileBuffer.toString('ascii', 0, 2) === 'PK';
+    
+    if (isDOCX) {
+      console.log(`📄 מחלץ טקסט מ-DOCX: ${cvPath}`);
+      const result = await mammoth.extractRawText({ buffer: fileBuffer });
+      return result.value || '';
+    } else if (isPDF) {
+      console.log(`📄 מחלץ טקסט מ-PDF: ${cvPath}`);
+      const tempFilePath = `/tmp/${Date.now()}.pdf`;
+      const textFilePath = `/tmp/${Date.now()}.txt`;
+      
+      try {
+        // כתיבת הקובץ למקום זמני
+        fs.writeFileSync(tempFilePath, fileBuffer);
+        
+        // חילוץ טקסט בעזרת pdftotext
+        try {
+          execSync(`pdftotext "${tempFilePath}" "${textFilePath}"`);
+          const extractedText = fs.readFileSync(textFilePath, 'utf8');
+          
+          // ניקוי קבצים זמניים
+          if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+          if (fs.existsSync(textFilePath)) fs.unlinkSync(textFilePath);
+          
+          return extractedText || '';
+        } catch (pdfError) {
+          console.log('📑 pdftotext לא זמין, מנסה עם strings');
+          const stringsOutput = execSync(`strings "${tempFilePath}"`).toString('utf8');
+          
+          // ניקוי קבצים זמניים
+          if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+          
+          return stringsOutput || '';
+        }
+      } catch (error) {
+        console.error('שגיאה בחילוץ PDF:', error);
+        return '';
+      }
+    }
+    
+    return '';
+  } catch (error) {
+    console.error(`שגיאה בחילוץ טקסט מקובץ ${cvPath}:`, error);
+    return '';
+  }
+}
+
+// פונקציה לבדיקה אם מילת מפתח נמצאת בטקסט
+function textContainsKeyword(text: string | null | undefined, keyword: string): boolean {
+  if (!text || !keyword) return false;
+  return text.toLowerCase().includes(keyword.toLowerCase());
 }
 
 export interface IStorage {
@@ -498,54 +570,10 @@ export class DatabaseStorage implements IStorage {
     try {
       const { positiveKeywords = [], negativeKeywords = [] } = filters;
 
-      // Build query with proper conditions
-      let conditions = [];
+      console.log(`🔍 מחפש עם מילות מפתח: חיוביות [${positiveKeywords.join(', ')}], שליליות [${negativeKeywords.join(', ')}]`);
 
-      // Add positive keyword conditions (must contain at least one keyword)
-      if (positiveKeywords.length > 0) {
-        const positiveConditions = positiveKeywords.map(keyword => 
-          sql`(
-            (${candidates.cvContent} IS NOT NULL AND ${candidates.cvContent} ILIKE ${`%${keyword}%`}) OR 
-            (${candidates.profession} IS NOT NULL AND ${candidates.profession} ILIKE ${`%${keyword}%`}) OR 
-            (${candidates.firstName} IS NOT NULL AND ${candidates.firstName} ILIKE ${`%${keyword}%`}) OR 
-            (${candidates.lastName} IS NOT NULL AND ${candidates.lastName} ILIKE ${`%${keyword}%`})
-          )`
-        );
-        
-        // At least one positive keyword must match
-        const anyPositive = positiveConditions.reduce((acc, condition) => 
-          acc ? sql`${acc} OR ${condition}` : condition
-        );
-        conditions.push(sql`(${anyPositive})`);
-      }
-
-      // Add negative keyword conditions (must NOT contain ANY keywords)  
-      if (negativeKeywords.length > 0) {
-        const negativeConditions = negativeKeywords.map(keyword => 
-          sql`(
-            (${candidates.cvContent} IS NULL OR ${candidates.cvContent} NOT ILIKE ${`%${keyword}%`}) AND 
-            (${candidates.profession} IS NULL OR ${candidates.profession} NOT ILIKE ${`%${keyword}%`}) AND
-            (${candidates.firstName} IS NULL OR ${candidates.firstName} NOT ILIKE ${`%${keyword}%`}) AND
-            (${candidates.lastName} IS NULL OR ${candidates.lastName} NOT ILIKE ${`%${keyword}%`})
-          )`
-        );
-        
-        // All negative keywords must NOT match
-        const allNegative = negativeConditions.reduce((acc, condition) => 
-          acc ? sql`${acc} AND ${condition}` : condition
-        );
-        conditions.push(allNegative);
-      }
-
-      // Optional: CV content filter - if no CV content, still allow name/profession matches
-      // conditions.push(isNotNull(candidates.cvContent));
-      // conditions.push(sql`LENGTH(TRIM(${candidates.cvContent})) > 0`);
-
-      const whereCondition = conditions.reduce((acc, condition) => 
-        acc ? sql`${acc} AND ${condition}` : condition
-      );
-
-      const results = await db
+      // שלב 1: קח את כל המועמדים 
+      const allCandidates = await db
         .select({
           candidateId: candidates.id,
           firstName: candidates.firstName,
@@ -553,50 +581,91 @@ export class DatabaseStorage implements IStorage {
           city: candidates.city,
           phone: candidates.mobile,
           email: candidates.email,
+          profession: candidates.profession,
           cvContent: candidates.cvContent,
+          cvPath: candidates.cvPath,
           extractedAt: candidates.createdAt,
         })
         .from(candidates)
-        .where(whereCondition)
-        .orderBy(desc(candidates.createdAt))
-        .limit(100);
+        .orderBy(desc(candidates.createdAt));
 
-      // Process results to create preview and match keywords
-      const processedResults: SearchResult[] = results.map(result => {
-        const allKeywords = [...positiveKeywords, ...negativeKeywords];
-        const matchedKeywords: string[] = [];
+      console.log(`📊 נמצאו ${allCandidates.length} מועמדים לבדיקה`);
+
+      // שלב 2: עבור על כל מועמד ובדוק אם הוא מתאים
+      const matchingCandidates: SearchResult[] = [];
+
+      for (const candidate of allCandidates) {
+        let candidateText = '';
         
-        // Find matched positive keywords
-        positiveKeywords.forEach(keyword => {
-          const regex = new RegExp(keyword, 'gi');
-          const fullName = `${result.firstName} ${result.lastName}`;
-          if (regex.test(result.cvContent || '') || regex.test(fullName) || regex.test(result.firstName || '') || regex.test(result.lastName || '')) {
-            matchedKeywords.push(keyword);
+        // צירוף טקסט זמין: שם, מקצוע
+        const nameProfession = `${candidate.firstName || ''} ${candidate.lastName || ''} ${candidate.profession || ''}`.trim();
+        candidateText = nameProfession;
+        
+        // אם יש תוכן קורות חיים, הוסף אותו
+        if (candidate.cvContent) {
+          candidateText += ' ' + candidate.cvContent;
+        }
+        
+        // אם יש קובץ קורות חיים אבל אין תוכן חולץ, נחלץ עכשיו
+        if (candidate.cvPath && !candidate.cvContent) {
+          console.log(`📄 מחלץ טקסט מקובץ עבור ${candidate.firstName} ${candidate.lastName}`);
+          try {
+            const extractedText = await extractTextFromCVFile(candidate.cvPath);
+            if (extractedText) {
+              candidateText += ' ' + extractedText;
+              console.log(`✅ חילוץ הצליח, ${extractedText.length} תווים`);
+            }
+          } catch (error) {
+            console.error(`❌ שגיאה בחילוץ טקסט עבור ${candidate.candidateId}:`, error);
           }
-        });
-
-        // Create preview with highlighted keywords
-        let cvPreview = (result.cvContent || '').substring(0, 300);
-        
-        // Add ellipsis if truncated
-        if ((result.cvContent || '').length > 300) {
-          cvPreview += '...';
         }
 
-        return {
-          candidateId: result.candidateId,
-          firstName: result.firstName,
-          lastName: result.lastName,
-          city: result.city || '',
-          phone: result.phone || '',
-          email: result.email || '',
-          matchedKeywords,
-          cvPreview,
-          extractedAt: result.extractedAt || new Date(),
-        };
-      });
+        // בדוק אם המועמד מתאים לקריטריונים
+        let matches = true;
+        const matchedKeywords: string[] = [];
 
-      return processedResults;
+        // בדיקת מילות מפתח חיוביות (לפחות אחת צריכה להתאים)
+        if (positiveKeywords.length > 0) {
+          let hasPositiveMatch = false;
+          for (const keyword of positiveKeywords) {
+            if (textContainsKeyword(candidateText, keyword)) {
+              hasPositiveMatch = true;
+              matchedKeywords.push(keyword);
+            }
+          }
+          if (!hasPositiveMatch) {
+            matches = false;
+          }
+        }
+
+        // בדיקת מילות מפתח שליליות (אף אחת לא צריכה להתאים)
+        if (matches && negativeKeywords.length > 0) {
+          for (const keyword of negativeKeywords) {
+            if (textContainsKeyword(candidateText, keyword)) {
+              matches = false;
+              break;
+            }
+          }
+        }
+
+        // אם המועמד מתאים, הוסף אותו לתוצאות
+        if (matches) {
+          matchingCandidates.push({
+            candidateId: candidate.candidateId,
+            firstName: candidate.firstName || '',
+            lastName: candidate.lastName || '',
+            city: candidate.city || '',
+            phone: candidate.phone || '',
+            email: candidate.email || '',
+            matchedKeywords,
+            cvPreview: candidateText.substring(0, 300) + (candidateText.length > 300 ? '...' : ''),
+            extractedAt: candidate.extractedAt,
+          });
+        }
+      }
+
+      console.log(`✅ נמצאו ${matchingCandidates.length} מועמדים מתאימים`);
+      return matchingCandidates;
 
     } catch (error) {
       console.error('Error searching CVs:', error);
