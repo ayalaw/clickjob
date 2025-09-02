@@ -1011,9 +1011,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // בדיקת כפילויות לפני יצירת מועמד חדש
       const existingCandidate = await storage.findCandidateByContactInfo(
-        candidateData.mobile,
-        candidateData.email,
-        candidateData.nationalId
+        candidateData.mobile || '',
+        candidateData.email || '',
+        candidateData.nationalId || ''
       );
       
       if (existingCandidate) {
@@ -1031,12 +1031,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
-      if (!candidateData.recruitmentSource && (req.user as any)?.claims) {
-        const userClaims = (req.user as any).claims;
-        const userFirstName = userClaims.first_name || '';
-        const userLastName = userClaims.last_name || '';
-        const userName = `${userFirstName} ${userLastName}`.trim() || userClaims.email;
-        candidateData.recruitmentSource = userName;
+      if (!candidateData.recruitmentSource && req.user && 'email' in req.user) {
+        const userEmail = (req.user as any).email;
+        candidateData.recruitmentSource = userEmail || 'משתמש לא ידוע';
       }
       
       const candidate = await storage.createCandidate(candidateData);
