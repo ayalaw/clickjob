@@ -138,9 +138,16 @@ export default function CVSearchPage() {
     if (!text || keywords.length === 0) return text;
     
     let highlightedText = text;
-    keywords.forEach(keyword => {
-      const regex = new RegExp(`(${keyword})`, 'gi');
-      highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-700 px-1 rounded">$1</mark>');
+    
+    // מיון מילות המפתח לפי אורך (הארוכות ראשונות) כדי למנוע התנגשויות
+    const uniqueKeywords = Array.from(new Set(keywords));
+    const sortedKeywords = uniqueKeywords.sort((a, b) => b.length - a.length);
+    
+    sortedKeywords.forEach(keyword => {
+      if (keyword.trim()) {
+        const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-300 dark:bg-yellow-600 px-1 py-0.5 rounded font-semibold">$1</mark>');
+      }
     });
     
     return highlightedText;
@@ -490,13 +497,13 @@ export default function CVSearchPage() {
           </CardHeader>
           
           <CardContent>
-            <ScrollArea className="h-96 w-full border rounded-md p-4">
+            <ScrollArea className="h-96 w-full border rounded-md p-4 bg-white dark:bg-gray-800">
               <div 
-                className="text-sm leading-relaxed whitespace-pre-wrap"
+                className="text-sm leading-relaxed whitespace-pre-wrap font-mono"
                 dangerouslySetInnerHTML={{
                   __html: highlightKeywords(
-                    selectedCandidateForCV.cvPreview.replace(/\.\.\.$/, ''), 
-                    [...positiveKeywords]
+                    selectedCandidateForCV.cvPreview, 
+                    [...positiveKeywords, ...selectedCandidateForCV.matchedKeywords]
                   )
                 }}
                 data-testid="cv-content-highlighted"
