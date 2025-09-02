@@ -146,10 +146,20 @@ function extractDataFromText(text: string) {
 
   // חילוץ אימייל משופר - מחפש בכל הטקסט עם מספר שיטות
   const emailPatterns = [
-    /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g, // דפוס רגיל
-    /([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/g, // דפוס רחב
-    /(?:אימייל|אימיל|email|mail)[:\s]*([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/gi, // עם תיאור
-    /([A-Za-z0-9]+@[a-zA-Z]+\.[a-zA-Z]{2,})/g // דפוס פשוט יותר
+    // ★ דפוס מדויק לפי תקן RFC 5322
+    /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g,
+    
+    // עם תיאורים בעברית
+    /(?:אימייל|אימיל|דואל|מייל)[:\s-]*\n?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
+    
+    // עם תיאורים באנגלית  
+    /(?:email|mail|e-mail|contact)[:\s-]*\n?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
+    
+    // בתחילת/סוף שורה
+    /^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}),?\s*$/gm,
+    
+    // פורמט פשוט ללא תיאור
+    /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g
   ];
   
   for (const pattern of emailPatterns) {
@@ -158,11 +168,15 @@ function extractDataFromText(text: string) {
     if (emailMatches) {
       for (const match of emailMatches) {
         // ניקוי התיאור
-        const email = match.replace(/^(?:אימייל|אימיל|email|mail)[:\s]*/i, '').trim();
-        if (email.includes('@') && email.includes('.') && email.length > 5) {
+        const email = match.replace(/^(?:אימייל|אימיל|דואל|מייל|email|mail|e-mail|contact)[:\s-]*\n?\s*/i, '').trim();
+        
+        // ★ בדיקת תקינות לפי התקן הבינלאומי
+        if (isValidEmail(email)) {
           result.email = email;
-          console.log(`📧 נמצא אימייל: ${result.email}`);
+          console.log(`📧 נמצא אימייל חוקי: ${result.email}`);
           break;
+        } else {
+          console.log(`⚠️ אימייל לא חוקי: ${email} - לא תואם לתקן`);
         }
       }
     }
@@ -270,6 +284,40 @@ function extractDataFromText(text: string) {
            !ignoredWords.includes(name) &&
            !/^\d+$/.test(name) && // לא רק מספרים
            !/^[^\u0590-\u05FF\u0041-\u005A\u0061-\u007A]+$/.test(name); // לא רק סימנים
+  };
+
+  // ★ פונקציה לבדיקת תקינות אימייל לפי התקן הבינלאומי RFC 5322
+  const isValidEmail = (email: string): boolean => {
+    // בדיקות בסיסיות
+    if (!email || email.length < 5 || email.length > 254) return false;
+    
+    // חייב להכיל @ בדיוק פעם אחת
+    const atCount = (email.match(/@/g) || []).length;
+    if (atCount !== 1) return false;
+    
+    const [localPart, domain] = email.split('@');
+    
+    // בדיקת החלק המקומי (לפני @)
+    if (!localPart || localPart.length > 64) return false;
+    if (localPart.startsWith('.') || localPart.endsWith('.')) return false;
+    if (localPart.includes('..')) return false; // לא שתי נקודות רצופות
+    if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) return false;
+    
+    // בדיקת הדומיין (אחרי @)
+    if (!domain || domain.length > 253) return false;
+    if (domain.startsWith('.') || domain.endsWith('.')) return false;
+    if (domain.startsWith('-') || domain.endsWith('-')) return false;
+    if (!/^[a-zA-Z0-9.-]+$/.test(domain)) return false;
+    
+    // חייב להכיל לפחות נקודה אחת בדומיין
+    if (!domain.includes('.')) return false;
+    
+    // בדיקת TLD (החלק האחרון)
+    const parts = domain.split('.');
+    const tld = parts[parts.length - 1];
+    if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+    
+    return true;
   };
   
   // מערכת חילוץ שמות מקיפה - כל סוגי הקורות חיים
