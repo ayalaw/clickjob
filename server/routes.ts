@@ -107,8 +107,15 @@ function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
   
-  // לוקחים את 30% העליון של הטקסט
-  const upperThird = text.substring(0, Math.floor(text.length * 0.3));
+  // ניקוי הטקסט מתווים בלתי חוקיים לפני עיבוד
+  const cleanedText = text
+    .replace(/\u0000/g, '') // NULL bytes
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Control characters
+    .replace(/[\uFFFD]/g, '') // Unicode replacement characters
+    .replace(/[\u200B-\u200F\u2028-\u202F]/g, ''); // Zero-width characters
+  
+  // לוקחים את 30% העליון של הטקסט הנקי
+  const upperThird = cleanedText.substring(0, Math.floor(cleanedText.length * 0.3));
   console.log('📄 Upper third length:', upperThird.length);
   
   const result = {
@@ -186,7 +193,7 @@ function extractDataFromText(text: string) {
 
   // חילוץ עיר מהרשימה
   const cityFound = israeliCities.find(city => 
-    upperThird.includes(city) || text.includes(city)
+    upperThird.includes(city) || cleanedText.includes(city)
   );
   if (cityFound) {
     result.city = cityFound;
@@ -1167,7 +1174,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // הכנת נתוני המועמד עם נקיון נתונים מתווים בלתי חוקיים
             const cleanString = (str: string | null | undefined): string => {
               if (!str) return "";
-              return String(str).replace(/\u0000/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+              // ניקוי מתקדם יותר לטקסט מPDF
+              return String(str)
+                .replace(/\u0000/g, '') // NULL bytes
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Control characters
+                .replace(/[\uFFFD]/g, '') // Unicode replacement characters
+                .replace(/[\u200B-\u200F\u2028-\u202F]/g, '') // Zero-width and line separator characters
+                .replace(/[^\x20-\x7E\u0590-\u05FF\u200F\u200E]/g, '') // Keep only ASCII printable + Hebrew + direction marks
+                .trim();
             };
             
             const candidateData = {
