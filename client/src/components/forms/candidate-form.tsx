@@ -370,7 +370,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           return; // לא ממשיך לעדכן טופס
         }
 
-        // If candidate was created automatically, show success message
+        // If candidate was created automatically, show success message and navigate
         if (result.extractedData && result.extractedData.candidateCreated) {
           setWasAutoCreated(true);
           setHasFormChanged(false); // Reset form change tracking
@@ -378,15 +378,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           // Save the candidate ID for navigation button
           if (result.extractedData.candidateId) {
             setAutoCreatedCandidateId(result.extractedData.candidateId);
+            
+            toast({
+              title: "מועמד נוצר בהצלחה!",
+              description: result.extractedData.message || "מועמד נוצר אוטומטית מקורות החיים",
+              variant: "default"
+            });
+            
+            // Navigate to the candidate immediately to show the CV
+            setTimeout(() => {
+              navigate(`/candidates/${result.extractedData.candidateId}`);
+            }, 1500);
           }
-          
-          toast({
-            title: "מועמד נוצר בהצלחה!",
-            description: result.extractedData.message || "מועמד נוצר אוטומטית מקורות החיים",
-            variant: "default"
-          });
-          
-          // Don't automatically navigate - let user choose when to go
         }
 
         // Check if there's an error indicating candidate creation failed

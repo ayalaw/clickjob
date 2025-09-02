@@ -322,43 +322,50 @@ function extractDataFromText(text: string) {
   let birthYear = null;
   let age = null;
 
-  for (const pattern of birthDatePatterns) {
-    const matches = cleanedText.matchAll(pattern);
-    for (const match of matches) {
-      if (pattern.source.includes('גיל|age')) {
-        // זה גיל ישיר
-        const extractedAge = parseInt(match[1]);
-        if (extractedAge >= 16 && extractedAge <= 80) {
-          age = extractedAge;
-          birthYear = new Date().getFullYear() - extractedAge;
-          console.log(`👶 נמצא גיל: ${age} (שנת לידה משוערת: ${birthYear})`);
-          break;
-        }
-      } else if (match[1] && match[1].length === 4) {
-        // זו שנת לידה
-        const year = parseInt(match[1]);
-        if (year >= 1940 && year <= 2025) {
-          birthYear = year;
-          age = new Date().getFullYear() - year;
-          console.log(`📅 נמצאה שנת לידה: ${birthYear} (גיל משוער: ${age})`);
-          break;
-        }
-      } else if (match[3]) {
-        // זה תאריך מלא
-        let year = parseInt(match[3]);
-        if (year < 100) year += (year > 30 ? 1900 : 2000); // המרת שנתיים לארבע ספרות
-        if (year >= 1940 && year <= 2025) {
-          birthYear = year;
-          age = new Date().getFullYear() - year;
-          const day = match[1];
-          const month = match[2];
-          result.birthDate = `${day}/${month}/${year}`;
-          console.log(`📅 נמצא תאריך לידה מלא: ${result.birthDate} (גיל: ${age})`);
-          break;
-        }
+  // חיפוש פשוט יותר ויעיל יותר
+  const birthYearText = cleanedText.match(/שנה?\s*לידה\s*:\s*(\d{4})/i);
+  if (birthYearText) {
+    const year = parseInt(birthYearText[1]);
+    if (year >= 1940 && year <= 2025) {
+      birthYear = year;
+      age = new Date().getFullYear() - year;
+      result.birthDate = year.toString();
+      result.age = age;
+      console.log(`📅 נמצאה שנת לידה: ${birthYear} (גיל משוער: ${age})`);
+    }
+  }
+
+  // אם לא נמצאה שנת לידה, נחפש תאריך מלא
+  if (!birthYear) {
+    const fullDateText = cleanedText.match(/(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2,4})/);
+    if (fullDateText) {
+      let year = parseInt(fullDateText[3]);
+      if (year < 100) year += (year > 30 ? 1900 : 2000);
+      if (year >= 1940 && year <= 2025) {
+        birthYear = year;
+        age = new Date().getFullYear() - year;
+        const day = fullDateText[1];
+        const month = fullDateText[2];
+        result.birthDate = `${day}/${month}/${year}`;
+        result.age = age;
+        console.log(`📅 נמצא תאריך לידה מלא: ${result.birthDate} (גיל: ${age})`);
       }
     }
-    if (birthYear) break;
+  }
+
+  // אם לא נמצא כלום, נחפש שנה עצמאית בשורה
+  if (!birthYear) {
+    const standaloneYear = cleanedText.match(/^(19\d{2}|20\d{2})$/m);
+    if (standaloneYear) {
+      const year = parseInt(standaloneYear[1]);
+      if (year >= 1940 && year <= 2025) {
+        birthYear = year;
+        age = new Date().getFullYear() - year;
+        result.birthDate = year.toString();
+        result.age = age;
+        console.log(`📅 נמצאה שנה עצמאית: ${birthYear} (גיל משוער: ${age})`);
+      }
+    }
   }
 
   // שמירת הנתונים
