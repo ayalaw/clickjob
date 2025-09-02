@@ -1164,32 +1164,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             console.log('🎯 Creating candidate automatically from CV data...');
             
-            // הכנת נתוני המועמד
+            // הכנת נתוני המועמד עם נקיון נתונים מתווים בלתי חוקיים
+            const cleanString = (str: string | null | undefined): string => {
+              if (!str) return "";
+              return String(str).replace(/\u0000/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+            };
+            
             const candidateData = {
-              firstName: extractedData.firstName,
-              lastName: extractedData.lastName,
-              email: extractedData.email || "",
-              mobile: extractedData.mobile || "",
-              phone: extractedData.phone || "",
-              phone2: extractedData.phone2 || "",
-              nationalId: extractedData.nationalId || "",
-              city: extractedData.city || "",
-              street: extractedData.street || "",
-              houseNumber: extractedData.houseNumber || "",
-              zipCode: extractedData.zipCode || "",
-              gender: extractedData.gender || "",
-              maritalStatus: extractedData.maritalStatus || "",
-              drivingLicense: extractedData.drivingLicense || "",
-              address: `${extractedData.street || ""} ${extractedData.houseNumber || ""}`.trim(),
-              profession: extractedData.profession || "",
-              experience: extractedData.experience,
+              firstName: cleanString(extractedData.firstName),
+              lastName: cleanString(extractedData.lastName),
+              email: cleanString(extractedData.email),
+              mobile: cleanString(extractedData.mobile),
+              phone: cleanString(extractedData.phone),
+              phone2: cleanString(extractedData.phone2),
+              nationalId: cleanString(extractedData.nationalId),
+              city: cleanString(extractedData.city),
+              street: cleanString(extractedData.street),
+              houseNumber: cleanString(extractedData.houseNumber),
+              zipCode: cleanString(extractedData.zipCode),
+              gender: cleanString(extractedData.gender),
+              maritalStatus: cleanString(extractedData.maritalStatus),
+              drivingLicense: cleanString(extractedData.drivingLicense),
+              address: `${cleanString(extractedData.street)} ${cleanString(extractedData.houseNumber)}`.trim(),
+              profession: cleanString(extractedData.profession),
+              experience: extractedData.experience ? cleanString(String(extractedData.experience)) : null,
               expectedSalary: undefined,
               status: "available" as const,
               rating: undefined,
-              notes: extractedData.achievements || "",
+              notes: cleanString(extractedData.achievements),
               tags: [],
-              cvPath: req.file.path, // שמירת נתיב הקובץ
-              cvContent: "", // שמירת תוכן ריק כדי למנוע שגיאות UTF8
+              cvPath: req.file.path,
+              cvContent: "",
               recruitmentSource: "העלאת קורות חיים אוטומטית"
             };
 
