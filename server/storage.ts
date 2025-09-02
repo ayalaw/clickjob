@@ -504,7 +504,12 @@ export class DatabaseStorage implements IStorage {
       // Add positive keyword conditions (must contain at least one keyword)
       if (positiveKeywords.length > 0) {
         const positiveConditions = positiveKeywords.map(keyword => 
-          sql`(${candidates.cvContent} ILIKE ${`%${keyword}%`} OR ${candidates.profession} ILIKE ${`%${keyword}%`} OR ${candidates.firstName} ILIKE ${`%${keyword}%`} OR ${candidates.lastName} ILIKE ${`%${keyword}%`})`
+          sql`(
+            (${candidates.cvContent} IS NOT NULL AND ${candidates.cvContent} ILIKE ${`%${keyword}%`}) OR 
+            (${candidates.profession} IS NOT NULL AND ${candidates.profession} ILIKE ${`%${keyword}%`}) OR 
+            (${candidates.firstName} IS NOT NULL AND ${candidates.firstName} ILIKE ${`%${keyword}%`}) OR 
+            (${candidates.lastName} IS NOT NULL AND ${candidates.lastName} ILIKE ${`%${keyword}%`})
+          )`
         );
         
         // At least one positive keyword must match
@@ -517,7 +522,12 @@ export class DatabaseStorage implements IStorage {
       // Add negative keyword conditions (must NOT contain ANY keywords)  
       if (negativeKeywords.length > 0) {
         const negativeConditions = negativeKeywords.map(keyword => 
-          sql`(${candidates.cvContent} NOT ILIKE ${`%${keyword}%`} AND ${candidates.profession} NOT ILIKE ${`%${keyword}%`})`
+          sql`(
+            (${candidates.cvContent} IS NULL OR ${candidates.cvContent} NOT ILIKE ${`%${keyword}%`}) AND 
+            (${candidates.profession} IS NULL OR ${candidates.profession} NOT ILIKE ${`%${keyword}%`}) AND
+            (${candidates.firstName} IS NULL OR ${candidates.firstName} NOT ILIKE ${`%${keyword}%`}) AND
+            (${candidates.lastName} IS NULL OR ${candidates.lastName} NOT ILIKE ${`%${keyword}%`})
+          )`
         );
         
         // All negative keywords must NOT match
@@ -527,9 +537,9 @@ export class DatabaseStorage implements IStorage {
         conditions.push(allNegative);
       }
 
-      // Require CV content to exist
-      conditions.push(isNotNull(candidates.cvContent));
-      conditions.push(sql`LENGTH(TRIM(${candidates.cvContent})) > 0`);
+      // Optional: CV content filter - if no CV content, still allow name/profession matches
+      // conditions.push(isNotNull(candidates.cvContent));
+      // conditions.push(sql`LENGTH(TRIM(${candidates.cvContent})) > 0`);
 
       const whereCondition = conditions.reduce((acc, condition) => 
         acc ? sql`${acc} AND ${condition}` : condition
