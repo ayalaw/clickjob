@@ -107,9 +107,35 @@ function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
   
-  // בדיקה אם זה PDF עם בעיות קידוד - מנוטרל זמנית
-  // כרגע נשתמש בטקסט המקורי בלבד
+  // ★ בדיקה אם הטקסט הוא זבל PDF או טקסט אמיתי
+  const isPdfGarbage = text.includes('%PDF-') || text.includes('obj') || text.includes('stream') || 
+                       text.match(/^[%\d\s<>/]+/) || text.length > 100000 || 
+                       text.includes('%%%%') || text.includes('/Type/Catalog');
   
+  if (isPdfGarbage) {
+    console.log('❌ זוהה קובץ PDF עם טקסט זבל - מפסיק חילוץ');
+    return {
+      firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+      nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+      gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+      experience: 0, achievements: ""
+    };
+  }
+  
+  // ★ בדיקה נוספת - אם יש יותר מדי תווים לא רגילים זה ככל הנראה קובץ פגום
+  const strangeCharsCount = (text.match(/[^\x20-\x7E\u0590-\u05FF\u200E\u200F\s\n\r\t]/g) || []).length;
+  const strangeCharsRatio = strangeCharsCount / text.length;
+  
+  if (strangeCharsRatio > 0.3) {
+    console.log(`❌ יותר מדי תווים לא רגילים (${(strangeCharsRatio*100).toFixed(1)}%) - קובץ פגום`);
+    return {
+      firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
+      nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
+      gender: "", maritalStatus: "", drivingLicense: "", profession: "",
+      experience: 0, achievements: ""
+    };
+  }
+
   // ניקוי הטקסט מתווים בלתי חוקיים לפני עיבוד - משופר
   const cleanedText = text
     .replace(/\u0000/g, '') // NULL bytes
@@ -1363,10 +1389,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log('Extracted data from CV:', extractedData);
         
-        // בדיקה אם יש מספיק נתונים ליצירת מועמד אוטומטית
-        const hasRequiredData = extractedData.firstName && 
-                               extractedData.lastName && 
-                               (extractedData.mobile || extractedData.email);
+        // ★ בדיקת איכות נתונים מתקדמת
+        const dataQuality = {
+          hasValidName: extractedData.firstName.length >= 2 && extractedData.lastName.length >= 2,
+          hasValidEmail: extractedData.email.includes('@') && extractedData.email.includes('.') && extractedData.email.length > 5,
+          hasValidPhone: extractedData.mobile.length >= 9 || extractedData.phone.length >= 8,
+          hasAnyData: extractedData.firstName || extractedData.lastName || extractedData.email || extractedData.mobile || extractedData.phone
+        };
+        
+        const qualityScore = Object.values(dataQuality).filter(Boolean).length;
+        console.log(`📊 ציון איכות נתונים: ${qualityScore}/4`);
+        console.log('📊 פירוט איכות:', dataQuality);
+        
+        // בדיקה אם יש מספיק נתונים איכותיים ליצירת מועמד
+        const hasRequiredData = qualityScore >= 2 && dataQuality.hasValidName;
         
         if (hasRequiredData) {
           // 🔍 בדיקת מועמדים כפולים לפני יצירת המועמד!
@@ -1487,7 +1523,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
         } else {
-          console.log('⚠️ Insufficient data for auto-candidate creation');
+          console.log('❌ נתונים לא מספיקים או לא תקינים ליצירה אוטומטית');
+          console.log('📋 נדרש מילוי ידני של הפרטים');
           res.json({
             extractedData: {
               ...extractedData,
