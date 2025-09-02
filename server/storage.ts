@@ -658,7 +658,7 @@ export class DatabaseStorage implements IStorage {
             phone: candidate.phone || '',
             email: candidate.email || '',
             matchedKeywords,
-            cvPreview: candidateText.substring(0, 300) + (candidateText.length > 300 ? '...' : ''),
+            cvPreview: candidateText,
             extractedAt: candidate.extractedAt,
           });
         }

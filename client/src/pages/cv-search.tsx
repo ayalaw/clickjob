@@ -43,6 +43,7 @@ export default function CVSearchPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchStats, setSearchStats] = useState<{ totalCount: number; searchTime: number } | null>(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [selectedCandidateForCV, setSelectedCandidateForCV] = useState<SearchResult | null>(null);
 
   const positiveInputRef = useRef<HTMLInputElement>(null);
   const negativeInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +132,42 @@ export default function CVSearchPage() {
   };
 
   const canSearch = positiveKeywords.length > 0;
+
+  // פונקציה להדגשת מילות מפתח בטקסט
+  const highlightKeywords = (text: string, keywords: string[]) => {
+    if (!text || keywords.length === 0) return text;
+    
+    let highlightedText = text;
+    keywords.forEach(keyword => {
+      const regex = new RegExp(`(${keyword})`, 'gi');
+      highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-700 px-1 rounded">$1</mark>');
+    });
+    
+    return highlightedText;
+  };
+
+  // פונקציה לצפייה בקורות חיים מלא
+  const viewFullCV = async (candidate: SearchResult) => {
+    try {
+      // קבל תוכן מלא מהשרת
+      const res = await apiRequest('GET', `/api/candidates/${candidate.candidateId}/cv-content`);
+      const response = await res.json() as { success: boolean; data: { cvContent: string } };
+      
+      if (response.success) {
+        // עדכן את המועמד עם התוכן המלא
+        const candidateWithFullCV = {
+          ...candidate,
+          cvPreview: response.data.cvContent || candidate.cvPreview
+        };
+        setSelectedCandidateForCV(candidateWithFullCV);
+      } else {
+        setSelectedCandidateForCV(candidate);
+      }
+    } catch (error) {
+      console.error('שגיאה בקבלת תוכן קורות חיים:', error);
+      setSelectedCandidateForCV(candidate);
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
@@ -349,11 +386,21 @@ export default function CVSearchPage() {
                         </TableCell>
                         <TableCell className="font-medium">
                           <div>
-                            <div>{result.firstName} {result.lastName}</div>
+                            <div 
+                              dangerouslySetInnerHTML={{
+                                __html: highlightKeywords(`${result.firstName} ${result.lastName}`, [...positiveKeywords])
+                              }}
+                            />
                             {result.cvPreview && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-md truncate">
-                                {result.cvPreview}
-                              </div>
+                              <div 
+                                className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-md truncate"
+                                dangerouslySetInnerHTML={{
+                                  __html: highlightKeywords(
+                                    result.cvPreview.substring(0, 150) + (result.cvPreview.length > 150 ? '...' : ''), 
+                                    [...positiveKeywords]
+                                  )
+                                }}
+                              />
                             )}
                           </div>
                         </TableCell>
@@ -386,14 +433,26 @@ export default function CVSearchPage() {
                           {new Date(result.extractedAt).toLocaleDateString('he-IL')}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(`/candidates/${result.candidateId}`, '_blank')}
-                            data-testid={`button-view-${result.candidateId}`}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => viewFullCV(result)}
+                              data-testid={`button-view-cv-${result.candidateId}`}
+                              title="צפה בקורות חיים"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(`/candidates/${result.candidateId}`, '_blank')}
+                              data-testid={`button-view-${result.candidateId}`}
+                              title="פתח פרופיל מלא"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -401,6 +460,70 @@ export default function CVSearchPage() {
                 </Table>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CV Viewer Modal */}
+      {selectedCandidateForCV && (
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  קורות חיים - {selectedCandidateForCV.firstName} {selectedCandidateForCV.lastName}
+                </CardTitle>
+                <CardDescription>
+                  מילות מפתח מודגשות: {selectedCandidateForCV.matchedKeywords.join(', ')}
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedCandidateForCV(null)}
+                data-testid="button-close-cv"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <ScrollArea className="h-96 w-full border rounded-md p-4">
+              <div 
+                className="text-sm leading-relaxed whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{
+                  __html: highlightKeywords(
+                    selectedCandidateForCV.cvPreview.replace(/\.\.\.$/, ''), 
+                    [...positiveKeywords]
+                  )
+                }}
+                data-testid="cv-content-highlighted"
+              />
+            </ScrollArea>
+            
+            <div className="flex justify-between items-center mt-4 pt-4 border-t">
+              <div className="flex gap-2">
+                {selectedCandidateForCV.matchedKeywords.map((keyword) => (
+                  <Badge
+                    key={keyword}
+                    variant="secondary"
+                    className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                    data-testid={`badge-highlighted-${keyword}`}
+                  >
+                    {keyword}
+                  </Badge>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank')}
+                data-testid="button-open-full-profile"
+              >
+                פתח פרופיל מלא
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

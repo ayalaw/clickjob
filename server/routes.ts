@@ -3776,6 +3776,64 @@ ${recommendation}
     }
   });
 
+  // Get full CV content for a candidate
+  app.get('/api/candidates/:id/cv-content', isAuthenticated, async (req, res) => {
+    try {
+      const candidateId = req.params.id;
+      const candidate = await storage.getCandidate(candidateId);
+      
+      if (!candidate) {
+        return res.status(404).json({ error: 'מועמד לא נמצא' });
+      }
+
+      let cvContent = candidate.cvContent || '';
+      
+      // אם אין תוכן חולץ אבל יש קובץ, חלץ עכשיו
+      if (!cvContent && candidate.cvPath) {
+        try {
+          const filePath = candidate.cvPath.startsWith('uploads/') ? 
+            candidate.cvPath : path.join('uploads', candidate.cvPath);
+            
+          if (fs.existsSync(filePath)) {
+            const fileBuffer = fs.readFileSync(filePath);
+            
+            // זיהוי סוג הקובץ
+            const isPDF = fileBuffer.length >= 4 && fileBuffer.toString('ascii', 0, 4) === '%PDF';
+            const isDOCX = fileBuffer.length >= 2 && fileBuffer.toString('ascii', 0, 2) === 'PK';
+            
+            if (isDOCX) {
+              const result = await mammoth.extractRawText({ buffer: fileBuffer });
+              cvContent = result.value || '';
+            } else if (isPDF) {
+              const tempFilePath = `/tmp/${Date.now()}.pdf`;
+              const textFilePath = `/tmp/${Date.now()}.txt`;
+              
+              try {
+                fs.writeFileSync(tempFilePath, fileBuffer);
+                execSync(`pdftotext "${tempFilePath}" "${textFilePath}"`);
+                cvContent = fs.readFileSync(textFilePath, 'utf8');
+                
+                if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+                if (fs.existsSync(textFilePath)) fs.unlinkSync(textFilePath);
+              } catch (pdfError) {
+                const stringsOutput = execSync(`strings "${tempFilePath}"`).toString('utf8');
+                cvContent = stringsOutput;
+                if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('שגיאה בחילוץ תוכן קורות חיים:', error);
+        }
+      }
+
+      res.json({ success: true, data: { cvContent } });
+    } catch (error) {
+      console.error('שגיאה בקבלת תוכן קורות חיים:', error);
+      res.status(500).json({ error: 'שגיאה בקבלת תוכן קורות חיים' });
+    }
+  });
+
   // CV Search Routes
   app.post('/api/search/search', isAuthenticated, async (req, res) => {
     try {
