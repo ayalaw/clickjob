@@ -565,13 +565,23 @@ export default function CVSearchPage() {
                   </Badge>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   variant="outline"
                   onClick={() => window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank')}
                   data-testid="button-open-full-profile"
                 >
-                  פתח פרופיל מלא
+                  👤 פתח פרופיל מלא
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                  onClick={() => {
+                    window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank');
+                  }}
+                  data-testid="button-view-in-system"
+                >
+                  🔍 צפה במערכת
                 </Button>
                 <Button
                   variant="outline"
@@ -579,9 +589,9 @@ export default function CVSearchPage() {
                   onClick={() => {
                     window.open(`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`, '_blank');
                   }}
-                  data-testid="button-view-original-file"
+                  data-testid="button-download-original-file"
                 >
-                  📄 צפה בקובץ המקורי
+                  📥 הורד קובץ מקורי
                 </Button>
               </div>
             </div>
