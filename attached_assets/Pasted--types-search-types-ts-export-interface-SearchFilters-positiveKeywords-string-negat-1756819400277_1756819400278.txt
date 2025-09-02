@@ -1,0 +1,418 @@
+// types/search.types.ts
+export interface SearchFilters {
+  positiveKeywords: string[][];
+  negativeKeywords: string[][];
+}
+
+export interface SearchResult {
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+  city: string;
+  phone: string;
+  email: string;
+  matchedKeywords: string[];
+  cvPreview: string;
+  extractedAt: Date;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+  totalCount: number;
+  searchTime: number;
+  query: SearchFilters;
+}
+
+export interface CandidateDetails {
+  candidate: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    city: string;
+    street: string;
+    houseNumber: string;
+    age: number;
+    gender: string;
+    lastPosition: string;
+    extractedAt: Date;
+  };
+  highlightedCV: string;
+  keywords: string[];
+}
+
+// hooks/useSearch.ts
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
+export const useSearch = () => {
+  const searchMutation = useMutation({
+    mutationFn: async (filters: SearchFilters): Promise<SearchResponse> => {
+      const response = await fetch('/api/search/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filters),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to search CVs');
+      }
+
+      const result = await response.json();
+      return result.data;
+    },
+    onError: (error: Error) => {
+      toast.error(`שגיאה בחיפוש: ${error.message}`);
+    },
+  });
+
+  const getCandidateDetails = (candidateId: string, keywords: string[] = []) => {
+    return useQuery({
+      queryKey: ['candidate', candidateId, keywords],
+      queryFn: async (): Promise<CandidateDetails> => {
+        const queryParams = new URLSearchParams();
+        keywords.forEach(keyword => queryParams.append('keywords', keyword));
+        
+        const response = await fetch(
+          `/api/search/candidate/${candidateId}?${queryParams.toString()}`
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to get candidate details');
+        }
+
+        const result = await response.json();
+        return result.data;
+      },
+      enabled: !!candidateId,
+    });
+  };
+
+  return {
+    searchCVs: searchMutation.mutate,
+    searchResults: searchMutation.data,
+    isSearching: searchMutation.isPending,
+    searchError: searchMutation.error,
+    getCandidateDetails,
+  };
+};
+
+// components/KeywordInput.tsx
+import React, { useState, KeyboardEvent } from 'react';
+import { X, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface KeywordInputProps {
+  title: string;
+  keywords: string[][];
+  onChange: (keywords: string[][]) => void;
+  placeholder: string;
+  variant?: 'positive' | 'negative';
+}
+
+export const KeywordInput: React.FC<KeywordInputProps> = ({
+  title,
+  keywords,
+  onChange,
+  placeholder,
+  variant = 'positive',
+}) => {
+  const [inputValues, setInputValues] = useState<string[]>(
+    keywords.length > 0 ? keywords.map(() => '') : ['']
+  );
+
+  const addKeywordGroup = () => {
+    setInputValues([...inputValues, '']);
+    onChange([...keywords, []]);
+  };
+
+  const removeKeywordGroup = (groupIndex: number) => {
+    const newInputValues = inputValues.filter((_, i) => i !== groupIndex);
+    const newKeywords = keywords.filter((_, i) => i !== groupIndex);
+    setInputValues(newInputValues.length > 0 ? newInputValues : ['']);
+    onChange(newKeywords.length > 0 ? newKeywords : []);
+  };
+
+  const handleKeywordAdd = (groupIndex: number, value: string) => {
+    if (value.trim() && !keywords[groupIndex]?.includes(value.trim())) {
+      const newKeywords = [...keywords];
+      if (!newKeywords[groupIndex]) {
+        newKeywords[groupIndex] = [];
+      }
+      newKeywords[groupIndex].push(value.trim());
+      onChange(newKeywords);
+      
+      // Clear input
+      const newInputValues = [...inputValues];
+      newInputValues[groupIndex] = '';
+      setInputValues(newInputValues);
+    }
+  };
+
+  const handleKeywordRemove = (groupIndex: number, keywordIndex: number) => {
+    const newKeywords = [...keywords];
+    newKeywords[groupIndex].splice(keywordIndex, 1);
+    onChange(newKeywords);
+  };
+
+  const handleKeyPress = (
+    e: KeyboardEvent<HTMLInputElement>, 
+    groupIndex: number, 
+    value: string
+  ) => {
+    if (e.key === 'Enter' && value.trim()) {
+      e.preventDefault();
+      handleKeywordAdd(groupIndex, value);
+    }
+  };
+
+  const handleInputChange = (groupIndex: number, value: string) => {
+    const newInputValues = [...inputValues];
+    newInputValues[groupIndex] = value;
+    setInputValues(newInputValues);
+  };
+
+  return (
+    <Card className={`${variant === 'negative' ? 'border-red-200' : 'border-green-200'}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className={`text-lg ${variant === 'negative' ? 'text-red-700' : 'text-green-700'}`}>
+            {title}
+          </CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addKeywordGroup}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            הוסף שדה
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {inputValues.map((inputValue, groupIndex) => (
+          <div key={groupIndex} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={inputValue}
+                onChange={(e) => handleInputChange(groupIndex, e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, groupIndex, inputValue)}
+                placeholder={placeholder}
+                className="flex-1"
+              />
+              {inputValues.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeKeywordGroup(groupIndex)}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            
+            {keywords[groupIndex] && keywords[groupIndex].length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {keywords[groupIndex].map((keyword, keywordIndex) => (
+                  <Badge
+                    key={keywordIndex}
+                    variant={variant === 'negative' ? 'destructive' : 'default'}
+                    className="flex items-center gap-1 text-sm"
+                  >
+                    {keyword}
+                    <button
+                      type="button"
+                      onClick={() => handleKeywordRemove(groupIndex, keywordIndex)}
+                      className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+// components/SearchForm.tsx
+import React, { useState } from 'react';
+import { Search, Loader2, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { KeywordInput } from './KeywordInput';
+import { SearchFilters } from '../types/search.types';
+
+interface SearchFormProps {
+  onSearch: (filters: SearchFilters) => void;
+  isLoading: boolean;
+}
+
+export const SearchForm: React.FC<SearchFormProps> = ({ onSearch, isLoading }) => {
+  const [positiveKeywords, setPositiveKeywords] = useState<string[][]>([]);
+  const [negativeKeywords, setNegativeKeywords] = useState<string[][]>([]);
+
+  const handleSearch = () => {
+    const filters: SearchFilters = {
+      positiveKeywords: positiveKeywords.filter(group => group.length > 0),
+      negativeKeywords: negativeKeywords.filter(group => group.length > 0),
+    };
+
+    if (filters.positiveKeywords.length === 0 && filters.negativeKeywords.length === 0) {
+      return;
+    }
+
+    onSearch(filters);
+  };
+
+  const handleReset = () => {
+    setPositiveKeywords([]);
+    setNegativeKeywords([]);
+  };
+
+  const canSearch = positiveKeywords.some(group => group.length > 0) || 
+                   negativeKeywords.some(group => group.length > 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Search className="w-5 h-5" />
+          חיפוש קורות חיים
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <KeywordInput
+          title="מילות מפתח חיוביות (חובה)"
+          keywords={positiveKeywords}
+          onChange={setPositiveKeywords}
+          placeholder="הקלד מילת מפתח ולחץ Enter..."
+          variant="positive"
+        />
+
+        <KeywordInput
+          title="מילות מפתח שליליות (לא להציג)"
+          keywords={negativeKeywords}
+          onChange={setNegativeKeywords}
+          placeholder="הקלד מילת מפתח לחריגה ולחץ Enter..."
+          variant="negative"
+        />
+
+        <div className="flex gap-3 pt-4">
+          <Button
+            onClick={handleSearch}
+            disabled={!canSearch || isLoading}
+            className="flex-1 flex items-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                מחפש...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4" />
+                חפש
+              </>
+            )}
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleReset}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+            אפס
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// components/SearchResults.tsx
+import React from 'react';
+import { Clock, User, MapPin, Phone, Mail, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { SearchResult } from '../types/search.types';
+
+interface SearchResultsProps {
+  results: SearchResult[];
+  totalCount: number;
+  searchTime: number;
+  onViewCandidate: (candidateId: string, keywords: string[]) => void;
+}
+
+export const SearchResults: React.FC<SearchResultsProps> = ({
+  results,
+  totalCount,
+  searchTime,
+  onViewCandidate,
+}) => {
+  if (results.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 mb-2">
+            לא נמצאו תוצאות
+          </h3>
+          <p className="text-gray-500">
+            נסה לשנות את קריטריוני החיפוש או להקליד מילות מפתח שונות
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Search Summary */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>נמצאו {totalCount} תוצאות</span>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              <span>זמן חיפוש: {searchTime}ms</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>תוצאות חיפוש</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-right p-3 font-medium">שם</th>
+                  <th className="text-right p-3 font-medium">עיר</th>
+                  <th className="text-right p-3 font-medium">טלפון</th>
+                  <th className="text-right p-3 font-medium">אימייל</th>
+                  <th className="text-right p-3 font-medium">מילות מפתח שנמצאו</th>
+                  <th className="text-right p-3 font-medium">תאריך

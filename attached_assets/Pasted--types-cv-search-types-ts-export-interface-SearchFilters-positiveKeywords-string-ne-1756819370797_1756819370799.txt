@@ -1,0 +1,471 @@
+// types/cv-search.types.ts
+export interface SearchFilters {
+  positiveKeywords: string[][];
+  negativeKeywords: string[][];
+}
+
+export interface SearchResult {
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+  city: string;
+  phone: string;
+  email: string;
+  matchedKeywords: string[];
+  cvPreview: string;
+  extractedAt: Date;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+  totalCount: number;
+  searchTime: number;
+  query: SearchFilters;
+}
+
+// services/cv-search.service.ts
+import { Pool } from 'pg';
+import { z } from 'zod';
+
+export class CVSearchService {
+  private pool: Pool;
+  private searchCache = new Map<string, { results: SearchResult[], timestamp: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  constructor(pool: Pool) {
+    this.pool = pool;
+  }
+
+  // Schema for search validation
+  private readonly searchSchema = z.object({
+    positiveKeywords: z.array(z.array(z.string().min(1))).min(0),
+    negativeKeywords: z.array(z.array(z.string().min(1))).min(0),
+  });
+
+  async searchCVs(filters: SearchFilters): Promise<SearchResponse> {
+    const startTime = Date.now();
+    
+    // Validate input
+    const validatedFilters = this.searchSchema.parse(filters);
+    
+    // Create cache key
+    const cacheKey = this.createCacheKey(validatedFilters);
+    
+    // Check cache first
+    const cached = this.getCachedResult(cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        searchTime: Date.now() - startTime,
+        query: validatedFilters,
+      };
+    }
+
+    // Prepare search terms
+    const cleanedPositive = this.cleanAndPrepareKeywords(validatedFilters.positiveKeywords);
+    const cleanedNegative = this.cleanAndPrepareKeywords(validatedFilters.negativeKeywords);
+
+    // Build SQL query with full-text search optimization
+    const query = this.buildOptimizedQuery(cleanedPositive, cleanedNegative);
+    
+    const results = await this.executeSearch(query.sql, query.params);
+    
+    // Cache results
+    this.setCacheResult(cacheKey, results);
+
+    const searchTime = Date.now() - startTime;
+
+    return {
+      results,
+      totalCount: results.length,
+      searchTime,
+      query: validatedFilters,
+    };
+  }
+
+  private cleanAndPrepareKeywords(keywordGroups: string[][]): string[][] {
+    return keywordGroups.map(group => 
+      group.map(keyword => 
+        keyword
+          .trim()
+          .toLowerCase()
+          .replace(/[^\u0590-\u05FFa-zA-Z0-9\s]/g, '') // Keep Hebrew, English, numbers, spaces
+          .replace(/\s+/g, ' ')
+      ).filter(keyword => keyword.length > 0)
+    ).filter(group => group.length > 0);
+  }
+
+  private buildOptimizedQuery(positiveGroups: string[][], negativeGroups: string[][]): { sql: string; params: any[] } {
+    let sql = `
+      SELECT DISTINCT
+        c.id as candidate_id,
+        c.first_name,
+        c.last_name,
+        c.city,
+        c.phone,
+        c.email,
+        c.raw_text,
+        c.notes,
+        c.extracted_at,
+        ts_headline('hebrew', 
+          COALESCE(c.raw_text, '') || ' ' || COALESCE(c.notes, ''), 
+          plainto_tsquery('hebrew', $1),
+          'StartSel=<mark>, StopSel=</mark>, MaxWords=50'
+        ) as highlighted_preview
+      FROM candidates c
+      WHERE c.raw_text IS NOT NULL
+    `;
+
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // Build positive keyword conditions - all groups must match (AND between groups)
+    if (positiveGroups.length > 0) {
+      const positiveConditions: string[] = [];
+      const allPositiveKeywords: string[] = [];
+
+      positiveGroups.forEach((group, groupIndex) => {
+        if (group.length > 0) {
+          // Within each group, at least one keyword must match (OR within group)
+          const groupConditions = group.map(keyword => {
+            allPositiveKeywords.push(keyword);
+            params.push(`%${keyword}%`);
+            return `(LOWER(COALESCE(c.raw_text, '') || ' ' || COALESCE(c.notes, '')) LIKE $${paramIndex++})`;
+          });
+          
+          positiveConditions.push(`(${groupConditions.join(' OR ')})`);
+        }
+      });
+
+      if (positiveConditions.length > 0) {
+        sql += ` AND (${positiveConditions.join(' AND ')})`;
+        
+        // Add the combined keywords for highlighting
+        params[0] = allPositiveKeywords.join(' ');
+      }
+    } else {
+      // If no positive keywords, still need a parameter for highlighting
+      params[0] = '';
+    }
+
+    // Build negative keyword conditions - if any negative keyword found, exclude (NOT)
+    if (negativeGroups.length > 0) {
+      const negativeConditions: string[] = [];
+
+      negativeGroups.forEach(group => {
+        group.forEach(keyword => {
+          params.push(`%${keyword}%`);
+          negativeConditions.push(`LOWER(COALESCE(c.raw_text, '') || ' ' || COALESCE(c.notes, '')) NOT LIKE $${paramIndex++}`);
+        });
+      });
+
+      if (negativeConditions.length > 0) {
+        sql += ` AND (${negativeConditions.join(' AND ')})`;
+      }
+    }
+
+    // Add ordering and limit
+    sql += `
+      ORDER BY c.extracted_at DESC
+      LIMIT 1000
+    `;
+
+    return { sql, params };
+  }
+
+  private async executeSearch(sql: string, params: any[]): Promise<SearchResult[]> {
+    const client = await this.pool.connect();
+    
+    try {
+      const result = await client.query(sql, params);
+      
+      return result.rows.map(row => ({
+        candidateId: row.candidate_id,
+        firstName: row.first_name || '',
+        lastName: row.last_name || '',
+        city: row.city || '',
+        phone: row.phone || '',
+        email: row.email || '',
+        matchedKeywords: this.extractMatchedKeywords(row.raw_text + ' ' + (row.notes || ''), params.slice(1)),
+        cvPreview: row.highlighted_preview || this.createPreview(row.raw_text),
+        extractedAt: row.extracted_at,
+      }));
+    } finally {
+      client.release();
+    }
+  }
+
+  private extractMatchedKeywords(text: string, searchParams: string[]): string[] {
+    const lowerText = text.toLowerCase();
+    const matched: string[] = [];
+    
+    searchParams.forEach(param => {
+      if (typeof param === 'string' && param.startsWith('%') && param.endsWith('%')) {
+        const keyword = param.slice(1, -1);
+        if (lowerText.includes(keyword) && !matched.includes(keyword)) {
+          matched.push(keyword);
+        }
+      }
+    });
+    
+    return matched;
+  }
+
+  private createPreview(text: string): string {
+    if (!text) return '';
+    return text.substring(0, 200) + (text.length > 200 ? '...' : '');
+  }
+
+  private createCacheKey(filters: SearchFilters): string {
+    return JSON.stringify({
+      positive: filters.positiveKeywords,
+      negative: filters.negativeKeywords,
+    });
+  }
+
+  private getCachedResult(cacheKey: string): { results: SearchResult[], totalCount: number } | null {
+    const cached = this.searchCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return {
+        results: cached.results,
+        totalCount: cached.results.length,
+      };
+    }
+    return null;
+  }
+
+  private setCacheResult(cacheKey: string, results: SearchResult[]): void {
+    // Limit cache size to prevent memory issues
+    if (this.searchCache.size > 100) {
+      const firstKey = this.searchCache.keys().next().value;
+      this.searchCache.delete(firstKey);
+    }
+    
+    this.searchCache.set(cacheKey, {
+      results,
+      timestamp: Date.now(),
+    });
+  }
+
+  async getCandidateCV(candidateId: string): Promise<{ 
+    candidate: any; 
+    highlightedCV: string; 
+    keywords: string[] 
+  } | null> {
+    const client = await this.pool.connect();
+    
+    try {
+      const result = await client.query(`
+        SELECT 
+          id,
+          first_name,
+          last_name,
+          email,
+          phone,
+          city,
+          street,
+          house_number,
+          age,
+          gender,
+          last_position,
+          raw_text,
+          notes,
+          extracted_at
+        FROM candidates 
+        WHERE id = $1
+      `, [candidateId]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const candidate = result.rows[0];
+      
+      return {
+        candidate: {
+          id: candidate.id,
+          firstName: candidate.first_name,
+          lastName: candidate.last_name,
+          email: candidate.email,
+          phone: candidate.phone,
+          city: candidate.city,
+          street: candidate.street,
+          houseNumber: candidate.house_number,
+          age: candidate.age,
+          gender: candidate.gender,
+          lastPosition: candidate.last_position,
+          extractedAt: candidate.extracted_at,
+        },
+        highlightedCV: candidate.raw_text || '',
+        keywords: [], // Will be populated by frontend based on search
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  // Method to optimize database for search performance
+  async createSearchIndexes(): Promise<void> {
+    const client = await this.pool.connect();
+    
+    try {
+      // Create GIN index for full-text search on Hebrew and English
+      await client.query(`
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_candidates_fulltext_search 
+        ON candidates 
+        USING GIN (to_tsvector('hebrew', COALESCE(raw_text, '') || ' ' || COALESCE(notes, '')))
+      `);
+
+      // Create regular indexes for exact matches and filtering
+      await client.query(`
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_candidates_text_search 
+        ON candidates (LOWER(raw_text), LOWER(notes))
+      `);
+
+      // Index for ordering by extracted_at
+      await client.query(`
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_candidates_extracted_at 
+        ON candidates (extracted_at DESC)
+      `);
+
+      console.log('Search indexes created successfully');
+    } catch (error) {
+      console.error('Error creating search indexes:', error);
+    } finally {
+      client.release();
+    }
+  }
+}
+
+// controllers/cv-search.controller.ts
+import { Request, Response } from 'express';
+import { CVSearchService } from '../services/cv-search.service';
+import { z } from 'zod';
+
+export class CVSearchController {
+  private cvSearchService: CVSearchService;
+
+  constructor(cvSearchService: CVSearchService) {
+    this.cvSearchService = cvSearchService;
+  }
+
+  async searchCVs(req: Request, res: Response) {
+    try {
+      const { positiveKeywords = [], negativeKeywords = [] } = req.body;
+
+      // Validate request
+      const searchFilters = {
+        positiveKeywords: Array.isArray(positiveKeywords) ? positiveKeywords : [],
+        negativeKeywords: Array.isArray(negativeKeywords) ? negativeKeywords : [],
+      };
+
+      // Ensure we have at least some search criteria
+      if (searchFilters.positiveKeywords.length === 0 && searchFilters.negativeKeywords.length === 0) {
+        return res.status(400).json({
+          error: 'At least one search criterion is required',
+        });
+      }
+
+      const results = await this.cvSearchService.searchCVs(searchFilters);
+
+      res.status(200).json({
+        success: true,
+        data: results,
+      });
+
+    } catch (error) {
+      console.error('CV search error:', error);
+      res.status(500).json({
+        error: 'Failed to search CVs',
+        details: error.message,
+      });
+    }
+  }
+
+  async getCandidateDetails(req: Request, res: Response) {
+    try {
+      const { candidateId } = req.params;
+      const { keywords = [] } = req.query;
+
+      if (!candidateId) {
+        return res.status(400).json({
+          error: 'Candidate ID is required',
+        });
+      }
+
+      const result = await this.cvSearchService.getCandidateCV(candidateId);
+      
+      if (!result) {
+        return res.status(404).json({
+          error: 'Candidate not found',
+        });
+      }
+
+      // If keywords were provided, highlight them in the CV text
+      let highlightedCV = result.highlightedCV;
+      if (keywords && Array.isArray(keywords)) {
+        keywords.forEach((keyword: string) => {
+          const regex = new RegExp(`(${keyword})`, 'gi');
+          highlightedCV = highlightedCV.replace(regex, '<mark>$1</mark>');
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          ...result,
+          highlightedCV,
+          keywords: keywords || [],
+        },
+      });
+
+    } catch (error) {
+      console.error('Get candidate details error:', error);
+      res.status(500).json({
+        error: 'Failed to get candidate details',
+        details: error.message,
+      });
+    }
+  }
+
+  async initializeSearchSystem(req: Request, res: Response) {
+    try {
+      await this.cvSearchService.createSearchIndexes();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Search system initialized successfully',
+      });
+
+    } catch (error) {
+      console.error('Initialize search system error:', error);
+      res.status(500).json({
+        error: 'Failed to initialize search system',
+        details: error.message,
+      });
+    }
+  }
+}
+
+// routes/cv-search.routes.ts
+import express from 'express';
+import { CVSearchController } from '../controllers/cv-search.controller';
+import { CVSearchService } from '../services/cv-search.service';
+import { Pool } from 'pg';
+
+const router = express.Router();
+
+// Initialize service with database pool
+const pool = new Pool({
+  // Your PostgreSQL connection config
+});
+
+const cvSearchService = new CVSearchService(pool);
+const cvSearchController = new CVSearchController(cvSearchService);
+
+// Search routes
+router.post('/search', cvSearchController.searchCVs.bind(cvSearchController));
+router.get('/candidate/:candidateId', cvSearchController.getCandidateDetails.bind(cvSearchController));
+router.post('/initialize', cvSearchController.initializeSearchSystem.bind(cvSearchController));
+
+export default router;

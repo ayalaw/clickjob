@@ -3776,6 +3776,108 @@ ${recommendation}
     }
   });
 
+  // CV Search Routes
+  app.post('/api/search/search', isAuthenticated, async (req, res) => {
+    try {
+      const { positiveKeywords = [], negativeKeywords = [] } = req.body;
+
+      // Validate request
+      if (!Array.isArray(positiveKeywords) || !Array.isArray(negativeKeywords)) {
+        return res.status(400).json({
+          error: 'Invalid search parameters',
+        });
+      }
+
+      // Ensure we have at least some search criteria
+      if (positiveKeywords.length === 0 && negativeKeywords.length === 0) {
+        return res.status(400).json({
+          error: 'At least one search criterion is required',
+        });
+      }
+
+      const startTime = Date.now();
+      const results = await storage.searchCVs({ positiveKeywords, negativeKeywords });
+      const searchTime = Date.now() - startTime;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          results,
+          totalCount: results.length,
+          searchTime,
+          query: { positiveKeywords, negativeKeywords },
+        },
+      });
+
+    } catch (error) {
+      console.error('CV search error:', error);
+      res.status(500).json({
+        error: 'Failed to search CVs',
+        details: error.message,
+      });
+    }
+  });
+
+  app.get('/api/search/candidate/:candidateId', isAuthenticated, async (req, res) => {
+    try {
+      const { candidateId } = req.params;
+      const { keywords = [] } = req.query;
+
+      if (!candidateId) {
+        return res.status(400).json({
+          error: 'Candidate ID is required',
+        });
+      }
+
+      const candidate = await storage.getCandidateById(candidateId);
+      
+      if (!candidate) {
+        return res.status(404).json({
+          error: 'Candidate not found',
+        });
+      }
+
+      // Highlight keywords in CV content if provided
+      let highlightedCV = candidate.cvContent || '';
+      if (keywords && Array.isArray(keywords)) {
+        keywords.forEach((keyword: string) => {
+          const regex = new RegExp(`(${keyword})`, 'gi');
+          highlightedCV = highlightedCV.replace(regex, '<mark>$1</mark>');
+        });
+      }
+
+      const result = {
+        candidate: {
+          id: candidate.id,
+          firstName: candidate.firstName,
+          lastName: candidate.lastName,
+          email: candidate.email,
+          mobile: candidate.mobile,
+          city: candidate.city,
+          street: candidate.street,
+          age: candidate.age,
+          gender: candidate.gender,
+          lastPosition: candidate.profession,
+          extractedAt: candidate.createdAt,
+        },
+        highlightedCV,
+        keywords: keywords || [],
+      };
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+
+    } catch (error) {
+      console.error('Get candidate details error:', error);
+      res.status(500).json({
+        error: 'Failed to get candidate details',
+        details: error.message,
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

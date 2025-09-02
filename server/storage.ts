@@ -58,6 +58,19 @@ import { db } from "./db";
 import { eq, and, desc, asc, like, ilike, sql, count, or, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
+// CV Search types
+export interface SearchResult {
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+  city: string;
+  phone: string;
+  email: string;
+  matchedKeywords: string[];
+  cvPreview: string;
+  extractedAt: Date;
+}
+
 export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
@@ -74,8 +87,12 @@ export interface IStorage {
   deleteCandidate(id: string): Promise<void>;
   findCandidateByMobileOrId(mobile?: string, nationalId?: string): Promise<Candidate | undefined>;
   findCandidateByContactInfo(mobile?: string, email?: string, nationalId?: string): Promise<Candidate | undefined>;
+  getCandidateById(id: string): Promise<Candidate | undefined>;
   addCandidateEvent(event: InsertCandidateEvent): Promise<CandidateEvent>;
   getCandidateEvents(candidateId: string): Promise<CandidateEvent[]>;
+  
+  // CV Search operations
+  searchCVs(filters: { positiveKeywords: string[][], negativeKeywords: string[][] }): Promise<SearchResult[]>;
 
   // Reminder operations
   getReminders(userId?: string): Promise<ReminderWithDetails[]>;
@@ -470,6 +487,110 @@ export class DatabaseStorage implements IStorage {
       .from(candidateEvents)
       .where(eq(candidateEvents.candidateId, candidateId))
       .orderBy(desc(candidateEvents.createdAt));
+  }
+
+  async getCandidateById(id: string): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidates).where(eq(candidates.id, id));
+    return candidate;
+  }
+
+  async searchCVs(filters: { positiveKeywords: string[]; negativeKeywords: string[] }): Promise<SearchResult[]> {
+    try {
+      const { positiveKeywords = [], negativeKeywords = [] } = filters;
+
+      // Build query with proper conditions
+      let conditions = [];
+
+      // Add positive keyword conditions (must contain ALL keywords)
+      if (positiveKeywords.length > 0) {
+        const positiveConditions = positiveKeywords.map(keyword => 
+          sql`(${candidates.cvContent} ILIKE ${`%${keyword}%`} OR ${candidates.profession} ILIKE ${`%${keyword}%`})`
+        );
+        
+        // All positive keywords must match
+        const allPositive = positiveConditions.reduce((acc, condition) => 
+          acc ? sql`${acc} AND ${condition}` : condition
+        );
+        conditions.push(allPositive);
+      }
+
+      // Add negative keyword conditions (must NOT contain ANY keywords)  
+      if (negativeKeywords.length > 0) {
+        const negativeConditions = negativeKeywords.map(keyword => 
+          sql`(${candidates.cvContent} NOT ILIKE ${`%${keyword}%`} AND ${candidates.profession} NOT ILIKE ${`%${keyword}%`})`
+        );
+        
+        // All negative keywords must NOT match
+        const allNegative = negativeConditions.reduce((acc, condition) => 
+          acc ? sql`${acc} AND ${condition}` : condition
+        );
+        conditions.push(allNegative);
+      }
+
+      // Require CV content to exist
+      conditions.push(isNotNull(candidates.cvContent));
+      conditions.push(sql`LENGTH(TRIM(${candidates.cvContent})) > 0`);
+
+      const whereCondition = conditions.reduce((acc, condition) => 
+        acc ? sql`${acc} AND ${condition}` : condition
+      );
+
+      const results = await db
+        .select({
+          candidateId: candidates.id,
+          firstName: candidates.firstName,
+          lastName: candidates.lastName,
+          city: candidates.city,
+          phone: candidates.mobile,
+          email: candidates.email,
+          cvContent: candidates.cvContent,
+          extractedAt: candidates.createdAt,
+        })
+        .from(candidates)
+        .where(whereCondition)
+        .orderBy(desc(candidates.createdAt))
+        .limit(100);
+
+      // Process results to create preview and match keywords
+      const processedResults: SearchResult[] = results.map(result => {
+        const allKeywords = [...positiveKeywords, ...negativeKeywords];
+        const matchedKeywords: string[] = [];
+        
+        // Find matched positive keywords
+        positiveKeywords.forEach(keyword => {
+          const regex = new RegExp(keyword, 'gi');
+          if (regex.test(result.cvContent || '') || regex.test(result.firstName + ' ' + result.lastName)) {
+            matchedKeywords.push(keyword);
+          }
+        });
+
+        // Create preview with highlighted keywords
+        let cvPreview = (result.cvContent || '').substring(0, 300);
+        
+        // Add ellipsis if truncated
+        if ((result.cvContent || '').length > 300) {
+          cvPreview += '...';
+        }
+
+        return {
+          candidateId: result.candidateId,
+          firstName: result.firstName,
+          lastName: result.lastName,
+          city: result.city || '',
+          phone: result.phone || '',
+          email: result.email || '',
+          matchedKeywords,
+          cvPreview,
+          extractedAt: result.extractedAt,
+        };
+      });
+
+      return processedResults;
+
+    } catch (error) {
+      console.error('Error searching CVs:', error);
+      throw new Error(`CV search failed: ${error.message}`);
+    }
   }
 
   async updateCandidate(id: string, candidate: Partial<InsertCandidate>): Promise<Candidate> {
