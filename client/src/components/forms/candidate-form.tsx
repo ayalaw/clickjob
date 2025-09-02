@@ -248,14 +248,15 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   useEffect(() => {
     // Only check for duplicates if we're not editing an existing candidate
-    if (!candidate) {
+    // ⚠️ השתקת בדיקה אוטומטית כי היא מתבצעת אחרי יצירת מועמד ומזהה כפול שגוי
+    if (!candidate && !wasAutoCreated) {
       const timeoutId = setTimeout(() => {
         checkDuplicates(watchedMobile, watchedEmail, watchedNationalId);
       }, 500); // Debounce by 500ms
 
       return () => clearTimeout(timeoutId);
     }
-  }, [watchedMobile, watchedEmail, watchedNationalId, candidate]);
+  }, [watchedMobile, watchedEmail, watchedNationalId, candidate, wasAutoCreated]);
 
   useEffect(() => {
     if (candidate) {

@@ -1410,10 +1410,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const hasRequiredData = qualityScore >= 2 && dataQuality.hasValidName;
         
         if (hasRequiredData) {
+          console.log('✅ יש מספיק נתונים ליצירת מועמד - מתחיל בדיקת כפולים');
           // 🔍 בדיקת מועמדים כפולים לפני יצירת המועמד!
           const cleanEmail = extractedData.email?.trim() || '';
           const cleanMobile = extractedData.mobile?.trim() || '';
           const cleanNationalId = extractedData.nationalId?.trim() || '';
+          console.log(`🧹 נתונים נקיים: נייד="${cleanMobile}", אימייל="${cleanEmail}", ת.ז="${cleanNationalId}"`);
           
           // בדיקת מועמדים כפולים (מונעת יצירה כפולה!)
           let duplicateInfo = null;
