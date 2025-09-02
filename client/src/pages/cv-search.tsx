@@ -575,23 +575,14 @@ export default function CVSearchPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                  onClick={() => {
-                    window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank');
-                  }}
-                  data-testid="button-view-in-system"
-                >
-                  🔍 צפה במערכת
-                </Button>
-                <Button
-                  variant="outline"
                   className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                   onClick={() => {
+                    // Open the original CV file directly in a new tab
                     window.open(`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`, '_blank');
                   }}
-                  data-testid="button-download-original-file"
+                  data-testid="button-view-original-cv"
                 >
-                  📥 הורד קובץ מקורי
+                  📄 צפה בקובץ המקורי
                 </Button>
               </div>
             </div>
