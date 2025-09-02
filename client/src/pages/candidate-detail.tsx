@@ -425,7 +425,7 @@ export default function CandidateDetail() {
   // פונקציית בדיקת ניווט
   const testNavigate = () => {
     console.log("🧪 בודק ניווט...");
-    alert("בודק ניווט לראיונות");
+    alert("כפתור בדיקה עובד! עובר לראיונות...");
     navigate("/interviews");
     console.log("🧪 ניווט הושלם");
   };
@@ -1088,7 +1088,11 @@ export default function CandidateDetail() {
                         ביטול
                       </Button>
                       <Button 
-                        onClick={handleAddToInterview}
+                        onClick={() => {
+                          console.log("🎯 כפתור 'הוסף לראיון' נלחץ!");
+                          alert("כפתור הוסף לראיון נלחץ!");
+                          handleAddToInterview();
+                        }}
                         disabled={!selectedInterviewJobIds.length || isUpdatingStatus}
                         data-testid="button-confirm-add-to-interview"
                       >
