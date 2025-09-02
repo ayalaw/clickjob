@@ -107,15 +107,18 @@ function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
   
-  // ניקוי הטקסט מתווים בלתי חוקיים לפני עיבוד
+  // ניקוי הטקסט מתווים בלתי חוקיים לפני עיבוד - משופר
   const cleanedText = text
     .replace(/\u0000/g, '') // NULL bytes
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Control characters
     .replace(/[\uFFFD]/g, '') // Unicode replacement characters
-    .replace(/[\u200B-\u200F\u2028-\u202F]/g, ''); // Zero-width characters
+    .replace(/[\u200B-\u200F\u2028-\u202F]/g, '') // Zero-width characters
+    .replace(/\s+/g, ' ') // נירמול רווחים
+    .trim();
   
-  // לוקחים את 30% העליון של הטקסט הנקי
+  // חיפוש בחלקים שונים של הטקסט לדיוק טוב יותר
   const upperThird = cleanedText.substring(0, Math.floor(cleanedText.length * 0.3));
+  const upperHalf = cleanedText.substring(0, Math.floor(cleanedText.length * 0.5));
   console.log('📄 Upper third length:', upperThird.length);
   
   const result = {
@@ -138,19 +141,24 @@ function extractDataFromText(text: string) {
     achievements: ""
   };
 
-  // חילוץ אימייל (מכיל @) - מחפש בכל הטקסט
-  const emailPattern = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g;
-  let emailMatch = cleanedText.match(emailPattern);
-  if (emailMatch) {
-    result.email = emailMatch[0];
-    console.log(`📧 נמצא אימייל: ${result.email}`);
-  } else {
-    // ניסיון נוסף עם דפוס רחב יותר
-    const emailPatternWide = /([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/g;
-    emailMatch = cleanedText.match(emailPatternWide);
+  // חילוץ אימייל משופר - מחפש בכל הטקסט עם מספר שיטות
+  const emailPatterns = [
+    /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g, // דפוס רגיל
+    /([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/g, // דפוס רחב
+    /(?:אימייל|אימיל|email|mail)[:\s]*([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/gi // עם תיאור
+  ];
+  
+  for (const pattern of emailPatterns) {
+    if (result.email) break;
+    const emailMatch = cleanedText.match(pattern);
     if (emailMatch) {
-      result.email = emailMatch[0];
-      console.log(`📧 נמצא אימייל (דפוס רחב): ${result.email}`);
+      // לוקח את האימייל הראשון שנמצא
+      const email = emailMatch[0].replace(/^(?:אימייל|אימיל|email|mail)[:\s]*/i, '').trim();
+      if (email.includes('@') && email.includes('.')) {
+        result.email = email;
+        console.log(`📧 נמצא אימייל: ${result.email}`);
+        break;
+      }
     }
   }
 
@@ -228,71 +236,119 @@ function extractDataFromText(text: string) {
   // רשימת מילים להתעלמות
   const ignoredWords = ['קורות', 'חיים', 'קוח', 'קו"ח', 'אינפורמציה', 'פרטית', 'מידע', 'אישי', 'פרטים', 'תקופת', 'המועמד', 'המועמדת', 'סיכום', 'עמוד', 'מס', 'טלפון', 'נייד', 'דואל', 'אימיל', 'כתובת', 'מגורים'];
   
-  // חיפוש שמות מתקדם יותר - עברית ואנגלית
+  // חיפוש שמות מתקדם יותר - עברית ואנגלית עם אולוגיקה משופרת
   let foundName = false;
   
-  // תבנית 1: שם עברי (מינימום 2 אותיות עבריות)
-  const hebrewNamePattern = /([א-ת]{2,})\s+([א-ת]{2,})/g;
-  let hebrewMatch;
-  while ((hebrewMatch = hebrewNamePattern.exec(upperThird)) !== null && !foundName) {
-    const firstName = hebrewMatch[1];
-    const lastName = hebrewMatch[2];
-    
-    if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName)) {
-      result.firstName = firstName;
-      result.lastName = lastName;
-      foundName = true;
-      console.log(`📝 נמצא שם עברי: ${firstName} ${lastName}`);
-    }
-  }
+  // פונקציה לבדיקת איכות שם
+  const isValidName = (name: string): boolean => {
+    return name.length >= 2 && 
+           !ignoredWords.includes(name.toLowerCase()) &&
+           !ignoredWords.includes(name) &&
+           !/^\d+$/.test(name) && // לא רק מספרים
+           !/^[^\u0590-\u05FF\u0041-\u005A\u0061-\u007A]+$/.test(name); // לא רק סימנים
+  };
   
-  // תבנית 2: שם אנגלי (אות גדולה + אותיות קטנות)
-  if (!foundName) {
-    const englishNamePattern = /([A-Z][a-z]{1,})\s+([A-Z][a-z]{1,})/g;
-    let englishMatch;
-    while ((englishMatch = englishNamePattern.exec(upperThird)) !== null && !foundName) {
-      const firstName = englishMatch[1];
-      const lastName = englishMatch[2];
+  // תבנית 1: שם עברי במעלה של השליש העליון
+  const hebrewNamePatterns = [
+    /(?:^|\s)([א-ת]{2,})\s+([א-ת]{2,})(?:\s|$)/g, // שמות רגילים
+    /שם[:\s]*([א-ת]{2,})\s+([א-ת]{2,})/g, // עם המילה "שם"
+    /([א-ת]{2,})\s+([א-ת]{2,})\s*(?:טלפון|נייד|אימייל)/g // לפני פרטי קשר
+  ];
+  
+  for (const pattern of hebrewNamePatterns) {
+    if (foundName) break;
+    let match;
+    while ((match = pattern.exec(upperThird)) !== null && !foundName) {
+      const firstName = match[1].trim();
+      const lastName = match[2].trim();
       
-      if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName)) {
+      if (isValidName(firstName) && isValidName(lastName)) {
         result.firstName = firstName;
         result.lastName = lastName;
         foundName = true;
-        console.log(`📝 נמצא שם אנגלי: ${firstName} ${lastName}`);
+        console.log(`📝 נמצא שם עברי: ${firstName} ${lastName}`);
       }
     }
   }
   
-  // תבנית 3: חיפוש בכל הטקסט אם לא נמצא בחלק העליון
+  // תבנית 2: שם אנגלי
   if (!foundName) {
-    const allTextPattern = /([א-ת]{2,}|[A-Z][a-z]{1,})\s+([א-ת]{2,}|[A-Z][a-z]{1,})/g;
-    let allTextMatch;
-    while ((allTextMatch = allTextPattern.exec(cleanedText)) !== null && !foundName) {
-      const firstName = allTextMatch[1];
-      const lastName = allTextMatch[2];
+    const englishNamePatterns = [
+      /(?:^|\s)([A-Z][a-z]{1,})\s+([A-Z][a-z]{1,})(?:\s|$)/g,
+      /Name[:\s]*([A-Z][a-z]+)\s+([A-Z][a-z]+)/gi
+    ];
+    
+    for (const pattern of englishNamePatterns) {
+      if (foundName) break;
+      let match;
+      while ((match = pattern.exec(upperThird)) !== null && !foundName) {
+        const firstName = match[1].trim();
+        const lastName = match[2].trim();
+        
+        if (isValidName(firstName) && isValidName(lastName)) {
+          result.firstName = firstName;
+          result.lastName = lastName;
+          foundName = true;
+          console.log(`📝 נמצא שם אנגלי: ${firstName} ${lastName}`);
+        }
+      }
+    }
+  }
+  
+  // תבנית 3: חיפוש רחב יותר בכל הטקסט
+  if (!foundName) {
+    const mixedPattern = /(?:^|\s)([א-ת]{2,}|[A-Z][a-z]{1,})\s+([א-ת]{2,}|[A-Z][a-z]{1,})(?:\s|$)/g;
+    let match;
+    while ((match = mixedPattern.exec(upperHalf)) !== null && !foundName) {
+      const firstName = match[1].trim();
+      const lastName = match[2].trim();
       
-      if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName) &&
-          firstName.length >= 2 && lastName.length >= 2) {
+      if (isValidName(firstName) && isValidName(lastName)) {
         result.firstName = firstName;
         result.lastName = lastName;
         foundName = true;
-        console.log(`📝 נמצא שם בטקסט המלא: ${firstName} ${lastName}`);
+        console.log(`📝 נמצא שם בחצי העליון: ${firstName} ${lastName}`);
       }
     }
   }
 
-  // חילוץ מקצוע (מחפש מילות מפתח)
+  // חילוץ מקצוע משופר (מחפש מילות מפתח ותפקידים)
   const professionKeywords = [
     'מפתח', 'מתכנת', 'מהנדס', 'מעצב', 'רופא', 'עורך דין', 'רואה חשבון',
     'מנהל', 'סמנכ"ל', 'מנכ"ל', 'יועץ', 'אדריכל', 'מורה', 'מרצה',
-    'developer', 'engineer', 'designer', 'manager', 'analyst', 'consultant'
+    'developer', 'engineer', 'designer', 'manager', 'analyst', 'consultant',
+    'פרויקטים', 'מכירות', 'שיווק', 'כספים', 'משאבי אנוש', 'טכנולוגיה'
   ];
   
+  // חיפוש דפוסים של תפקידים
+  const professionPatterns = [
+    /(?:תפקיד|משרה|עבודה)[:\s]*([א-ת\s]+)/gi,
+    /(?:position|job|role)[:\s]*([a-zA-Z\s]+)/gi,
+    /([א-ת]+)\s+ב([א-ת\s]+)/g // דפוס של "מתכנת בחברת"
+  ];
+  
+  // חיפוש לפי מילות מפתח
   const professionFound = professionKeywords.find(profession => 
-    text.toLowerCase().includes(profession.toLowerCase())
+    cleanedText.toLowerCase().includes(profession.toLowerCase())
   );
   if (professionFound) {
     result.profession = professionFound;
+    console.log(`💼 נמצא מקצוע: ${professionFound}`);
+  }
+  
+  // חיפוש לפי דפוסים אם לא נמצא
+  if (!result.profession) {
+    for (const pattern of professionPatterns) {
+      const match = upperHalf.match(pattern);
+      if (match && match[1]) {
+        const profession = match[1].trim();
+        if (profession.length > 2 && profession.length < 50) {
+          result.profession = profession;
+          console.log(`💼 נמצא מקצוע בדפוס: ${profession}`);
+          break;
+        }
+      }
+    }
   }
 
   // חילוץ שנות ניסיון (מחפש מספרים ליד "שנות ניסיון" או "years")
