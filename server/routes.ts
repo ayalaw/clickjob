@@ -1309,29 +1309,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          console.log('📑 PDF file detected - attempting text extraction with pdftotext');
+          console.log('📑 PDF file detected - attempting text extraction');
           try {
             // ★ שימוש בכלי pdftotext לחילוץ טקסט מ-PDF
             const tempFilePath = `/tmp/${Date.now()}.pdf`;
             const textFilePath = `/tmp/${Date.now()}.txt`;
             
             // כתיבת הקובץ למקום זמני
-            require('fs').writeFileSync(tempFilePath, fileBuffer);
+            fs.writeFileSync(tempFilePath, fileBuffer);
             
             // חילוץ טקסט בעזרת pdftotext
             try {
               execSync(`pdftotext "${tempFilePath}" "${textFilePath}"`);
-              fileText = require('fs').readFileSync(textFilePath, 'utf8');
-              
-              // מחיקת קבצים זמניים
-              require('fs').unlinkSync(tempFilePath);
-              require('fs').unlinkSync(textFilePath);
+              fileText = fs.readFileSync(textFilePath, 'utf8');
+              console.log('✅ pdftotext extraction successful');
             } catch (pdfError) {
               // אם pdftotext לא זמין, ננסה עם strings
               console.log('📑 pdftotext not available, trying strings command');
               const stringsOutput = execSync(`strings "${tempFilePath}"`).toString('utf8');
               fileText = stringsOutput;
-              require('fs').unlinkSync(tempFilePath);
+              console.log('✅ strings extraction successful');
+            }
+            
+            // ניקוי קבצים זמניים
+            try {
+              fs.unlinkSync(tempFilePath);
+              if (fs.existsSync(textFilePath)) {
+                fs.unlinkSync(textFilePath);
+              }
+            } catch (cleanupError) {
+              console.log('⚠️ Warning: Could not clean up temp files');
             }
             
             console.log(`📑 PDF text extracted successfully, length: ${fileText.length}`);
@@ -1459,7 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               drivingLicense: cleanString(extractedData.drivingLicense),
               address: `${cleanString(extractedData.street)} ${cleanString(extractedData.houseNumber)}`.trim(),
               profession: cleanString(extractedData.profession),
-              experience: extractedData.experience ? cleanString(String(extractedData.experience)) : null,
+              experience: extractedData.experience ? parseInt(String(extractedData.experience)) || 0 : 0,
               expectedSalary: undefined,
               status: "available" as const,
               rating: undefined,
@@ -1471,12 +1478,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
 
             // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
-            if ((req.user as any)?.claims) {
-              const userClaims = (req.user as any).claims;
-              const userFirstName = userClaims.first_name || '';
-              const userLastName = userClaims.last_name || '';
-              const userName = `${userFirstName} ${userLastName}`.trim() || userClaims.email;
-              candidateData.recruitmentSource = `${userName} - העלאת קורות חיים`;
+            if (req.user && 'email' in req.user) {
+              const userEmail = (req.user as any).email;
+              candidateData.recruitmentSource = `${userEmail} - העלאת קורות חיים`;
             }
             
             // יצירת המועמד
