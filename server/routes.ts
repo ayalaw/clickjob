@@ -107,6 +107,27 @@ function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
   
+  // בדיקה אם זה PDF עם בעיות קידוד
+  if (text.includes('%PDF')) {
+    console.log('🔍 PDF מזוהה - מנסה חילוץ טקסט משופר');
+    // חיפוש דפוסים ספציפיים בתוך PDF
+    const pdfTextMatch = text.match(/(?:stream[\s\S]*?endstream|BT[\s\S]*?ET)/g);
+    if (pdfTextMatch) {
+      let extractedText = pdfTextMatch.join(' ');
+      // ניקוי תווי PDF
+      extractedText = extractedText
+        .replace(/BT|ET|stream|endstream/g, ' ')
+        .replace(/\/[A-Za-z0-9]+/g, ' ')
+        .replace(/[\d\.]+\s+[\d\.]+\s+[mMlLhHvV]/g, ' ')
+        .replace(/\s+/g, ' ');
+      
+      if (extractedText.length > text.length * 0.1) {
+        console.log('📄 משתמש בטקסט משופר מתוך PDF');
+        text = extractedText;
+      }
+    }
+  }
+  
   // ניקוי הטקסט מתווים בלתי חוקיים לפני עיבוד - משופר
   const cleanedText = text
     .replace(/\u0000/g, '') // NULL bytes
@@ -145,19 +166,22 @@ function extractDataFromText(text: string) {
   const emailPatterns = [
     /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g, // דפוס רגיל
     /([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/g, // דפוס רחב
-    /(?:אימייל|אימיל|email|mail)[:\s]*([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/gi // עם תיאור
+    /(?:אימייל|אימיל|email|mail)[:\s]*([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/gi, // עם תיאור
+    /([A-Za-z0-9]+@[a-zA-Z]+\.[a-zA-Z]{2,})/g // דפוס פשוט יותר
   ];
   
   for (const pattern of emailPatterns) {
     if (result.email) break;
-    const emailMatch = cleanedText.match(pattern);
-    if (emailMatch) {
-      // לוקח את האימייל הראשון שנמצא
-      const email = emailMatch[0].replace(/^(?:אימייל|אימיל|email|mail)[:\s]*/i, '').trim();
-      if (email.includes('@') && email.includes('.')) {
-        result.email = email;
-        console.log(`📧 נמצא אימייל: ${result.email}`);
-        break;
+    const emailMatches = cleanedText.match(pattern);
+    if (emailMatches) {
+      for (const match of emailMatches) {
+        // ניקוי התיאור
+        const email = match.replace(/^(?:אימייל|אימיל|email|mail)[:\s]*/i, '').trim();
+        if (email.includes('@') && email.includes('.') && email.length > 5) {
+          result.email = email;
+          console.log(`📧 נמצא אימייל: ${result.email}`);
+          break;
+        }
       }
     }
   }
@@ -248,17 +272,24 @@ function extractDataFromText(text: string) {
            !/^[^\u0590-\u05FF\u0041-\u005A\u0061-\u007A]+$/.test(name); // לא רק סימנים
   };
   
-  // תבנית 1: שם עברי במעלה של השליש העליון
-  const hebrewNamePatterns = [
-    /(?:^|\s)([א-ת]{2,})\s+([א-ת]{2,})(?:\s|$)/g, // שמות רגילים
-    /שם[:\s]*([א-ת]{2,})\s+([א-ת]{2,})/g, // עם המילה "שם"
-    /([א-ת]{2,})\s+([א-ת]{2,})\s*(?:טלפון|נייד|אימייל)/g // לפני פרטי קשר
+  // תבנית 1: שם עברי ואנגלי במקביל
+  const namePatterns = [
+    // שמות עבריים
+    /(?:^|\s)([א-ת]{2,})\s+([א-ת]{2,})(?:\s|$)/g,
+    /שם[:\s]*([א-ת]{2,})\s+([א-ת]{2,})/g,
+    /([א-ת]{2,})\s+([א-ת]{2,})\s*(?:טלפון|נייד|אימייל)/g,
+    // שמות אנגליים - דפוסים שונים
+    /(?:^|\s)([A-Z][A-Z\s]+)\n([A-Z][A-Z\s]+)/g, // שמות באותיות גדולות בשורות נפרדות
+    /([A-Z]{2,})\s*\n\s*([A-Z]{2,})/g, // NADAV\nKASHTAN
+    /(?:^|\s)([A-Z][a-z]{1,})\s+([A-Z][a-z]{1,})(?:\s|$)/g, // Nadav Kashtan
+    /Name[:\s]*([A-Z][a-z]+)\s+([A-Z][a-z]+)/gi
   ];
   
-  for (const pattern of hebrewNamePatterns) {
+  for (const pattern of namePatterns) {
     if (foundName) break;
     let match;
-    while ((match = pattern.exec(upperThird)) !== null && !foundName) {
+    const textToSearch = pattern.toString().includes('\\n') ? cleanedText : upperThird;
+    while ((match = pattern.exec(textToSearch)) !== null && !foundName) {
       const firstName = match[1].trim();
       const lastName = match[2].trim();
       
@@ -266,31 +297,27 @@ function extractDataFromText(text: string) {
         result.firstName = firstName;
         result.lastName = lastName;
         foundName = true;
-        console.log(`📝 נמצא שם עברי: ${firstName} ${lastName}`);
+        console.log(`📝 נמצא שם: ${firstName} ${lastName}`);
       }
     }
   }
   
-  // תבנית 2: שם אנגלי
+  // תבנית 2: חיפוש נוסף אם לא נמצא
   if (!foundName) {
-    const englishNamePatterns = [
-      /(?:^|\s)([A-Z][a-z]{1,})\s+([A-Z][a-z]{1,})(?:\s|$)/g,
-      /Name[:\s]*([A-Z][a-z]+)\s+([A-Z][a-z]+)/gi
-    ];
-    
-    for (const pattern of englishNamePatterns) {
-      if (foundName) break;
-      let match;
-      while ((match = pattern.exec(upperThird)) !== null && !foundName) {
-        const firstName = match[1].trim();
-        const lastName = match[2].trim();
-        
-        if (isValidName(firstName) && isValidName(lastName)) {
-          result.firstName = firstName;
-          result.lastName = lastName;
-          foundName = true;
-          console.log(`📝 נמצא שם אנגלי: ${firstName} ${lastName}`);
-        }
+    // חיפוש שמות בכל הטקסט בצורה פשוטה יותר
+    const simpleNamePattern = /([A-Z][A-Z\s]*[A-Z])\s*([A-Z][A-Z\s]*[A-Z])/g;
+    let match;
+    while ((match = simpleNamePattern.exec(cleanedText)) !== null && !foundName) {
+      const firstName = match[1].trim().replace(/\s+/g, '');
+      const lastName = match[2].trim().replace(/\s+/g, '');
+      
+      if (firstName.length >= 2 && lastName.length >= 2 && 
+          firstName !== lastName && 
+          !ignoredWords.includes(firstName.toLowerCase())) {
+        result.firstName = firstName;
+        result.lastName = lastName;
+        foundName = true;
+        console.log(`📝 נמצא שם פשוט: ${firstName} ${lastName}`);
       }
     }
   }
