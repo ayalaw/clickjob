@@ -1419,7 +1419,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let duplicateInfo = null;
           if (cleanEmail || cleanMobile || cleanNationalId) {
             console.log('🔍 בודק מועמדים כפולים לפני יצירה...');
+            console.log(`🔍 מחפש לפי: נייד="${cleanMobile}", אימייל="${cleanEmail}", ת.ז="${cleanNationalId}"`);
             const existingCandidate = await storage.findCandidateByContactInfo(cleanMobile, cleanEmail, cleanNationalId);
+            console.log('🔍 תוצאת חיפוש:', existingCandidate ? `נמצא מועמד: ${existingCandidate.firstName} ${existingCandidate.lastName}` : 'לא נמצא מועמד כפול');
             
             if (existingCandidate) {
               console.log('⚠️⚠️⚠️ נמצא מועמד כפול! לא יוצר מועמד חדש!');
