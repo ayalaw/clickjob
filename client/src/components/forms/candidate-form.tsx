@@ -83,6 +83,8 @@ const formSchema = z.object({
   zipCode: z.string().optional(),
   gender: z.enum(["male", "female", "other"]).optional(),
   maritalStatus: z.enum(["single", "married", "divorced", "widowed", "other"]).optional(),
+  birthDate: z.string().optional(),
+  age: z.number().min(16).max(120).optional(),
   drivingLicense: z.boolean().optional(),
   address: z.string().optional(),
   profession: z.string().optional(),
@@ -178,6 +180,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       zipCode: candidate?.zipCode || "",
       gender: candidate?.gender as "male" | "female" | "other" | undefined,
       maritalStatus: candidate?.maritalStatus as "single" | "married" | "divorced" | "widowed" | "other" | undefined,
+      birthDate: candidate?.birthDate || "",
+      age: candidate?.age || undefined,
       drivingLicense: candidate?.drivingLicense ? true : false,
       address: candidate?.address || "",
       profession: candidate?.profession || "",
@@ -274,6 +278,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         zipCode: candidate.zipCode || '',
         gender: candidate.gender || '',
         maritalStatus: candidate.maritalStatus || '',
+        birthDate: candidate.birthDate || '',
+        age: candidate.age || '',
         drivingLicense: candidate.drivingLicense || false,
         address: candidate.address || '',
         profession: candidate.profession || '',
@@ -969,6 +975,40 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       }}
                       className="w-48 text-base"
                       placeholder="הכנס מיקוד"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">תאריך לידה:</span>
+                    <Input
+                      value={candidate ? fieldValues.birthDate || '' : form.watch('birthDate') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('birthDate', e.target.value);
+                        } else {
+                          form.setValue('birthDate', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס תאריך לידה (DD/MM/YYYY או שנה)"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">גיל:</span>
+                    <Input
+                      type="number"
+                      value={candidate ? fieldValues.age || '' : form.watch('age') || ''}
+                      onChange={(e) => {
+                        const age = parseInt(e.target.value) || '';
+                        if (candidate) {
+                          updateFieldValue('age', age);
+                        } else {
+                          form.setValue('age', age as any);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס גיל"
+                      min="16"
+                      max="120"
                     />
                   </div>
                   <div className="flex flex-row-reverse justify-between items-center">

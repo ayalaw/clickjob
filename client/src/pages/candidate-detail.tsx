@@ -631,6 +631,8 @@ export default function CandidateDetail() {
         houseNumber: candidate.houseNumber || '',
         gender: candidate.gender || '',
         maritalStatus: candidate.maritalStatus || '',
+        birthDate: candidate.birthDate || '',
+        age: candidate.age || '',
         mobile: candidate.mobile || '',
         drivingLicense: candidate.drivingLicense || '',
       });
@@ -1481,6 +1483,27 @@ export default function CandidateDetail() {
                           <SelectItem value="אלמן/ה">אלמן/ה</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">תאריך לידה:</span>
+                      <Input
+                        value={fieldValues.birthDate || ''}
+                        onChange={(e) => updateFieldValue('birthDate', e.target.value)}
+                        className="w-48 text-base"
+                        placeholder="DD/MM/YYYY או שנה"
+                      />
+                    </div>
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">גיל:</span>
+                      <Input
+                        type="number"
+                        value={fieldValues.age || ''}
+                        onChange={(e) => updateFieldValue('age', e.target.value)}
+                        className="w-48 text-base"
+                        placeholder="הכנס גיל"
+                        min="16"
+                        max="120"
+                      />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
                       <span className="text-base font-medium">מס' נייד:</span>

@@ -165,6 +165,8 @@ function extractDataFromText(text: string) {
     zipCode: "",
     gender: "",
     maritalStatus: "",
+    birthDate: "",
+    age: 0 as number | null,
     drivingLicense: "",
     profession: "",
     experience: 0 as number | null,
@@ -295,6 +297,69 @@ function extractDataFromText(text: string) {
     if (zipCode.length >= 5 && zipCode.length <= 7) {
       result.zipCode = zipCode;
     }
+  }
+
+  // חילוץ תאריך לידה וחישוב גיל
+  const birthDatePatterns = [
+    // שנת לידה בלבד (1950-2010)
+    /(?:שנת\s*לידה|נולד|נולדה|born|birth)[:\s]*(\d{4})/gi,
+    /(\d{4})\s*(?:שנת\s*לידה|birth\s*year)/gi,
+    // תאריך מלא עברי
+    /(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2,4})/g,
+    // שנה בפורמט עצמאי (בשורה נפרדת או ליד פרטים אישיים)
+    /^(\d{4})$/gm,
+    // שנה ליד מילות מפתח
+    /(?:גיל|age)[:\s]*(\d{1,3})/gi
+  ];
+
+  let birthYear = null;
+  let age = null;
+
+  for (const pattern of birthDatePatterns) {
+    const matches = cleanedText.matchAll(pattern);
+    for (const match of matches) {
+      if (pattern.source.includes('גיל|age')) {
+        // זה גיל ישיר
+        const extractedAge = parseInt(match[1]);
+        if (extractedAge >= 16 && extractedAge <= 80) {
+          age = extractedAge;
+          birthYear = new Date().getFullYear() - extractedAge;
+          console.log(`👶 נמצא גיל: ${age} (שנת לידה משוערת: ${birthYear})`);
+          break;
+        }
+      } else if (match[1] && match[1].length === 4) {
+        // זו שנת לידה
+        const year = parseInt(match[1]);
+        if (year >= 1940 && year <= 2010) {
+          birthYear = year;
+          age = new Date().getFullYear() - year;
+          console.log(`📅 נמצאה שנת לידה: ${birthYear} (גיל משוער: ${age})`);
+          break;
+        }
+      } else if (match[3]) {
+        // זה תאריך מלא
+        let year = parseInt(match[3]);
+        if (year < 100) year += (year > 30 ? 1900 : 2000); // המרת שנתיים לארבע ספרות
+        if (year >= 1940 && year <= 2010) {
+          birthYear = year;
+          age = new Date().getFullYear() - year;
+          const day = match[1];
+          const month = match[2];
+          result.birthDate = `${day}/${month}/${year}`;
+          console.log(`📅 נמצא תאריך לידה מלא: ${result.birthDate} (גיל: ${age})`);
+          break;
+        }
+      }
+    }
+    if (birthYear) break;
+  }
+
+  // שמירת הנתונים
+  if (age && age >= 16 && age <= 80) {
+    result.age = age;
+  }
+  if (birthYear && !result.birthDate) {
+    result.birthDate = birthYear.toString();
   }
 
   // חילוץ שם פרטי ושם משפחה (מחפשים מילים בעברית ובאנגלית)
@@ -1475,6 +1540,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               zipCode: cleanString(extractedData.zipCode),
               gender: cleanString(extractedData.gender),
               maritalStatus: cleanString(extractedData.maritalStatus),
+              birthDate: cleanString(extractedData.birthDate),
+              age: extractedData.age ? parseInt(String(extractedData.age)) || null : null,
               drivingLicense: cleanString(extractedData.drivingLicense),
               address: `${cleanString(extractedData.street)} ${cleanString(extractedData.houseNumber)}`.trim(),
               profession: cleanString(extractedData.profession),

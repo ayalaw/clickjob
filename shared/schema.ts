@@ -120,6 +120,8 @@ export const candidates = pgTable("candidates", {
   address: text("address"), // כתובת מלאה (נשאר לתאימות לאחור)
   gender: varchar("gender"), // מין
   maritalStatus: varchar("marital_status"), // מצב משפחתי
+  birthDate: varchar("birth_date"), // תאריך לידה
+  age: integer("age"), // גיל (מחושב מתאריך לידה)
   drivingLicense: varchar("driving_license"), // רישיון נהיגה
   receptionArea: varchar("reception_area"), // איזור קליטה אופטימליות (מוסר)
   profession: varchar("profession"),
