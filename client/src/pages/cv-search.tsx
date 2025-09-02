@@ -564,6 +564,36 @@ export default function CVSearchPage() {
               </div>
             )}
             
+            {/* Toggle buttons above content */}
+            <div className="mb-4 flex gap-2 flex-wrap">
+              {viewMode === 'extracted' ? (
+                <Button
+                  variant="outline"
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                  onClick={() => setViewMode('original')}
+                  data-testid="button-view-original-cv"
+                >
+                  📄 צפה בקובץ המקורי
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                  onClick={() => setViewMode('extracted')}
+                  data-testid="button-view-extracted-content"
+                >
+                  🔍 חזרה לתוצאות מודגשות
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank')}
+                data-testid="button-open-full-profile"
+              >
+                👤 פתח פרופיל מלא
+              </Button>
+            </div>
+            
             <div className="flex justify-between items-center mt-4 pt-4 border-t">
               <div className="flex gap-2">
                 {selectedCandidateForCV.matchedKeywords.map((keyword) => (
@@ -576,34 +606,6 @@ export default function CVSearchPage() {
                     {keyword}
                   </Badge>
                 ))}
-              </div>
-              <div className="flex gap-2 flex-wrap mb-4">
-                {viewMode === 'extracted' ? (
-                  <Button
-                    variant="outline"
-                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                    onClick={() => setViewMode('original')}
-                    data-testid="button-view-original-cv"
-                  >
-                    📄 צפה בקובץ המקורי
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                    onClick={() => setViewMode('extracted')}
-                    data-testid="button-view-extracted-content"
-                  >
-                    🔍 חזרה לתוצאות מודגשות
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(`/candidates/${selectedCandidateForCV.candidateId}`, '_blank')}
-                  data-testid="button-open-full-profile"
-                >
-                  👤 פתח פרופיל מלא
-                </Button>
               </div>
             </div>
           </CardContent>
