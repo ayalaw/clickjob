@@ -1168,6 +1168,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                (extractedData.mobile || extractedData.email);
         
         if (hasRequiredData) {
+          // 🔍 בדיקת מועמדים כפולים לפני יצירת המועמד!
+          const cleanEmail = extractedData.email?.trim() || '';
+          const cleanMobile = extractedData.mobile?.trim() || '';
+          const cleanNationalId = extractedData.nationalId?.trim() || '';
+          
+          if (cleanEmail || cleanMobile || cleanNationalId) {
+            console.log('🔍 בודק מועמדים כפולים לפני יצירה...');
+            const existingCandidate = await storage.findCandidateByContactInfo(cleanMobile, cleanEmail, cleanNationalId);
+            
+            if (existingCandidate) {
+              console.log('⚠️⚠️⚠️ נמצא מועמד כפול! לא יוצר מועמד חדש');
+              console.log(`🆔 מועמד קיים: ${existingCandidate.firstName} ${existingCandidate.lastName}`);
+              
+              // החזרת הנתונים עם הודעה על מועמד כפול
+              return res.json({
+                extractedData: {
+                  ...extractedData,
+                  candidateCreated: false,
+                  duplicateFound: true,
+                  existingCandidateId: existingCandidate.id,
+                  message: "נמצא מועמד דומה במערכת! לא נוצר מועמד חדש."
+                },
+                fileContent: fileText
+              });
+            }
+          }
+
           try {
             console.log('🎯 Creating candidate automatically from CV data...');
             
