@@ -123,6 +123,10 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   // Field values for inline editing
   const [fieldValues, setFieldValues] = useState<any>({});
   
+  // Track if form has been changed since last save or auto-creation
+  const [hasFormChanged, setHasFormChanged] = useState(false);
+  const [wasAutoCreated, setWasAutoCreated] = useState(false);
+  
   // Function to check for duplicates
   const checkDuplicates = async (mobile?: string, email?: string, nationalId?: string) => {
     if (!mobile && !email && !nationalId) {
@@ -185,6 +189,19 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       recruitmentSource: candidate?.recruitmentSource || "",
     },
   });
+
+  // Watch for form changes
+  const watchedValues = form.watch();
+  
+  useEffect(() => {
+    // If we have a candidate (editing) or if auto-created, enable change tracking
+    if (candidate || wasAutoCreated) {
+      setHasFormChanged(form.formState.isDirty);
+    } else {
+      // For new candidates, always allow saving
+      setHasFormChanged(true);
+    }
+  }, [watchedValues, candidate, wasAutoCreated, form.formState.isDirty]);
 
   // Load existing CV if candidate exists - BUT DON'T CLEAR if it's a new candidate
   useEffect(() => {
@@ -341,6 +358,9 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
         // If candidate was created automatically, show success message
         if (result.extractedData && result.extractedData.candidateCreated) {
+          setWasAutoCreated(true);
+          setHasFormChanged(false); // Reset form change tracking
+          
           toast({
             title: "מועמד נוצר בהצלחה!",
             description: result.extractedData.message || "מועמד נוצר אוטומטית מקורות החיים",
@@ -441,6 +461,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setHasFormChanged(false);
       onSuccess();
     },
     onError: (error) => {
@@ -465,6 +486,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setHasFormChanged(false);
       onSuccess();
     },
     onError: (error) => {
@@ -674,7 +696,11 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex justify-end">
                     <Button 
                       onClick={form.handleSubmit(onSubmit)} 
-                      disabled={createCandidate.isPending || updateCandidate.isPending}
+                      disabled={
+                        createCandidate.isPending || 
+                        updateCandidate.isPending || 
+                        (!hasFormChanged && !!(candidate || wasAutoCreated))
+                      }
                       className="flex items-center gap-2"
                     >
                       <Save className="w-4 h-4" />
