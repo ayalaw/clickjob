@@ -301,15 +301,22 @@ function extractDataFromText(text: string) {
 
   // חילוץ תאריך לידה וחישוב גיל
   const birthDatePatterns = [
-    // שנת לידה בלבד (1950-2010)
-    /(?:שנת\s*לידה|נולד|נולדה|born|birth)[:\s]*(\d{4})/gi,
-    /(\d{4})\s*(?:שנת\s*לידה|birth\s*year)/gi,
-    // תאריך מלא עברי
+    // שנת לידה - פשוט ומדויק
+    /שנה\s*לידה\s*:\s*(\d{4})/gi,
+    /שנת\s*לידה\s*:\s*(\d{4})/gi,
+    /נולד\s*:\s*(\d{4})/gi,
+    /נולדה\s*:\s*(\d{4})/gi,
+    /born\s*:\s*(\d{4})/gi,
+    /birth\s*:\s*(\d{4})/gi,
+    // שנה ליד מילות מפתח (הפוך)
+    /(\d{4})\s*שנת?\s*לידה/gi,
+    // תאריך מלא עברי (DD/MM/YYYY או DD.MM.YYYY או DD-MM-YYYY)
     /(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2,4})/g,
-    // שנה בפורמט עצמאי (בשורה נפרדת או ליד פרטים אישיים)
-    /^(\d{4})$/gm,
-    // שנה ליד מילות מפתח
-    /(?:גיל|age)[:\s]*(\d{1,3})/gi
+    // שנה בפורמט עצמאי (בשורה נפרדת) - רק לשנים סבירות
+    /^(19\d{2}|20\d{2})$/gm,
+    // גיל עם מילות מפתח
+    /גיל\s*:\s*(\d{1,3})/gi,
+    /age\s*:\s*(\d{1,3})/gi
   ];
 
   let birthYear = null;
@@ -330,7 +337,7 @@ function extractDataFromText(text: string) {
       } else if (match[1] && match[1].length === 4) {
         // זו שנת לידה
         const year = parseInt(match[1]);
-        if (year >= 1940 && year <= 2010) {
+        if (year >= 1940 && year <= 2025) {
           birthYear = year;
           age = new Date().getFullYear() - year;
           console.log(`📅 נמצאה שנת לידה: ${birthYear} (גיל משוער: ${age})`);
@@ -340,7 +347,7 @@ function extractDataFromText(text: string) {
         // זה תאריך מלא
         let year = parseInt(match[3]);
         if (year < 100) year += (year > 30 ? 1900 : 2000); // המרת שנתיים לארבע ספרות
-        if (year >= 1940 && year <= 2010) {
+        if (year >= 1940 && year <= 2025) {
           birthYear = year;
           age = new Date().getFullYear() - year;
           const day = match[1];
