@@ -92,7 +92,7 @@ export interface IStorage {
   getCandidateEvents(candidateId: string): Promise<CandidateEvent[]>;
   
   // CV Search operations
-  searchCVs(filters: { positiveKeywords: string[][], negativeKeywords: string[][] }): Promise<SearchResult[]>;
+  searchCVs(filters: { positiveKeywords: string[]; negativeKeywords: string[] }): Promise<SearchResult[]>;
 
   // Reminder operations
   getReminders(userId?: string): Promise<ReminderWithDetails[]>;
@@ -501,17 +501,17 @@ export class DatabaseStorage implements IStorage {
       // Build query with proper conditions
       let conditions = [];
 
-      // Add positive keyword conditions (must contain ALL keywords)
+      // Add positive keyword conditions (must contain at least one keyword)
       if (positiveKeywords.length > 0) {
         const positiveConditions = positiveKeywords.map(keyword => 
-          sql`(${candidates.cvContent} ILIKE ${`%${keyword}%`} OR ${candidates.profession} ILIKE ${`%${keyword}%`})`
+          sql`(${candidates.cvContent} ILIKE ${`%${keyword}%`} OR ${candidates.profession} ILIKE ${`%${keyword}%`} OR ${candidates.firstName} ILIKE ${`%${keyword}%`} OR ${candidates.lastName} ILIKE ${`%${keyword}%`})`
         );
         
-        // All positive keywords must match
-        const allPositive = positiveConditions.reduce((acc, condition) => 
-          acc ? sql`${acc} AND ${condition}` : condition
+        // At least one positive keyword must match
+        const anyPositive = positiveConditions.reduce((acc, condition) => 
+          acc ? sql`${acc} OR ${condition}` : condition
         );
-        conditions.push(allPositive);
+        conditions.push(sql`(${anyPositive})`);
       }
 
       // Add negative keyword conditions (must NOT contain ANY keywords)  
@@ -559,7 +559,8 @@ export class DatabaseStorage implements IStorage {
         // Find matched positive keywords
         positiveKeywords.forEach(keyword => {
           const regex = new RegExp(keyword, 'gi');
-          if (regex.test(result.cvContent || '') || regex.test(result.firstName + ' ' + result.lastName)) {
+          const fullName = `${result.firstName} ${result.lastName}`;
+          if (regex.test(result.cvContent || '') || regex.test(fullName) || regex.test(result.firstName || '') || regex.test(result.lastName || '')) {
             matchedKeywords.push(keyword);
           }
         });
@@ -581,7 +582,7 @@ export class DatabaseStorage implements IStorage {
           email: result.email || '',
           matchedKeywords,
           cvPreview,
-          extractedAt: result.extractedAt,
+          extractedAt: result.extractedAt || new Date(),
         };
       });
 
@@ -589,7 +590,7 @@ export class DatabaseStorage implements IStorage {
 
     } catch (error) {
       console.error('Error searching CVs:', error);
-      throw new Error(`CV search failed: ${error.message}`);
+      throw new Error(`CV search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
