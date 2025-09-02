@@ -276,12 +276,12 @@ export default function Candidates() {
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[150px]">מתעניין במשרה אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">מקור גיוס אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[130px]">מס' נייד</TableHead>
-                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">מס' מועמד</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[200px]">דוא״ל</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">אירוע ידני אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">הפניה אחרונה</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">שינוי סטטוס אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">סטטוס</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">מס' מועמד</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">פעולות</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -318,11 +318,6 @@ export default function Candidates() {
                               </div>
                             ) : "-"}
                           </TableCell>
-                          <TableCell>
-                            <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
-                              {candidate.candidateNumber || "-"}
-                            </span>
-                          </TableCell>
                           <TableCell data-testid={`text-candidate-email-${candidate.id}`}>
                             <div className="flex items-center">
                               <Mail className="h-3 w-3 ml-1" />
@@ -339,6 +334,11 @@ export default function Candidates() {
                             <Badge className={getStatusColor(candidate.status || 'available')}>
                               {getStatusText(candidate.status || 'available')}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                              {candidate.candidateNumber || "-"}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-1 space-x-reverse" onClick={(e) => e.stopPropagation()}>
