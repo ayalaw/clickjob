@@ -449,7 +449,7 @@ export default function CandidateDetail() {
           const result = await apiRequest('POST', '/api/job-applications', {
             candidateId: candidate.id,
             jobId: jobId,
-            status: 'interview_scheduled'
+            status: 'submitted'
           });
           
           console.log(`📥 קיבל תגובה למשרה ${jobId}:`, result);
