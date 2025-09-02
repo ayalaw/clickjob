@@ -1189,7 +1189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               notes: extractedData.achievements || "",
               tags: [],
               cvPath: req.file.path, // שמירת נתיב הקובץ
-              cvContent: fileText, // שמירת תוכן הקובץ לחיפוש
+              cvContent: "", // שמירת תוכן ריק כדי למנוע שגיאות UTF8
               recruitmentSource: "העלאת קורות חיים אוטומטית"
             };
 

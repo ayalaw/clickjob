@@ -320,48 +320,47 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         // The actual data is inside extractedData
         const data = result.extractedData || result;
         
-        // Check if there's an error indicating candidate already exists
-        if ((result.error && (
-          result.error.includes('duplicate key value violates unique constraint') ||
-          result.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')
-        )) || (result.extractedData && result.extractedData.error && (
-          result.extractedData.error.includes('duplicate key value violates unique constraint') ||
-          result.extractedData.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')
-        ))) {
-          // Find the existing candidate to get their ID
+        // Check if we have enough data to check for duplicates
+        if (data.email || data.mobile) {
           try {
-            const candidatesResponse = await fetch('/api/candidates');
-            if (candidatesResponse.ok) {
-              const candidatesData = await candidatesResponse.json();
-              const existingCandidate = candidatesData.candidates?.find((c: any) => 
-                (data.email && c.email === data.email) || 
-                (data.mobile && c.mobile === data.mobile)
-              );
-              
-              if (existingCandidate) {
-                console.log('Found existing candidate:', existingCandidate);
+            const duplicateResponse = await fetch('/api/candidates/check-duplicate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                email: data.email, 
+                mobile: data.mobile,
+                nationalId: data.nationalId 
+              }),
+            });
+            
+            if (duplicateResponse.ok) {
+              const duplicateResult = await duplicateResponse.json();
+              if (duplicateResult.exists) {
+                console.log('Found existing candidate:', duplicateResult.candidate);
                 setDuplicateDialog({
                   open: true,
                   candidateData: data,
-                  existingCandidateId: existingCandidate.id
+                  existingCandidateId: duplicateResult.candidate.id
                 });
-              } else {
-                toast({
-                  title: "מועמד דומה נמצא",
-                  description: `מועמד עם פרטים דומים כבר קיים במערכת`,
-                  variant: "destructive"
-                });
+                return; // Don't fill the form if candidate exists
               }
             }
           } catch (error) {
-            console.error('Error finding existing candidate:', error);
-            toast({
-              title: "מועמד דומה נמצא",
-              description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לרשימת המועמדים`,
-              variant: "destructive",
-            });
+            console.error('Error checking for duplicates:', error);
           }
-          return; // Don't fill the form if candidate exists
+        }
+
+        // Check if there's an error indicating candidate creation failed
+        if ((result.error && result.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')) || 
+            (result.extractedData && result.extractedData.error && result.extractedData.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה'))) {
+          // Show general error message
+          toast({
+            title: "שגיאה ביצירת מועמד",
+            description: "נתונים חולצו בהצלחה אך לא ניתן ליצור מועמד אוטומטית",
+            variant: "destructive"
+          });
         }
         
         // Update form fields with extracted data
