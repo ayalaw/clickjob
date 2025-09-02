@@ -343,6 +343,11 @@ export default function CVSearchPage() {
                         <Clock className="h-3 w-3" />
                         {searchStats.searchTime}ms
                       </span>
+                      {includeNotes && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          כולל הערות
+                        </Badge>
+                      )}
                     </div>
                   )}
                 </CardDescription>
@@ -419,11 +424,11 @@ export default function CVSearchPage() {
                             />
                             {result.cvPreview && (
                               <div 
-                                className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-md truncate"
+                                className="text-xs text-gray-600 dark:text-gray-300 mt-1 max-w-lg"
                                 dangerouslySetInnerHTML={{
                                   __html: highlightKeywords(
-                                    result.cvPreview.substring(0, 150) + (result.cvPreview.length > 150 ? '...' : ''), 
-                                    [...positiveKeywords]
+                                    result.cvPreview.substring(0, 250) + (result.cvPreview.length > 250 ? '...' : ''), 
+                                    [...positiveKeywords, ...result.matchedKeywords]
                                   )
                                 }}
                               />
@@ -465,7 +470,7 @@ export default function CVSearchPage() {
                               size="sm"
                               onClick={() => viewFullCV(result)}
                               data-testid={`button-view-cv-${result.candidateId}`}
-                              title="צפה בקורות חיים"
+                              title="צפה בקורות חיים מלא עם הדגשות"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
