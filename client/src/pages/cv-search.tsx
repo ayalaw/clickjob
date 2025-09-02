@@ -50,7 +50,7 @@ export default function CVSearchPage() {
   const handleAddPositiveKeyword = (e: React.KeyboardEvent | React.MouseEvent) => {
     if ((e.type === 'keydown' && (e as React.KeyboardEvent).key === 'Enter') || e.type === 'click') {
       const keyword = newPositiveKeyword.trim();
-      if (keyword && !positiveKeywords.includes(keyword)) {
+      if (keyword.length > 0 && !positiveKeywords.includes(keyword)) {
         setPositiveKeywords([...positiveKeywords, keyword]);
         setNewPositiveKeyword('');
       }
@@ -60,7 +60,7 @@ export default function CVSearchPage() {
   const handleAddNegativeKeyword = (e: React.KeyboardEvent | React.MouseEvent) => {
     if ((e.type === 'keydown' && (e as React.KeyboardEvent).key === 'Enter') || e.type === 'click') {
       const keyword = newNegativeKeyword.trim();
-      if (keyword && !negativeKeywords.includes(keyword)) {
+      if (keyword.length > 0 && !negativeKeywords.includes(keyword)) {
         setNegativeKeywords([...negativeKeywords, keyword]);
         setNewNegativeKeyword('');
       }
@@ -164,7 +164,7 @@ export default function CVSearchPage() {
                 value={newPositiveKeyword}
                 onChange={(e) => setNewPositiveKeyword(e.target.value)}
                 onKeyDown={handleAddPositiveKeyword}
-                placeholder="הקלד מילת מפתח..."
+                placeholder="הקלד תו, מספר או מילה..."
                 className="flex-1"
                 data-testid="input-positive-keyword"
               />
@@ -209,7 +209,7 @@ export default function CVSearchPage() {
                 value={newNegativeKeyword}
                 onChange={(e) => setNewNegativeKeyword(e.target.value)}
                 onKeyDown={handleAddNegativeKeyword}
-                placeholder="הקלד מילת מפתח..."
+                placeholder="הקלד תו, מספר או מילה..."
                 className="flex-1"
                 data-testid="input-negative-keyword"
               />
