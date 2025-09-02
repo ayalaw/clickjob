@@ -22,7 +22,6 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import mammoth from 'mammoth';
-import pdfParse from 'pdf-parse';
 import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
@@ -1284,16 +1283,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          console.log('📑 PDF file detected - attempting proper text extraction with pdf-parse');
+          console.log('📑 PDF file detected - attempting text extraction with pdftotext');
           try {
-            // ★ שימוש בספריית pdf-parse לחילוץ טקסט נכון מ-PDF
-            const pdfData = await pdfParse(fileBuffer);
-            fileText = pdfData.text;
+            // ★ שימוש בכלי pdftotext לחילוץ טקסט מ-PDF
+            const tempFilePath = `/tmp/${Date.now()}.pdf`;
+            const textFilePath = `/tmp/${Date.now()}.txt`;
+            
+            // כתיבת הקובץ למקום זמני
+            require('fs').writeFileSync(tempFilePath, fileBuffer);
+            
+            // חילוץ טקסט בעזרת pdftotext
+            try {
+              execSync(`pdftotext "${tempFilePath}" "${textFilePath}"`);
+              fileText = require('fs').readFileSync(textFilePath, 'utf8');
+              
+              // מחיקת קבצים זמניים
+              require('fs').unlinkSync(tempFilePath);
+              require('fs').unlinkSync(textFilePath);
+            } catch (pdfError) {
+              // אם pdftotext לא זמין, ננסה עם strings
+              console.log('📑 pdftotext not available, trying strings command');
+              const stringsOutput = execSync(`strings "${tempFilePath}"`).toString('utf8');
+              fileText = stringsOutput;
+              require('fs').unlinkSync(tempFilePath);
+            }
             
             console.log(`📑 PDF text extracted successfully, length: ${fileText.length}`);
             console.log(`📑 PDF content preview: ${fileText.substring(0, 200)}...`);
             
-            if (!fileText || fileText.length < 10) {
+            if (!fileText || fileText.length < 20) {
               throw new Error('PDF appears to be empty or text extraction failed');
             }
             
