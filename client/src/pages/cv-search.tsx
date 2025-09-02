@@ -76,7 +76,7 @@ export default function CVSearchPage() {
   };
 
   const handleSearch = async () => {
-    if (positiveKeywords.length === 0 && negativeKeywords.length === 0) {
+    if (positiveKeywords.length === 0) {
       return;
     }
 
@@ -130,7 +130,7 @@ export default function CVSearchPage() {
     console.log(`Bulk ${action} for candidates:`, selectedCandidates);
   };
 
-  const canSearch = positiveKeywords.length > 0 || negativeKeywords.length > 0;
+  const canSearch = positiveKeywords.length > 0;
 
   return (
     <div className="container mx-auto p-6 max-w-7xl" dir="rtl">

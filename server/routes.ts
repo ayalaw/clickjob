@@ -3788,10 +3788,10 @@ ${recommendation}
         });
       }
 
-      // Ensure we have at least some search criteria
-      if (positiveKeywords.length === 0 && negativeKeywords.length === 0) {
+      // Ensure we have at least positive keywords
+      if (positiveKeywords.length === 0) {
         return res.status(400).json({
-          error: 'At least one search criterion is required',
+          error: 'At least one positive keyword is required',
         });
       }
 
