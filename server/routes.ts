@@ -138,11 +138,20 @@ function extractDataFromText(text: string) {
     achievements: ""
   };
 
-  // חילוץ אימייל (מכיל @)
+  // חילוץ אימייל (מכיל @) - מחפש בכל הטקסט
   const emailPattern = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g;
-  const emailMatch = upperThird.match(emailPattern);
+  let emailMatch = cleanedText.match(emailPattern);
   if (emailMatch) {
     result.email = emailMatch[0];
+    console.log(`📧 נמצא אימייל: ${result.email}`);
+  } else {
+    // ניסיון נוסף עם דפוס רחב יותר
+    const emailPatternWide = /([a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+\.[a-zA-Z]{2,})/g;
+    emailMatch = cleanedText.match(emailPatternWide);
+    if (emailMatch) {
+      result.email = emailMatch[0];
+      console.log(`📧 נמצא אימייל (דפוס רחב): ${result.email}`);
+    }
   }
 
   // חילוץ טלפון עם תמיכה בפורמטים שונים כולל +972
@@ -220,21 +229,57 @@ function extractDataFromText(text: string) {
 
   // חילוץ שם פרטי ושם משפחה (מחפשים מילים בעברית ובאנגלית)
   // רשימת מילים להתעלמות
-  const ignoredWords = ['קורות', 'חיים', 'קוח', 'קו"ח', 'אינפורמציה', 'פרטית', 'מידע', 'אישי', 'פרטים', 'תקופת', 'המועמד', 'המועמדת'];
+  const ignoredWords = ['קורות', 'חיים', 'קוח', 'קו"ח', 'אינפורמציה', 'פרטית', 'מידע', 'אישי', 'פרטים', 'תקופת', 'המועמד', 'המועמדת', 'סיכום', 'עמוד', 'מס', 'טלפון', 'נייד', 'דואל', 'אימיל', 'כתובת', 'מגורים'];
   
-  const namePattern = /(?:שם[:\s]*)?([א-ת]{2,})\s+([א-ת]{2,})|([A-Z][a-z]+)\s+([A-Z][a-z]+)/g;
-  const nameMatch = upperThird.match(namePattern);
-  if (nameMatch) {
-    const fullName = nameMatch[0].replace(/שם[:\s]*/, '').trim();
-    const nameParts = fullName.split(/\s+/);
-    if (nameParts.length >= 2) {
-      const firstName = nameParts[0];
-      const lastName = nameParts[1];
+  // חיפוש שמות מתקדם יותר - עברית ואנגלית
+  let foundName = false;
+  
+  // תבנית 1: שם עברי (מינימום 2 אותיות עבריות)
+  const hebrewNamePattern = /([א-ת]{2,})\s+([א-ת]{2,})/g;
+  let hebrewMatch;
+  while ((hebrewMatch = hebrewNamePattern.exec(upperThird)) !== null && !foundName) {
+    const firstName = hebrewMatch[1];
+    const lastName = hebrewMatch[2];
+    
+    if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName)) {
+      result.firstName = firstName;
+      result.lastName = lastName;
+      foundName = true;
+      console.log(`📝 נמצא שם עברי: ${firstName} ${lastName}`);
+    }
+  }
+  
+  // תבנית 2: שם אנגלי (אות גדולה + אותיות קטנות)
+  if (!foundName) {
+    const englishNamePattern = /([A-Z][a-z]{1,})\s+([A-Z][a-z]{1,})/g;
+    let englishMatch;
+    while ((englishMatch = englishNamePattern.exec(upperThird)) !== null && !foundName) {
+      const firstName = englishMatch[1];
+      const lastName = englishMatch[2];
       
-      // בדיקה שהשמות לא במילים הממוקעות להתעלמות
       if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName)) {
         result.firstName = firstName;
         result.lastName = lastName;
+        foundName = true;
+        console.log(`📝 נמצא שם אנגלי: ${firstName} ${lastName}`);
+      }
+    }
+  }
+  
+  // תבנית 3: חיפוש בכל הטקסט אם לא נמצא בחלק העליון
+  if (!foundName) {
+    const allTextPattern = /([א-ת]{2,}|[A-Z][a-z]{1,})\s+([א-ת]{2,}|[A-Z][a-z]{1,})/g;
+    let allTextMatch;
+    while ((allTextMatch = allTextPattern.exec(cleanedText)) !== null && !foundName) {
+      const firstName = allTextMatch[1];
+      const lastName = allTextMatch[2];
+      
+      if (!ignoredWords.includes(firstName) && !ignoredWords.includes(lastName) &&
+          firstName.length >= 2 && lastName.length >= 2) {
+        result.firstName = firstName;
+        result.lastName = lastName;
+        foundName = true;
+        console.log(`📝 נמצא שם בטקסט המלא: ${firstName} ${lastName}`);
       }
     }
   }
