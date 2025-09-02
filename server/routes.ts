@@ -1113,7 +1113,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
       if (!candidateData.recruitmentSource && req.user && 'email' in req.user) {
         const userEmail = (req.user as any).email;
-        candidateData.recruitmentSource = userEmail || 'משתמש לא ידוע';
+        // Extract username before @ for display
+        const username = userEmail ? userEmail.split('@')[0] : 'משתמש לא ידוע';
+        candidateData.recruitmentSource = username;
       }
       
       const candidate = await storage.createCandidate(candidateData);
@@ -1573,7 +1575,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
             if (req.user && 'email' in req.user) {
               const userEmail = (req.user as any).email;
-              candidateData.recruitmentSource = `${userEmail} - העלאת קורות חיים`;
+              const username = userEmail ? userEmail.split('@')[0] : 'משתמש לא ידוע';
+              candidateData.recruitmentSource = `${username} - העלאת קורות חיים`;
             }
             
             // יצירת המועמד

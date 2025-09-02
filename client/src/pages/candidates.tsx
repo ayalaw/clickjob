@@ -274,7 +274,7 @@ export default function Candidates() {
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">עיר</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">עדכון אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[150px]">מתעניין במשרה אחרון</TableHead>
-                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">מקור גיוס נוכחי</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">מקור גיוס אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[130px]">מס' נייד</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[100px]">מס' מועמד</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[200px]">דוא״ל</TableHead>

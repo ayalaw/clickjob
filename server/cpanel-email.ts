@@ -625,6 +625,10 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                   
                   if (!candidateExists) {
                     // Create new candidate with minimal data - no fake information
+                    // Extract domain from sender email for recruitment source
+                    const senderDomain = senderEmail ? senderEmail.split('@')[1] : null;
+                    const recruitmentSourceText = senderDomain ? senderDomain : 'מייל נכנס ללא דומיין';
+                    
                     const newCandidate = await storage.createCandidate({
         firstName: '', // Leave empty - will be filled manually
         lastName: '', // Leave empty - will be filled manually  
@@ -633,7 +637,7 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
         mobile: '', // Leave empty
         profession: '', // Leave empty
         status: 'פעיל',
-        recruitmentSource: 'מייל נכנס - קורות חיים',
+        recruitmentSource: recruitmentSourceText,
         notes: `מועמד שנוסף אוטומטית מהמייל. נושא המייל: "${parsed.subject || 'ללא נושא'}"`,
         cvPath: `${timestamp}-${cleanFilename.toLowerCase().replace(/[^a-z0-9.-]/g, '')}`
       });
