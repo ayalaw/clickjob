@@ -170,14 +170,28 @@ function extractDataFromText(text: string) {
 
   // חילוץ טלפון עם תמיכה בפורמטים שונים כולל +972
   const phonePatterns = [
-    // פורמט ישראלי רגיל - ניידים
-    /(05\d{1}[-\s]?\d{7}|05\d{8})/g,
-    // פורמט ישראלי רגיל - קוויים
-    /(0[2-9][-\s]?\d{7}|0[2-9]\d{7})/g,
-    // פורמט עם +972 - כל הטלפונים
-    /(\+972[-\s]?[2-9]\d{1}[-\s]?\d{7}|\+972[-\s]?[2-9]\d{8})/g,
-    // פורמט עם 972 בלי +
-    /(972[-\s]?[2-9]\d{1}[-\s]?\d{7}|972[-\s]?[2-9]\d{8})/g
+    // ★ ניידים ישראליים - 05[2-9] + 7 ספרות (10 ספרות סה"כ)
+    /(05[2-9]\d{7})/g, // 0527654321
+    /(05[2-9][-\s]\d{3}[-\s]?\d{4})/g, // 052-765-4321
+    /(05[2-9][-\s]\d{7})/g, // 052-7654321
+    
+    // ★ קווים ישראליים - 0[2,3,4,8,9] + 7 ספרות (9 ספרות סה"כ)  
+    /(0[2349]\d{7})/g, // 025555555, 039876543
+    /(0[2349][-\s]\d{3}[-\s]?\d{4})/g, // 02-555-5555
+    /(0[2349][-\s]\d{7})/g, // 02-5555555
+    
+    // ★ פורמט בינלאומי +972
+    // ניידים: +972-5[2-9]-XXXXXXX
+    /(\+972[-\s]?5[2-9][-\s]?\d{7})/g, // +972-52-7654321
+    /(\+972[-\s]?5[2-9][-\s]?\d{3}[-\s]?\d{4})/g, // +972-52-765-4321
+    
+    // קווים: +972-[2,3,4,8,9]-XXXXXXX
+    /(\+972[-\s]?[2349][-\s]?\d{7})/g, // +972-2-5555555
+    /(\+972[-\s]?[2349][-\s]?\d{3}[-\s]?\d{4})/g, // +972-2-555-5555
+    
+    // ★ פורמט 972 בלי +
+    /(972[-\s]?5[2-9][-\s]?\d{7})/g,
+    /(972[-\s]?[2349][-\s]?\d{7})/g
   ];
 
   // חיפוש כל הטלפונים
@@ -187,25 +201,29 @@ function extractDataFromText(text: string) {
       for (const match of matches) {
         const normalized = normalizeIsraeliPhone(match);
         
-        // טלפון נייד ישראלי (מתחיל ב-05)
-        if (normalized.startsWith('05') && normalized.length === 10) {
+        // ★ טלפון נייד ישראלי - 05[2-9] + 7 ספרות (10 ספרות סה"כ)
+        if (normalized.match(/^05[2-9]\d{7}$/)) {
           if (!result.mobile) {
             result.mobile = normalized;
-            console.log(`📱 מצא נייד: ${normalized} (מקור: ${match})`);
+            console.log(`📱 מצא נייד חוקי: ${normalized} (מקור: ${match})`);
           } else if (result.mobile !== normalized && !result.phone2) {
             result.phone2 = normalized;
             console.log(`📞 מצא נייד שני: ${normalized} (מקור: ${match})`);
           }
         }
-        // טלפונים קוויים (02, 03, 04, 08, 09) - לא כולל 05x
-        else if (normalized.match(/^0[2-4,6-9]\d{7,8}$/) && normalized.length >= 9) {
+        // ★ טלפון קווי ישראלי - 0[2,3,4,8,9] + 7 ספרות (9 ספרות סה"כ)
+        else if (normalized.match(/^0[2349]\d{7}$/)) {
           if (!result.phone) {
             result.phone = normalized;
-            console.log(`☎️ מצא טלפון קווי: ${normalized} (מקור: ${match})`);
+            console.log(`☎️ מצא טלפון קווי חוקי: ${normalized} (מקור: ${match})`);
           } else if (result.phone !== normalized && !result.phone2) {
             result.phone2 = normalized;
             console.log(`☎️ מצא טלפון קווי נוסף: ${normalized} (מקור: ${match})`);
           }
+        }
+        // ❌ טלפון לא חוקי לפי התקן הישראלי
+        else {
+          console.log(`⚠️ טלפון לא חוקי: ${normalized} (מקור: ${match}) - לא תואם לתקן הישראלי`);
         }
       }
     }
