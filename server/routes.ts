@@ -1575,7 +1575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (req.user && 'email' in req.user) {
               const userEmail = (req.user as any).email;
               const username = userEmail ? userEmail.split('@')[0] : 'משתמש לא ידוע';
-              candidateData.recruitmentSource = `${username} - העלאת קורות חיים`;
+              candidateData.recruitmentSource = username;
             } else {
               candidateData.recruitmentSource = "העלאת קורות חיים";
             }
