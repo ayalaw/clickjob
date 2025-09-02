@@ -1421,15 +1421,6 @@ export default function CandidateDetail() {
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-base font-medium">טלפון 1:</span>
-                      <Input
-                        value={fieldValues.phone || ''}
-                        onChange={(e) => updateFieldValue('phone', e.target.value)}
-                        className="w-48 text-base"
-                        placeholder="הכנס טלפון"
-                      />
-                    </div>
-                    <div className="flex flex-row-reverse justify-between items-center">
                       <span className="text-base font-medium">טלפון 2:</span>
                       <Input
                         value={fieldValues.phone2 || ''}
