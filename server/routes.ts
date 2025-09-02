@@ -107,26 +107,8 @@ function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
   
-  // בדיקה אם זה PDF עם בעיות קידוד
-  if (text.includes('%PDF')) {
-    console.log('🔍 PDF מזוהה - מנסה חילוץ טקסט משופר');
-    // חיפוש דפוסים ספציפיים בתוך PDF
-    const pdfTextMatch = text.match(/(?:stream[\s\S]*?endstream|BT[\s\S]*?ET)/g);
-    if (pdfTextMatch) {
-      let extractedText = pdfTextMatch.join(' ');
-      // ניקוי תווי PDF
-      extractedText = extractedText
-        .replace(/BT|ET|stream|endstream/g, ' ')
-        .replace(/\/[A-Za-z0-9]+/g, ' ')
-        .replace(/[\d\.]+\s+[\d\.]+\s+[mMlLhHvV]/g, ' ')
-        .replace(/\s+/g, ' ');
-      
-      if (extractedText.length > text.length * 0.1) {
-        console.log('📄 משתמש בטקסט משופר מתוך PDF');
-        text = extractedText;
-      }
-    }
-  }
+  // בדיקה אם זה PDF עם בעיות קידוד - מנוטרל זמנית
+  // כרגע נשתמש בטקסט המקורי בלבד
   
   // ניקוי הטקסט מתווים בלתי חוקיים לפני עיבוד - משופר
   const cleanedText = text
@@ -282,6 +264,7 @@ function extractDataFromText(text: string) {
     /(?:^|\s)([A-Z][A-Z\s]+)\n([A-Z][A-Z\s]+)/g, // שמות באותיות גדולות בשורות נפרדות
     /([A-Z]{2,})\s*\n\s*([A-Z]{2,})/g, // NADAV\nKASHTAN
     /(?:^|\s)([A-Z][a-z]{1,})\s+([A-Z][a-z]{1,})(?:\s|$)/g, // Nadav Kashtan
+    /^([A-Z][a-z]+)\s+([A-Z][a-z]+),?/gm, // Yahav Avramov, בתחילת שורה
     /Name[:\s]*([A-Z][a-z]+)\s+([A-Z][a-z]+)/gi
   ];
   
@@ -290,8 +273,12 @@ function extractDataFromText(text: string) {
     let match;
     const textToSearch = pattern.toString().includes('\\n') ? cleanedText : upperThird;
     while ((match = pattern.exec(textToSearch)) !== null && !foundName) {
-      const firstName = match[1].trim();
-      const lastName = match[2].trim();
+      let firstName = match[1].trim();
+      let lastName = match[2].trim();
+      
+      // ניקוי תווים מיותרים
+      firstName = firstName.replace(/[,\n\r]/g, '');
+      lastName = lastName.replace(/[,\n\r]/g, '');
       
       if (isValidName(firstName) && isValidName(lastName)) {
         result.firstName = firstName;
