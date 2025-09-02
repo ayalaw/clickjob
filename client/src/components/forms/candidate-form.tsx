@@ -349,11 +349,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               } else {
                 toast({
                   title: "מועמד דומה נמצא",
-                  description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לכרטיס המועמד`,
-                  variant: "destructive",
-                  action: {
-                    action: () => window.location.href = `/candidates`
-                  }
+                  description: `מועמד עם פרטים דומים כבר קיים במערכת`,
+                  variant: "destructive"
                 });
               }
             }
@@ -363,9 +360,6 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               title: "מועמד דומה נמצא",
               description: `מועמד עם פרטים דומים כבר קיים במערכת. לחץ כאן למעבר לרשימת המועמדים`,
               variant: "destructive",
-              action: {
-                action: () => window.location.href = `/candidates`
-              }
             });
           }
           return; // Don't fill the form if candidate exists
