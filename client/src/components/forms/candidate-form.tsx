@@ -652,54 +652,46 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     
                     {/* CV Display - Show file preview */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile?.url && selectedFile?.type === 'application/pdf' ? (
-                        <object
-                          data={selectedFile.url}
-                          type="application/pdf"
-                          className="w-full h-full"
-                          style={{ minHeight: '400px' }}
-                        >
-                          <iframe 
-                            src={selectedFile.url}
-                            className="w-full h-full border-0"
-                            title="קורות חיים PDF"
-                          >
+                      {selectedFile?.url ? (
+                        <>
+                          {selectedFile.type === 'application/pdf' ? (
+                            <div className="w-full h-full">
+                              <iframe 
+                                src={selectedFile.url}
+                                className="w-full h-full border-0"
+                                title="קורות חיים PDF"
+                                style={{ minHeight: '400px' }}
+                              />
+                            </div>
+                          ) : selectedFile.type?.startsWith('image/') ? (
+                            <img
+                              src={selectedFile.url}
+                              alt="קורות חיים"
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
                             <div className="flex items-center justify-center h-full">
                               <div className="text-center">
                                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                                <p className="text-sm text-gray-600">לא ניתן להציג את ה-PDF</p>
+                                <p className="text-sm text-gray-600">{selectedFile.name}</p>
+                                <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה - {selectedFile.type || 'סוג קובץ לא ידוע'}</p>
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
                                   className="mt-2"
-                                  onClick={() => selectedFile?.url && window.open(selectedFile.url, '_blank')}
+                                  onClick={() => window.open(selectedFile.url, '_blank')}
                                 >
                                   פתח בחלון חדש
                                 </Button>
                               </div>
                             </div>
-                          </iframe>
-                        </object>
-                      ) : selectedFile?.url && selectedFile?.type?.startsWith('image/') ? (
-                        <img
-                          src={selectedFile.url}
-                          alt="קורות חיים"
-                          className="w-full h-full object-contain"
-                        />
+                          )}
+                        </>
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
-                            <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה - {selectedFile?.type || 'סוג קובץ לא ידוע'}</p>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="mt-2"
-                              onClick={() => selectedFile?.url && window.open(selectedFile.url, '_blank')}
-                            >
-                              פתח בחלון חדש
-                            </Button>
+                            <p className="text-sm text-gray-600">לא נבחר קובץ</p>
                           </div>
                         </div>
                       )}
