@@ -107,13 +107,14 @@ function extractDataFromText(text: string) {
   console.log('📄 Starting text extraction, text length:', text.length);
   console.log('📄 First 100 chars of text:', text.substring(0, 100));
   
-  // ★ בדיקה אם הטקסט הוא זבל PDF או טקסט אמיתי
-  const isPdfGarbage = text.includes('%PDF-') || text.includes('obj') || text.includes('stream') || 
-                       text.match(/^[%\d\s<>/]+/) || text.length > 100000 || 
-                       text.includes('%%%%') || text.includes('/Type/Catalog');
+  // ★ בדיקה מדויקת אם הטקסט הוא זבל PDF (רק אם יש סימנים ברורים של PDF מבנה)
+  const isPdfGarbage = (text.includes('%PDF-1.') && text.includes('endstream')) || 
+                       (text.includes('obj') && text.includes('>>') && text.length > 50000) ||
+                       (text.match(/^[\x00-\x1F%<>{}[\]\\]*$/)) ||
+                       (text.includes('/Type/Catalog') && text.includes('/Root'));
   
   if (isPdfGarbage) {
-    console.log('❌ זוהה קובץ PDF עם טקסט זבל - מפסיק חילוץ');
+    console.log('❌ זוהה קובץ PDF עם מבנה גולמי - מפסיק חילוץ');
     return {
       firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
       nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
@@ -122,12 +123,12 @@ function extractDataFromText(text: string) {
     };
   }
   
-  // ★ בדיקה נוספת - אם יש יותר מדי תווים לא רגילים זה ככל הנראה קובץ פגום
-  const strangeCharsCount = (text.match(/[^\x20-\x7E\u0590-\u05FF\u200E\u200F\s\n\r\t]/g) || []).length;
-  const strangeCharsRatio = strangeCharsCount / text.length;
+  // ★ בדיקה זהירה יותר - רק אם יש הרבה מאוד תווים לא קריאים
+  const reallyStrangeChars = (text.match(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFFFD]/g) || []).length;
+  const reallyStrangeRatio = reallyStrangeChars / text.length;
   
-  if (strangeCharsRatio > 0.3) {
-    console.log(`❌ יותר מדי תווים לא רגילים (${(strangeCharsRatio*100).toFixed(1)}%) - קובץ פגום`);
+  if (reallyStrangeRatio > 0.5) {
+    console.log(`❌ יותר מדי תווי בקרה (${(reallyStrangeRatio*100).toFixed(1)}%) - קובץ פגום ממש`);
     return {
       firstName: "", lastName: "", email: "", mobile: "", phone: "", phone2: "",
       nationalId: "", city: "", street: "", houseNumber: "", zipCode: "",
