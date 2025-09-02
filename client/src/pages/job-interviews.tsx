@@ -829,7 +829,7 @@ export default function JobInterviews() {
                             onClick={handleScheduleInterview} 
                             disabled={!interviewDate || !interviewTime}
                           >
-                            קבע ראיון
+                            הפנייה לראיון
                           </Button>
                           <Button variant="outline" onClick={() => setInterviewDialog(false)}>
                             ביטול

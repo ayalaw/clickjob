@@ -3957,12 +3957,15 @@ ${recommendation}
         return res.status(404).json({ error: 'CV file not found on disk' });
       }
 
-      // Send the file with proper headers - sanitize filename
-      const firstName = (candidate.firstName || '').replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
-      const lastName = (candidate.lastName || '').replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
+      // Create a safe filename that works universally
+      const safeId = candidateId.substring(0, 8); // First 8 chars of UUID
+      const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
       const extension = filePath.split('.').pop() || 'pdf';
-      const fileName = `CV_${firstName}_${lastName}.${extension}`;
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+      const fileName = `CV_${safeId}_${timestamp}.${extension}`;
+      
+      // Set headers for inline viewing
+      res.setHeader('Content-Type', extension.toLowerCase() === 'pdf' ? 'application/pdf' : 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
       res.sendFile(path.resolve(fullPath));
     } catch (error) {
       console.error('Download CV error:', error);

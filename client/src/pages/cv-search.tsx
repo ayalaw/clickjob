@@ -378,7 +378,7 @@ export default function CVSearchPage() {
                     data-testid="button-bulk-interview"
                   >
                     <Calendar className="h-4 w-4 ml-2" />
-                    קבע ראיון ({selectedCandidates.length})
+                    הפנייה לראיון ({selectedCandidates.length})
                   </Button>
                 </div>
               )}

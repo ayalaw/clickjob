@@ -261,7 +261,7 @@ export default function CalendarPage() {
     if (title.includes('ראיון') || description.includes('ראיון')) {
       if (title.includes('טלפון') || description.includes('טלפון')) return 'ראיון טלפוני';
       if (title.includes('וידאו') || description.includes('וידאו')) return 'ראיון וידאו';
-      return 'נקבע ראיון';
+      return 'הופנה לראיון';
     }
     
     if (title.includes('חזור') || title.includes('טלפון') || description.includes('חזור') || description.includes('טלפון')) {
