@@ -126,6 +126,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
   // Track if form has been changed since last save or auto-creation
   const [hasFormChanged, setHasFormChanged] = useState(false);
   const [wasAutoCreated, setWasAutoCreated] = useState(false);
+  const [autoCreatedCandidateId, setAutoCreatedCandidateId] = useState<string | null>(null);
   
   // Function to check for duplicates
   const checkDuplicates = async (mobile?: string, email?: string, nationalId?: string) => {
@@ -361,19 +362,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           setWasAutoCreated(true);
           setHasFormChanged(false); // Reset form change tracking
           
+          // Save the candidate ID for navigation button
+          if (result.extractedData.candidateId) {
+            setAutoCreatedCandidateId(result.extractedData.candidateId);
+          }
+          
           toast({
             title: "מועמד נוצר בהצלחה!",
             description: result.extractedData.message || "מועמד נוצר אוטומטית מקורות החיים",
             variant: "default"
           });
           
-          // Navigate to the new candidate's page without page refresh
-          if (result.extractedData.candidateId) {
-            setTimeout(() => {
-              navigate(`/candidates/${result.extractedData.candidateId}`);
-            }, 2000);
-            return; // Don't fill the form since candidate was created
-          }
+          // Don't automatically navigate - let user choose when to go
         }
 
         // Check if there's an error indicating candidate creation failed
@@ -708,7 +708,18 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
               {/* Single Card with all candidate details */}
               <Card className="h-full">
                 <CardHeader className="pb-3">
-                  <div className="flex justify-end">
+                  <div className="flex justify-between items-center">
+                    {/* כפתור עבור למועמד - מופיע אחרי יצירה אוטומטית */}
+                    {autoCreatedCandidateId && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => navigate(`/candidates/${autoCreatedCandidateId}`)}
+                        className="flex items-center gap-2 text-green-600 border-green-200"
+                      >
+                        👤 עבור למועמד
+                      </Button>
+                    )}
+                    
                     <Button 
                       onClick={form.handleSubmit(onSubmit)} 
                       disabled={
