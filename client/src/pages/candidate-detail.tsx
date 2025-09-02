@@ -481,7 +481,7 @@ export default function CandidateDetail() {
           successfulJobs.push(jobId);
           console.log(`✅ נוסף למערך הצלחות: ${jobId}`);
         } catch (appError: any) {
-          console.error(`Error adding candidate to job ${jobId}:`, appError);
+          console.error(`💥 שגיאה בהוספת מועמד למשרה ${jobId}:`, appError);
           
           // טיפול במועמדות כפולה
           if (appError.status === 409) {
@@ -498,13 +498,17 @@ export default function CandidateDetail() {
         }
       }
 
+      console.log("🔄 מבצע invalidateQueries...");
       await queryClient.invalidateQueries({ queryKey: ['/api/candidates', candidate.id] });
       await queryClient.invalidateQueries({ queryKey: ['/api/candidates', candidate.id, 'events'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/job-applications'] });
+      console.log("✅ invalidateQueries הושלם");
       
       // סגירת הדיאלוג מיד
+      console.log("🚪 סוגר דיאלוג...");
       setInterviewDialogOpen(false);
       setSelectedInterviewJobIds([]);
+      console.log("✅ דיאלוג נסגר");
       
       // הודעות מפורטות על התוצאות
       console.log(`🎯 בודק תוצאות: successfulJobs=${successfulJobs.length}, errors=${errors.length}`);
@@ -524,9 +528,14 @@ export default function CandidateDetail() {
         }
         
         // ניווט מיידי לעמוד הראיונות - ללא השהיה!
-        console.log("🚀🚀🚀 מבצע ניווט מיידי!");
-        navigate("/interviews");
-        console.log("✅ ניווט הושלם!");
+        console.log("🚀🚀🚀 עכשיו מבצע ניווט מיידי לראיונות!");
+        console.log("📍 navigate function:", typeof navigate);
+        try {
+          navigate("/interviews");
+          console.log("✅ פקודת navigate בוצעה בהצלחה!");
+        } catch (navError) {
+          console.error("❌ שגיאה בניווט:", navError);
+        }
         
       } else {
         console.log("❌ אין הצלחות - מציג שגיאה");
