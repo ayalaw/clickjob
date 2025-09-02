@@ -1173,25 +1173,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cleanMobile = extractedData.mobile?.trim() || '';
           const cleanNationalId = extractedData.nationalId?.trim() || '';
           
+          // בדיקת מועמדים כפולים (רק להתראה, לא למניעה)
+          let duplicateInfo = null;
           if (cleanEmail || cleanMobile || cleanNationalId) {
             console.log('🔍 בודק מועמדים כפולים לפני יצירה...');
             const existingCandidate = await storage.findCandidateByContactInfo(cleanMobile, cleanEmail, cleanNationalId);
             
             if (existingCandidate) {
-              console.log('⚠️⚠️⚠️ נמצא מועמד כפול! לא יוצר מועמד חדש');
+              console.log('⚠️⚠️⚠️ נמצא מועמד כפול! ממשיך ביצירה בכל זאת');
               console.log(`🆔 מועמד קיים: ${existingCandidate.firstName} ${existingCandidate.lastName}`);
-              
-              // החזרת הנתונים עם הודעה על מועמד כפול
-              return res.json({
-                extractedData: {
-                  ...extractedData,
-                  candidateCreated: false,
-                  duplicateFound: true,
-                  existingCandidateId: existingCandidate.id,
-                  message: "נמצא מועמד דומה במערכת! לא נוצר מועמד חדש."
-                },
-                fileContent: fileText
-              });
+              duplicateInfo = {
+                exists: true,
+                existingCandidate: existingCandidate
+              };
             }
           }
 
@@ -1266,14 +1260,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             });
             
-            // החזרת הנתונים כולל מידע על המועמד החדש
+            // החזרת הנתונים כולל מידע על המועמד החדש ומועמד כפול אם נמצא
             res.json({
               extractedData: {
                 ...extractedData,
                 candidateCreated: true,
                 candidateId: candidate.id,
                 candidateName: `${candidate.firstName} ${candidate.lastName}`,
-                message: "מועמד נוצר אוטומטית מקורות החיים!"
+                message: "מועמד נוצר אוטומטית מקורות החיים!",
+                duplicateInfo: duplicateInfo
               },
               fileContent: fileText
             });
