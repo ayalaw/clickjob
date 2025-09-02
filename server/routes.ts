@@ -3957,9 +3957,12 @@ ${recommendation}
         return res.status(404).json({ error: 'CV file not found on disk' });
       }
 
-      // Send the file with proper headers
-      const fileName = `CV_${candidate.firstName}_${candidate.lastName}.${filePath.split('.').pop()}`;
-      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      // Send the file with proper headers - sanitize filename
+      const firstName = (candidate.firstName || '').replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
+      const lastName = (candidate.lastName || '').replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
+      const extension = filePath.split('.').pop() || 'pdf';
+      const fileName = `CV_${firstName}_${lastName}.${extension}`;
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
       res.sendFile(path.resolve(fullPath));
     } catch (error) {
       console.error('Download CV error:', error);

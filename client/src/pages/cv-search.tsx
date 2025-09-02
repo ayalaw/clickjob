@@ -555,12 +555,34 @@ export default function CVSearchPage() {
                 />
               </ScrollArea>
             ) : (
-              <div className="h-96 w-full border rounded-md bg-white dark:bg-gray-800 p-2">
-                <iframe
-                  src={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
+              <div className="h-96 w-full border rounded-md bg-white dark:bg-gray-800">
+                {/* PDF/Document viewer like in candidate card */}
+                <object
+                  data={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
+                  type="application/pdf"
                   className="w-full h-full rounded"
-                  title="קובץ קורות חיים מקורי"
-                />
+                  style={{ minHeight: '24rem' }}
+                >
+                  <iframe
+                    src={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
+                    className="w-full h-full rounded border-none"
+                    title="קובץ קורות חיים מקורי"
+                  >
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <div className="text-center">
+                        <div className="text-4xl mb-4">📄</div>
+                        <p>לא ניתן להציג את הקובץ בדפדפן</p>
+                        <a 
+                          href={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
+                          target="_blank"
+                          className="text-blue-600 hover:underline mt-2 inline-block"
+                        >
+                          לחץ כאן להורדה
+                        </a>
+                      </div>
+                    </div>
+                  </iframe>
+                </object>
               </div>
             )}
             
