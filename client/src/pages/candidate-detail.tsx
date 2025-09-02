@@ -1483,12 +1483,12 @@ export default function CandidateDetail() {
                       </Select>
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-base font-medium">ניידות:</span>
+                      <span className="text-base font-medium">מס' נייד:</span>
                       <Input
                         value={fieldValues.mobile || ''}
                         onChange={(e) => updateFieldValue('mobile', e.target.value)}
                         className="w-48 text-base"
-                        placeholder="הכנס ניידות"
+                        placeholder="הכנס מס' נייד"
                       />
                     </div>
                     <div className="flex flex-row-reverse justify-between items-center">

@@ -803,7 +803,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   </div>
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-base font-medium">טלפון נייד:</span>
+                      <span className="text-base font-medium">מס' נייד:</span>
                       <Input
                         value={candidate ? fieldValues.mobile || '' : form.watch('mobile') || ''}
                         onChange={(e) => {
