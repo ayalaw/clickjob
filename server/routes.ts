@@ -1568,8 +1568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               notes: cleanString(extractedData.achievements),
               tags: [],
               cvPath: req.file.path,
-              cvContent: "",
-              recruitmentSource: "העלאת קורות חיים אוטומטית"
+              cvContent: ""
             };
 
             // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
@@ -1577,6 +1576,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const userEmail = (req.user as any).email;
               const username = userEmail ? userEmail.split('@')[0] : 'משתמש לא ידוע';
               candidateData.recruitmentSource = `${username} - העלאת קורות חיים`;
+            } else {
+              candidateData.recruitmentSource = "העלאת קורות חיים";
             }
             
             // יצירת המועמד
