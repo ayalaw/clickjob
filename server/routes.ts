@@ -22,6 +22,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import mammoth from 'mammoth';
+import pdfParse from 'pdf-parse';
 import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
@@ -1283,31 +1284,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // נסיון לקרוא את הקובץ לפי סוג
         if (req.file.mimetype === 'application/pdf') {
-          console.log('📑 PDF file detected - attempting text extraction');
+          console.log('📑 PDF file detected - attempting proper text extraction with pdf-parse');
           try {
-            // Convert to text and try to extract readable content
-            const textContent = fileBuffer.toString('utf8');
+            // ★ שימוש בספריית pdf-parse לחילוץ טקסט נכון מ-PDF
+            const pdfData = await pdfParse(fileBuffer);
+            fileText = pdfData.text;
             
-            // Look for email patterns and text
-            const emailMatch = textContent.match(/[\w\.-]+@[\w\.-]+\.\w+/g);
-            const phoneMatch = textContent.match(/05\d[\d\-\s]{7,}/g);
+            console.log(`📑 PDF text extracted successfully, length: ${fileText.length}`);
+            console.log(`📑 PDF content preview: ${fileText.substring(0, 200)}...`);
             
-            let extractedEmail = '';
-            let extractedPhone = '';
-            
-            if (emailMatch) {
-              extractedEmail = emailMatch[0];
+            if (!fileText || fileText.length < 10) {
+              throw new Error('PDF appears to be empty or text extraction failed');
             }
-            
-            if (phoneMatch) {
-              extractedPhone = phoneMatch[0].replace(/[\s\-]/g, '');
-            }
-            
-            console.log('📑 Email found:', extractedEmail);
-            console.log('📑 Phone found:', extractedPhone);
-            
-            fileText = textContent;
-            console.log('📑 PDF content processed, length:', fileText.length);
             
           } catch (error) {
             console.log('❌ Error extracting PDF text:', error instanceof Error ? error.message : 'Unknown error');
