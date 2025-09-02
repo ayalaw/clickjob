@@ -652,14 +652,35 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     
                     {/* CV Display - Show file preview */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile?.url && selectedFile?.file?.type === 'application/pdf' ? (
-                        <embed
-                          src={selectedFile.url}
+                      {selectedFile?.url && selectedFile?.type === 'application/pdf' ? (
+                        <object
+                          data={selectedFile.url}
                           type="application/pdf"
                           className="w-full h-full"
-                          title="תצוגה מקדימה של קורות חיים"
-                        />
-                      ) : selectedFile?.url && selectedFile?.file?.type?.startsWith('image/') ? (
+                          style={{ minHeight: '400px' }}
+                        >
+                          <iframe 
+                            src={selectedFile.url}
+                            className="w-full h-full border-0"
+                            title="קורות חיים PDF"
+                          >
+                            <div className="flex items-center justify-center h-full">
+                              <div className="text-center">
+                                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                <p className="text-sm text-gray-600">לא ניתן להציג את ה-PDF</p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-2"
+                                  onClick={() => selectedFile?.url && window.open(selectedFile.url, '_blank')}
+                                >
+                                  פתח בחלון חדש
+                                </Button>
+                              </div>
+                            </div>
+                          </iframe>
+                        </object>
+                      ) : selectedFile?.url && selectedFile?.type?.startsWith('image/') ? (
                         <img
                           src={selectedFile.url}
                           alt="קורות חיים"
@@ -670,7 +691,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                             <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
-                            <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה - {selectedFile?.file?.type || 'סוג קובץ לא ידוע'}</p>
+                            <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה - {selectedFile?.type || 'סוג קובץ לא ידוע'}</p>
                             <Button 
                               variant="outline" 
                               size="sm" 
