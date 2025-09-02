@@ -363,12 +363,30 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
           });
         }
         
-        // Update form fields with extracted data
-        if (data.firstName) form.setValue('firstName', data.firstName);
-        if (data.lastName) form.setValue('lastName', data.lastName);
-        if (data.email) form.setValue('email', data.email);
-        if (data.mobile) form.setValue('mobile', data.mobile);
-        if (data.phone) form.setValue('phone', data.phone);
+        // Update form fields with extracted data - זה התיקון הנכון!
+        console.log('מעדכן שדות הטופס עם הנתונים:', data);
+        
+        // עדכון הטופס עם הנתונים שחולצו
+        if (data.firstName) {
+          form.setValue('firstName', data.firstName);
+          console.log('שם פרטי עודכן:', data.firstName);
+        }
+        if (data.lastName) {
+          form.setValue('lastName', data.lastName);
+          console.log('שם משפחה עודכן:', data.lastName);
+        }
+        if (data.email) {
+          form.setValue('email', data.email);
+          console.log('אימייל עודכן:', data.email);
+        }
+        if (data.mobile) {
+          form.setValue('mobile', data.mobile);
+          console.log('נייד עודכן:', data.mobile);
+        }
+        if (data.phone) {
+          form.setValue('phone', data.phone);
+          console.log('טלפון עודכן:', data.phone);
+        }
         if (data.nationalId) form.setValue('nationalId', data.nationalId);
         if (data.city) form.setValue('city', data.city);
         if (data.street) form.setValue('street', data.street);
@@ -376,9 +394,12 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         if (data.zipCode) form.setValue('zipCode', data.zipCode);
         if (data.profession) form.setValue('profession', data.profession);
         
+        // הרענת הטופס לוודא שהשינויים מוצגים
+        form.trigger();
+        
         toast({
           title: "נתונים חולצו בהצלחה!",
-          description: "פרטי המועמד נוספו לטופס מקורות החיים",
+          description: `שם: ${data.firstName || ''} ${data.lastName || ''} | אימייל: ${data.email || 'לא נמצא'}`,
         });
       } else {
         console.error('Failed to extract data');
@@ -601,20 +622,35 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - Show actual file content */}
+                    {/* CV Display - Show file preview */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile?.url ? (
-                        <iframe
+                      {selectedFile?.url && selectedFile?.file?.type === 'application/pdf' ? (
+                        <embed
                           src={selectedFile.url}
-                          className="w-full h-full border-0"
+                          type="application/pdf"
+                          className="w-full h-full"
                           title="תצוגה מקדימה של קורות חיים"
+                        />
+                      ) : selectedFile?.url && selectedFile?.file?.type?.startsWith('image/') ? (
+                        <img
+                          src={selectedFile.url}
+                          alt="קורות חיים"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                             <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
-                            <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה</p>
+                            <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה - {selectedFile?.file?.type || 'סוג קובץ לא ידוע'}</p>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mt-2"
+                              onClick={() => selectedFile?.url && window.open(selectedFile.url, '_blank')}
+                            >
+                              פתח בחלון חדש
+                            </Button>
                           </div>
                         </div>
                       )}
