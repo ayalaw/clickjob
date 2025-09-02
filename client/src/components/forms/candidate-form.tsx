@@ -47,7 +47,6 @@ import {
   Trash2
 } from "lucide-react";
 
-import { FileViewer } from "@/components/file-viewer";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -603,16 +602,20 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                       </div>
                     </div>
                     
-                    {/* CV Display - Show actual file content using FileViewer */}
+                    {/* CV Display - Show actual file content */}
                     <div className="flex-1 bg-white rounded border overflow-hidden">
-                      {selectedFile?.file ? (
-                        <FileViewer file={selectedFile.file} />
+                      {selectedFile?.url ? (
+                        <iframe
+                          src={selectedFile.url}
+                          className="w-full h-full border-0"
+                          title="תצוגה מקדימה של קורות חיים"
+                        />
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                             <p className="text-sm text-gray-600">{selectedFile?.name || 'קורות חיים'}</p>
-                            <p className="text-xs text-gray-500 mt-1">תצוגה מקדימה לא זמינה</p>
+                            <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה</p>
                           </div>
                         </div>
                       )}
@@ -631,12 +634,12 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 <CardHeader className="pb-3">
                   <div className="flex justify-end">
                     <Button 
-                      onClick={candidate ? saveAllChanges : form.handleSubmit((data: FormData) => onSubmit(data))} 
-                      disabled={candidate ? updateMutation.isPending : (createCandidate.isPending || updateCandidate.isPending)}
+                      onClick={form.handleSubmit(onSubmit)} 
+                      disabled={createCandidate.isPending || updateCandidate.isPending}
                       className="flex items-center gap-2"
                     >
                       <Save className="w-4 h-4" />
-                      שמור הכל
+                      {candidate ? 'עדכן מועמד' : 'שמור מועמד'}
                     </Button>
                   </div>
                 </CardHeader>
