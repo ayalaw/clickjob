@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
-import { setupLocalAuth, isAuthenticated } from "./localAuth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware";
 import { 
   insertCandidateSchema, 
