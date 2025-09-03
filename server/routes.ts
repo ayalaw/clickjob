@@ -1034,6 +1034,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/candidates', isAuthenticated, upload.single('cv'), async (req, res) => {
     try {
+      console.log('🔍 DEBUG: Raw request body:', JSON.stringify(req.body, null, 2));
+      
       // Handle tags array conversion if it comes as a string
       const bodyData = { ...req.body };
       if (bodyData.tags && typeof bodyData.tags === 'string') {

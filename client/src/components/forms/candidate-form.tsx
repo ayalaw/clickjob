@@ -471,8 +471,39 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const createCandidate = useMutation({
     mutationFn: async (data: FormData & { cvPath?: string }) => {
-      const result = await apiRequest("POST", "/api/candidates", data);
-      return await result.json();
+      console.log('🔍 DEBUG CLIENT: Sending data:', data);
+      
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add all form fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+      
+      // Add CV file if selected
+      if (selectedFile?.file) {
+        formData.append('cv', selectedFile.file);
+      }
+      
+      const response = await fetch("/api/candidates", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create candidate");
+      }
+      
+      return await response.json();
     },
     onSuccess: (result) => {
       toast({
@@ -496,8 +527,39 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
 
   const updateCandidate = useMutation({
     mutationFn: async (data: FormData & { cvPath?: string }) => {
-      const result = await apiRequest("PUT", `/api/candidates/${candidate!.id}`, data);
-      return await result.json();
+      console.log('🔍 DEBUG CLIENT UPDATE: Sending data:', data);
+      
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add all form fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+      
+      // Add CV file if selected
+      if (selectedFile?.file) {
+        formData.append('cv', selectedFile.file);
+      }
+      
+      const response = await fetch(`/api/candidates/${candidate!.id}`, {
+        method: "PUT",
+        body: formData,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update candidate");
+      }
+      
+      return await response.json();
     },
     onSuccess: (result) => {
       toast({
