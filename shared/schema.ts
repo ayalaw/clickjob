@@ -161,10 +161,8 @@ export const candidates = pgTable("candidates", {
 // Clients table
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientNumber: varchar("client_number", { length: 8 }).unique(), // מספר לקוח אוטומטי בן 8 ספרות
   companyName: varchar("company_name").notNull(),
   address: text("address"),
-  documents: text("documents").array().default(sql`'{}'`), // מסמכים מועלים
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   // Legacy fields - kept for compatibility
@@ -178,7 +176,6 @@ export const clients = pgTable("clients", {
   notes: text("notes"),
   isActive: boolean("is_active").default(true),
 }, (table) => [
-  index("clients_client_number_idx").on(table.clientNumber),
   index("clients_company_name_idx").on(table.companyName),
 ]);
 

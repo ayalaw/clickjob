@@ -315,24 +315,33 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
           ))}
         </div>
 
-        <FormField
-          control={form.control}
-          name="isActive"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-x-reverse space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value || false}
-                  onCheckedChange={field.onChange}
-                  data-testid="checkbox-is-active"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>לקוח פעיל</FormLabel>
+        {/* הוספת מסמכים */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">הוספת מסמכים</h3>
+          <p className="text-sm text-gray-600">העלה מסמכים רלוונטיים ללקוח כמו הסכם סרוק או מסמכים נוספים</p>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              className="hidden"
+              id="documents-upload"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                console.log("קבצים נבחרו:", files.map(f => f.name));
+                // כאן נוסיף לוגיקה להעלאת קבצים בעתיד
+              }}
+              data-testid="input-documents"
+            />
+            <label htmlFor="documents-upload" className="cursor-pointer">
+              <div className="text-gray-500">
+                <div className="text-lg mb-2">📄</div>
+                <div>לחץ כאן להעלאת מסמכים</div>
+                <div className="text-sm text-gray-400 mt-1">PDF, DOC, DOCX, JPG, PNG</div>
               </div>
-            </FormItem>
-          )}
-        />
+            </label>
+          </div>
+        </div>
 
         <div className="flex justify-end space-x-4 space-x-reverse">
           <Button 
