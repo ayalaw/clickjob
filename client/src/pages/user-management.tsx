@@ -236,6 +236,12 @@ export default function UserManagement() {
     },
   });
 
+  // דיבוג זמני
+  console.log('Debug User Management:', { 
+    canManageUsers, 
+    canManageRoles, 
+    userRoles: userWithRoles?.userRoles?.map(ur => ur.role.type) 
+  });
   
   if (!canManageUsers && !canManageRoles) {
     return (
