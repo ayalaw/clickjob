@@ -736,7 +736,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     )}
                   </div>
                   <Textarea
-                    value={candidate ? fieldValues.manualCv || '' : form.watch('manualCv') || ''}
+                    value={candidate ? (fieldValues?.manualCv || candidate.manualCv || '') : form.watch('manualCv') || ''}
                     onChange={(e) => {
                       if (candidate) {
                         updateFieldValue('manualCv', e.target.value);
@@ -789,7 +789,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">שם פרטי:</span>
                     <Input
-                      value={candidate ? fieldValues.firstName || '' : form.watch('firstName') || ''}
+                      value={candidate ? (fieldValues?.firstName || candidate.firstName || '') : form.watch('firstName') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('firstName', e.target.value);
@@ -804,7 +804,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">שם משפחה:</span>
                     <Input
-                      value={candidate ? fieldValues.lastName || '' : form.watch('lastName') || ''}
+                      value={candidate ? (fieldValues?.lastName || candidate.lastName || '') : form.watch('lastName') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('lastName', e.target.value);
@@ -820,7 +820,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <div className="flex flex-row-reverse justify-between items-center">
                       <span className="text-base font-medium">מס' נייד:</span>
                       <Input
-                        value={candidate ? fieldValues.mobile || '' : form.watch('mobile') || ''}
+                        value={candidate ? (fieldValues?.mobile || candidate.mobile || '') : form.watch('mobile') || ''}
                         onChange={(e) => {
                           if (candidate) {
                             updateFieldValue('mobile', e.target.value);
@@ -856,7 +856,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <div className="flex flex-row-reverse justify-between items-center">
                       <span className="text-base font-medium">דוא״ל:</span>
                       <Input
-                        value={candidate ? fieldValues.email || '' : form.watch('email') || ''}
+                        value={candidate ? (fieldValues?.email || candidate.email || '') : form.watch('email') || ''}
                         onChange={(e) => {
                           if (candidate) {
                             updateFieldValue('email', e.target.value);
@@ -891,7 +891,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">טלפון 1:</span>
                     <Input
-                      value={candidate ? fieldValues.phone || '' : form.watch('phone') || ''}
+                      value={candidate ? (fieldValues?.phone || candidate.phone || '') : form.watch('phone') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('phone', e.target.value);
@@ -906,7 +906,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">טלפון 2:</span>
                     <Input
-                      value={candidate ? fieldValues.phone2 || '' : form.watch('phone2') || ''}
+                      value={candidate ? (fieldValues?.phone2 || candidate.phone2 || '') : form.watch('phone2') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('phone2', e.target.value);
@@ -922,7 +922,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <div className="flex flex-row-reverse justify-between items-center">
                       <span className="text-base font-medium">תעודת זהות:</span>
                       <Input
-                        value={candidate ? fieldValues.nationalId || '' : form.watch('nationalId') || ''}
+                        value={candidate ? (fieldValues?.nationalId || candidate.nationalId || '') : form.watch('nationalId') || ''}
                         onChange={(e) => {
                           if (candidate) {
                             updateFieldValue('nationalId', e.target.value);
@@ -958,7 +958,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">עיר:</span>
                     <Input
-                      value={candidate ? fieldValues.city || '' : form.watch('city') || ''}
+                      value={candidate ? (fieldValues?.city || candidate.city || '') : form.watch('city') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('city', e.target.value);
@@ -973,7 +973,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">רחוב:</span>
                     <Input
-                      value={candidate ? fieldValues.street || '' : form.watch('street') || ''}
+                      value={candidate ? (fieldValues?.street || candidate.street || '') : form.watch('street') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('street', e.target.value);
@@ -988,7 +988,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">מספר בית:</span>
                     <Input
-                      value={candidate ? fieldValues.houseNumber || '' : form.watch('houseNumber') || ''}
+                      value={candidate ? (fieldValues?.houseNumber || candidate.houseNumber || '') : form.watch('houseNumber') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('houseNumber', e.target.value);
@@ -1003,7 +1003,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">מיקוד:</span>
                     <Input
-                      value={candidate ? fieldValues.zipCode || '' : form.watch('zipCode') || ''}
+                      value={candidate ? (fieldValues?.zipCode || candidate.zipCode || '') : form.watch('zipCode') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('zipCode', e.target.value);
@@ -1018,7 +1018,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">תאריך לידה:</span>
                     <Input
-                      value={candidate ? fieldValues.birthDate || '' : form.watch('birthDate') || ''}
+                      value={candidate ? (fieldValues?.birthDate || candidate.birthDate || '') : form.watch('birthDate') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('birthDate', e.target.value);
@@ -1034,7 +1034,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     <span className="text-base font-medium">גיל:</span>
                     <Input
                       type="number"
-                      value={candidate ? fieldValues.age || '' : form.watch('age') || ''}
+                      value={candidate ? (fieldValues?.age || candidate.age || '') : form.watch('age') || ''}
                       onChange={(e) => {
                         const age = parseInt(e.target.value) || '';
                         if (candidate) {
@@ -1052,7 +1052,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">מקצוע:</span>
                     <Input
-                      value={candidate ? fieldValues.profession || '' : form.watch('profession') || ''}
+                      value={candidate ? (fieldValues?.profession || candidate.profession || '') : form.watch('profession') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('profession', e.target.value);
@@ -1067,7 +1067,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">ניסיון:</span>
                     <Input
-                      value={candidate ? fieldValues.experience || '' : form.watch('experience') || ''}
+                      value={candidate ? (fieldValues?.experience || candidate.experience || '') : form.watch('experience') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('experience', e.target.value);
@@ -1082,7 +1082,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">שכר צפוי:</span>
                     <Input
-                      value={candidate ? fieldValues.expectedSalary || '' : form.watch('expectedSalary') || ''}
+                      value={candidate ? (fieldValues?.expectedSalary || candidate.expectedSalary || '') : form.watch('expectedSalary') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('expectedSalary', e.target.value);
@@ -1097,7 +1097,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-start">
                     <span className="text-base font-medium mt-2">הערות:</span>
                     <Textarea
-                      value={candidate ? fieldValues.notes || '' : form.watch('notes') || ''}
+                      value={candidate ? (fieldValues?.notes || candidate.notes || '') : form.watch('notes') || ''}
                       onChange={(e) => {
                         if (candidate) {
                           updateFieldValue('notes', e.target.value);
@@ -1113,7 +1113,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                   <div className="flex flex-row-reverse justify-between items-center">
                     <span className="text-base font-medium">סטטוס:</span>
                     <Select
-                      value={candidate ? fieldValues.status || 'available' : form.watch('status') || 'available'}
+                      value={candidate ? (fieldValues?.status || candidate.status || 'available') : form.watch('status') || 'available'}
                       onValueChange={(value) => {
                         if (candidate) {
                           updateFieldValue('status', value);
