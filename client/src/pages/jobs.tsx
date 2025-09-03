@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import JobForm from "@/components/forms/job-form";
 import SearchFilter from "@/components/search-filter";
-import { Plus, Search, MapPin, Calendar, Building2, Edit, Trash2, Users } from "lucide-react";
+import { Plus, Search, MapPin, Calendar, Building2, Edit, Trash2, Users, Share2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import type { JobWithClient } from "@shared/schema";
 
@@ -293,6 +293,16 @@ export default function Jobs() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2 space-x-reverse">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(`/jobs/${job.id}/landing`, '_blank')}
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                data-testid={`button-landing-page-${job.id}`}
+                                title="דף נחיתה למפרסום"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
                               <EditButton
                                 permission="edit_jobs"
                                 variant="ghost"

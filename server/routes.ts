@@ -1887,6 +1887,193 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
     }
   });
 
+  // Public job landing page route - no authentication required
+  app.get('/api/jobs/:id/public', async (req, res) => {
+    try {
+      const job = await storage.getJob(req.params.id);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      
+      // Only return necessary public information
+      const publicJob = {
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        location: job.location,
+        isRemote: job.isRemote,
+        salaryRange: job.salaryRange,
+        jobType: job.jobType,
+        positions: job.positions,
+        deadline: job.deadline,
+        status: job.status,
+        jobCode: job.jobCode,
+        client: job.client ? {
+          id: job.client.id,
+          companyName: job.client.companyName,
+          contactEmail: job.client.contactEmail,
+          contactPhone: job.client.contactPhone,
+          website: job.client.website
+        } : null
+      };
+      
+      res.json(publicJob);
+    } catch (error) {
+      console.error("Error fetching public job:", error);
+      res.status(500).json({ message: "Failed to fetch job" });
+    }
+  });
+
+  // Public job application route - no authentication required
+  app.post('/api/jobs/:id/apply', upload.single('cv'), async (req, res) => {
+    try {
+      const jobId = req.params.id;
+      
+      // Validate that the job exists and is active
+      const job = await storage.getJob(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      
+      if (job.status !== 'active') {
+        return res.status(400).json({ message: "This job is no longer accepting applications" });
+      }
+      
+      const { firstName, lastName, email, phone, experience, motivation } = req.body;
+      
+      // Validate required fields
+      if (!firstName || !lastName || !email || !phone) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Check if candidate already exists or create new one
+      let candidate;
+      try {
+        // Try to find existing candidate by email
+        const existingCandidates = await storage.getCandidates(100, 0, email);
+        const existingCandidate = existingCandidates.candidates.find(c => 
+          c.email?.toLowerCase() === email.toLowerCase()
+        );
+        
+        if (existingCandidate) {
+          candidate = existingCandidate;
+          // Update candidate info if provided
+          await storage.updateCandidate(candidate.id, {
+            firstName,
+            lastName,
+            phone,
+            status: 'new_application'
+          });
+        } else {
+          // Create new candidate
+          candidate = await storage.createCandidate({
+            firstName,
+            lastName,
+            email,
+            phone,
+            status: 'new_application',
+            source: 'landing_page'
+          });
+        }
+      } catch (error) {
+        console.error("Error handling candidate:", error);
+        return res.status(500).json({ message: "Failed to process application" });
+      }
+      
+      // Handle CV file upload if provided
+      let cvPath = null;
+      if (req.file) {
+        cvPath = req.file.path;
+        
+        try {
+          // Update candidate with CV file
+          await storage.updateCandidate(candidate.id, {
+            cvFile: req.file.filename,
+            cvOriginalName: req.file.originalname
+          });
+        } catch (error) {
+          console.error("Error saving CV file:", error);
+        }
+      }
+      
+      // Create job application
+      try {
+        const applicationData = {
+          candidateId: candidate.id,
+          jobId: jobId,
+          status: 'submitted' as const,
+          notes: `הגישו דרך דף הנחיתה.${experience ? `\n\nניסיון: ${experience}` : ''}${motivation ? `\n\nמוטיבציה: ${motivation}` : ''}`
+        };
+        
+        const application = await storage.createJobApplication(applicationData);
+        
+        // Add candidate event
+        await storage.addCandidateEvent({
+          candidateId: candidate.id,
+          eventType: 'job_application',
+          description: `הגיש מועמדות למשרה "${job.title}" דרך דף הנחיתה`,
+          metadata: {
+            jobId: jobId,
+            source: 'landing_page',
+            applicationId: application.id,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // Send confirmation email if email service is configured
+        try {
+          await sendEmail({
+            to: email,
+            subject: `אישור קבלת מועמדות - ${job.title}`,
+            html: `
+              <div dir="rtl" style="font-family: Arial, sans-serif;">
+                <h2>שלום ${firstName},</h2>
+                <p>תודה על הגשת המועמדות למשרה <strong>${job.title}</strong>.</p>
+                <p>קיבלנו את הפרטים שלך ונחזור אליך בהקדם האפשרי.</p>
+                <br>
+                <p><strong>פרטי המשרה:</strong></p>
+                <ul>
+                  <li>תפקיד: ${job.title}</li>
+                  <li>חברה: ${job.client?.companyName || 'לא צוין'}</li>
+                  <li>מיקום: ${job.location || 'לא צוין'}</li>
+                </ul>
+                <br>
+                <p>בהצלחה!</p>
+                <p>צוות הגיוס</p>
+              </div>
+            `
+          });
+        } catch (emailError) {
+          console.log("Could not send confirmation email:", emailError);
+          // Don't fail the application if email fails
+        }
+        
+        res.status(201).json({ 
+          message: "Application submitted successfully",
+          applicationId: application.id,
+          candidateId: candidate.id 
+        });
+        
+      } catch (applicationError: any) {
+        console.error("Error creating job application:", applicationError);
+        
+        if (applicationError.message && applicationError.message.includes('already exists')) {
+          return res.status(409).json({ 
+            message: "You have already applied for this position",
+            candidateId: candidate.id
+          });
+        }
+        
+        return res.status(500).json({ message: "Failed to submit application" });
+      }
+      
+    } catch (error) {
+      console.error("Error processing job application:", error);
+      res.status(500).json({ message: "Failed to process application" });
+    }
+  });
+
   // Job application routes
   app.get('/api/job-applications', isAuthenticated, async (req, res) => {
     try {

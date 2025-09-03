@@ -8,6 +8,7 @@ import Navbar from "@/components/layout/navbar";
 import { ReminderPopup } from "@/components/reminder-popup";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import JobLanding from "@/pages/job-landing";
 import Dashboard from "@/pages/dashboard";
 import Candidates from "@/pages/candidates";
 import AddCandidate from "@/pages/add-candidate";
@@ -32,6 +33,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/jobs/:id/landing" component={JobLanding} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -54,6 +56,7 @@ function Router() {
           <Route path="/calendar" component={Calendar} />
           <Route path="/clients" component={Clients} />
           <Route path="/jobs" component={Jobs} />
+          <Route path="/jobs/:id/landing" component={JobLanding} />
           <Route path="/interviews" component={Interviews} />
           <Route path="/interviews/:jobId" component={JobInterviews} />
           <Route path="/emails" component={Emails} />
