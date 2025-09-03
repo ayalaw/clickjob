@@ -1531,6 +1531,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 .trim();
             };
             
+            // יצירת תמצית קורות חיים מהנתונים החלוצים
+            const cvSummary = `קורות חיים של ${cleanString(extractedData.firstName)} ${cleanString(extractedData.lastName)}
+
+פרטים אישיים:
+${extractedData.email ? `דואר אלקטרוני: ${cleanString(extractedData.email)}` : ''}
+${extractedData.mobile ? `נייד: ${cleanString(extractedData.mobile)}` : ''}
+${extractedData.phone ? `טלפון: ${cleanString(extractedData.phone)}` : ''}
+${extractedData.nationalId ? `תעודת זהות: ${cleanString(extractedData.nationalId)}` : ''}
+${extractedData.city ? `עיר מגורים: ${cleanString(extractedData.city)}` : ''}
+${extractedData.address ? `כתובת: ${cleanString(extractedData.address)}` : ''}
+${extractedData.birthDate ? `תאריך לידה: ${cleanString(extractedData.birthDate)}` : ''}
+${extractedData.age ? `גיל: ${extractedData.age}` : ''}
+${extractedData.gender ? `מין: ${cleanString(extractedData.gender)}` : ''}
+${extractedData.maritalStatus ? `מצב משפחתי: ${cleanString(extractedData.maritalStatus)}` : ''}
+${extractedData.drivingLicense ? `רישיון נהיגה: ${cleanString(extractedData.drivingLicense)}` : ''}
+
+פרטים מקצועיים:
+${extractedData.profession ? `מקצוע: ${cleanString(extractedData.profession)}` : ''}
+${extractedData.experience ? `שנות ניסיון: ${extractedData.experience}` : ''}
+${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanString(extractedData.achievements)}` : ''}
+
+תמצית זו נוצרה אוטומטיקה מחילוץ נתוני קורות החיים.`.replace(/\n\s*\n/g, '\n').trim();
+
             const candidateData = {
               firstName: cleanString(extractedData.firstName),
               lastName: cleanString(extractedData.lastName),
@@ -1557,7 +1580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               notes: cleanString(extractedData.achievements),
               tags: [],
               cvPath: req.file.path,
-              cvContent: ""
+              cvContent: "",
+              manualCv: cvSummary // תמצית קורות חיים ידני מהנתונים החלוצים
             };
 
             // הוספת מקור גיוס אוטומטי - שם המשתמש הנוכחי
