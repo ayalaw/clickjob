@@ -115,8 +115,8 @@ export function usePermissions() {
   // Admin helper functions
   const isAdmin = hasRole('admin') || hasRole('super_admin');
   const isSuperAdmin = hasRole('super_admin');
-  const canManageUsers = hasPermission('users', 'read') || isAdmin;
-  const canManageRoles = hasRole('super_admin');
+  const canManageUsers = hasPermission('users', 'read') || hasPermission('users', 'create') || hasPermission('users', 'update') || hasPermission('users', 'delete') || isAdmin;
+  const canManageRoles = hasRole('super_admin') || hasRole('admin');
 
   return {
     // Loading states

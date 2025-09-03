@@ -236,7 +236,9 @@ export default function UserManagement() {
     },
   });
 
-  if (!canManageUsers) {
+  console.log('Debug permissions:', { canManageUsers, canManageRoles, isAdmin: (userWithRoles?.userRoles?.some((ur: any) => ur.role.type === 'admin' || ur.role.type === 'super_admin')) });
+  
+  if (!canManageUsers && !canManageRoles) {
     return (
       <div className="container mx-auto p-4" dir="rtl">
         <Card>
@@ -245,6 +247,9 @@ export default function UserManagement() {
               <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-semibold mb-2">אין הרשאה</h3>
               <p className="text-muted-foreground">אין לך הרשאה לצפות בדף זה</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                נדרשות הרשאות ניהול משתמשים או תפקידים
+              </p>
             </div>
           </CardContent>
         </Card>
