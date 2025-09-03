@@ -236,15 +236,6 @@ export default function UserManagement() {
     },
   });
 
-  // דיבוג מפורט
-  console.log('🔍 User Management Debug:', { 
-    canManageUsers, 
-    canManageRoles, 
-    userRoles: userWithRoles?.userRoles?.map(ur => ur.role.type),
-    allUsers: users?.length,
-    allRoles: allRoles?.length,
-    isLoading: permissionsLoading
-  });
   
   if (!canManageUsers && !canManageRoles) {
     return (
@@ -355,8 +346,7 @@ export default function UserManagement() {
           <p className="text-muted-foreground">נהל משתמשים ותפקידים במערכת</p>
         </div>
         <div className="flex items-center gap-4">
-          {(canManageUsers || canManageRoles) && (
-            <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+          <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="button-add-user">
                   <Plus className="h-4 w-4 ml-2" />
@@ -435,7 +425,6 @@ export default function UserManagement() {
               </div>
             </DialogContent>
           </Dialog>
-          )}
           <Users className="h-8 w-8 text-muted-foreground" />
         </div>
       </div>
@@ -476,39 +465,35 @@ export default function UserManagement() {
                     <Lock className="h-4 w-4 ml-2" />
                     הרשאות מפורטות
                   </Button>
-                  {canManageUsers && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (window.confirm(`האם אתה בטוח שברצונך לאפס את הסיסמא של ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}?`)) {
-                          resetPasswordMutation.mutate(user.id);
-                        }
-                      }}
-                      disabled={resetPasswordMutation.isPending}
-                      data-testid={`button-reset-password-${user.id}`}
-                    >
-                      <RotateCcw className="h-4 w-4 ml-2" />
-                      {resetPasswordMutation.isPending ? "מאפס..." : "איפוס סיסמא"}
-                    </Button>
-                  )}
-                  {canManageUsers && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={() => {
-                        if (window.confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}?`)) {
-                          deleteUserMutation.mutate(user.id);
-                        }
-                      }}
-                      disabled={deleteUserMutation.isPending}
-                      data-testid={`button-delete-user-${user.id}`}
-                    >
-                      <Trash2 className="h-4 w-4 ml-2" />
-                      {deleteUserMutation.isPending ? "מוחק..." : "מחק"}
-                    </Button>
-                  )}
-                  {canManageRoles && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (window.confirm(`האם אתה בטוח שברצונך לאפס את הסיסמא של ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}?`)) {
+                        resetPasswordMutation.mutate(user.id);
+                      }
+                    }}
+                    disabled={resetPasswordMutation.isPending}
+                    data-testid={`button-reset-password-${user.id}`}
+                  >
+                    <RotateCcw className="h-4 w-4 ml-2" />
+                    {resetPasswordMutation.isPending ? "מאפס..." : "איפוס סיסמא"}
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => {
+                      if (window.confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}?`)) {
+                        deleteUserMutation.mutate(user.id);
+                      }
+                    }}
+                    disabled={deleteUserMutation.isPending}
+                    data-testid={`button-delete-user-${user.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 ml-2" />
+                    {deleteUserMutation.isPending ? "מוחק..." : "מחק"}
+                  </Button>
+                  {true && (
                     <Dialog open={isRoleDialogOpen && selectedUser?.id === user.id} onOpenChange={(open) => {
                       setIsRoleDialogOpen(open);
                       if (open) setSelectedUser(user);
@@ -580,22 +565,20 @@ export default function UserManagement() {
                         >
                           {userRole.role.name}
                         </Badge>
-                        {canManageRoles && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (window.confirm(`האם אתה בטוח שברצונך להסיר את התפקיד "${userRole.role.name}" מהמשתמש?`)) {
-                                handleRemoveRole(user.id, userRole.role.id);
-                              }
-                            }}
-                            disabled={removeRoleMutation.isPending}
-                            data-testid={`button-remove-role-${userRole.role.id}`}
-                            title="הסר תפקיד"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (window.confirm(`האם אתה בטוח שברצונך להסיר את התפקיד "${userRole.role.name}" מהמשתמש?`)) {
+                              handleRemoveRole(user.id, userRole.role.id);
+                            }
+                          }}
+                          disabled={removeRoleMutation.isPending}
+                          data-testid={`button-remove-role-${userRole.role.id}`}
+                          title="הסר תפקיד"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     ))}
                   </div>
