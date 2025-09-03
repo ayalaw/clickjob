@@ -194,8 +194,29 @@ export default function UserManagement() {
         return 'destructive';
       case 'admin':
         return 'secondary';
+      case 'restricted_admin':
+        return 'outline';
+      case 'job_viewer':
+        return 'default';
       default:
         return 'outline';
+    }
+  };
+
+  const getRoleDescription = (roleType: string) => {
+    switch (roleType) {
+      case 'super_admin':
+        return 'אדמין ראשי - גישה מלאה לכל המערכת';
+      case 'admin':
+        return 'אדמין - גישה לניהול המערכת';
+      case 'restricted_admin':
+        return 'אדמין מוגבל - גישה מוגבלת לחלקים מסוימים';
+      case 'job_viewer':
+        return 'צופה משרות - גישה למשרות ספציפיות בלבד (ללא פרטי לקוחות)';
+      case 'user':
+        return 'משתמש רגיל - גישה בסיסית למערכת';
+      default:
+        return 'תפקיד לא מוגדר';
     }
   };
 
@@ -435,6 +456,7 @@ export default function UserManagement() {
                         <Badge 
                           variant={getRoleBadgeVariant(userRole.role.type)}
                           data-testid={`badge-role-${userRole.role.type}`}
+                          title={getRoleDescription(userRole.role.type)}
                         >
                           {userRole.role.name}
                         </Badge>
