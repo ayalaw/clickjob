@@ -2115,7 +2115,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Email routes
   app.post('/api/emails/send-candidate-profile', isAuthenticated, async (req: any, res) => {
     try {
-      const { candidateId, to, cc, notes } = req.body;
+      const { candidateId, to, cc, notes, includeSummary } = req.body;
       
       const candidate = await storage.getCandidate(candidateId);
       if (!candidate) {
@@ -2123,11 +2123,40 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
       }
 
       const template = emailTemplates.candidateProfile(candidate);
+      
+      // Prepare attachments based on CV availability and user choice
+      const attachments = [];
+      
+      // If CV file exists, attach it
+      if (candidate.cvPath) {
+        const cvPath = candidate.cvPath.startsWith('uploads/') ? candidate.cvPath : `uploads/${candidate.cvPath}`;
+        if (fs.existsSync(cvPath)) {
+          const ext = path.extname(cvPath) || '.pdf';
+          attachments.push({
+            filename: `קורות_חיים_${candidate.firstName}_${candidate.lastName}${ext}`,
+            content: fs.readFileSync(cvPath).toString('base64'),
+            contentType: ext === '.pdf' ? 'application/pdf' : 
+                        ext === '.doc' ? 'application/msword' :
+                        ext === '.docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                        ext.includes('image') ? `image/${ext.replace('.', '')}` : 'application/octet-stream'
+          });
+        }
+      }
+      // If no CV file BUT user approved sending summary
+      else if (!candidate.cvPath && includeSummary && candidate.manualCv && candidate.manualCv.trim()) {
+        attachments.push({
+          filename: `תמצית_קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
+          content: Buffer.from(candidate.manualCv, 'utf8').toString('base64'),
+          contentType: 'text/plain; charset=utf-8'
+        });
+      }
+
       const emailData = {
         to,
         cc,
         subject: template.subject,
         html: template.html,
+        attachments: attachments
       };
 
       const result = await sendEmail(emailData);
@@ -2390,10 +2419,11 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         </div>
       `;
       
-      // Prepare attachments - CV file AND/OR manual CV as text file
+      // Prepare attachments based on user choice
+      const { includeSummary } = req.body; // New parameter from frontend
       const attachments = [];
       
-      // Attach actual CV file if exists
+      // If CV file exists, attach it (no manual CV attachment)
       if (candidate.cvPath) {
         const cvPath = candidate.cvPath.startsWith('uploads/') ? candidate.cvPath : `uploads/${candidate.cvPath}`;
         if (fs.existsSync(cvPath)) {
@@ -2408,12 +2438,10 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           });
         }
       }
-      
-      // ALWAYS attach manual CV as text file if it exists (as addition OR replacement)
-      if (candidate.manualCv && candidate.manualCv.trim()) {
-        const summaryTitle = candidate.cvPath ? 'תמצית_נוספת' : 'תמצית_קורות_חיים';
+      // If no CV file BUT user approved sending summary
+      else if (!candidate.cvPath && includeSummary && candidate.manualCv && candidate.manualCv.trim()) {
         attachments.push({
-          filename: `${summaryTitle}_${candidate.firstName}_${candidate.lastName}.txt`,
+          filename: `תמצית_קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
           content: Buffer.from(candidate.manualCv, 'utf8').toString('base64'),
           contentType: 'text/plain; charset=utf-8'
         });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Form,
   FormControl,
   FormField,
@@ -24,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Mail, Send, User, Users } from "lucide-react";
+import { Mail, Send, User, Users, AlertTriangle } from "lucide-react";
 
 const candidateEmailSchema = z.object({
   to: z.string().email("כתובת אימייל לא תקינה"),
@@ -67,6 +77,14 @@ export function EmailDialog({
 }: EmailDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showCvAlert, setShowCvAlert] = useState(false);
+  const [pendingEmailData, setPendingEmailData] = useState<any>(null);
+
+  // Get candidate details to check if CV exists
+  const { data: candidate } = useQuery({
+    queryKey: ["/api/candidates", candidateId],
+    enabled: !!candidateId && type === "candidate",
+  }) as { data: { cvPath?: string; manualCv?: string } | undefined };
 
   // Forms for different email types
   const candidateForm = useForm<z.infer<typeof candidateEmailSchema>>({
@@ -100,7 +118,7 @@ export function EmailDialog({
 
   // Mutations
   const sendCandidateProfileMutation = useMutation({
-    mutationFn: async (data: { candidateId: string; to: string; cc?: string }) => {
+    mutationFn: async (data: { candidateId: string; to: string; cc?: string; includeSummary?: boolean }) => {
       await apiRequest("POST", "/api/emails/send-candidate-profile", data);
     },
     onSuccess: () => {
@@ -109,6 +127,8 @@ export function EmailDialog({
         description: "פרופיל המועמד נשלח במייל",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      setShowCvAlert(false);
+      setPendingEmailData(null);
       onClose();
     },
     onError: (error: any) => {
@@ -117,6 +137,8 @@ export function EmailDialog({
         description: error.message || "לא ניתן לשלוח את המייל",
         variant: "destructive",
       });
+      setShowCvAlert(false);
+      setPendingEmailData(null);
     },
   });
 
@@ -164,10 +186,40 @@ export function EmailDialog({
 
   const handleCandidateSubmit = (data: z.infer<typeof candidateEmailSchema>) => {
     if (candidateId) {
+      // Check if candidate has CV file
+      if (candidate?.cvPath) {
+        // Has CV file - send directly
+        sendCandidateProfileMutation.mutate({
+          candidateId,
+          to: data.to,
+          cc: data.cc || undefined,
+        });
+      } else {
+        // No CV file - show confirmation dialog
+        setPendingEmailData({
+          candidateId,
+          to: data.to,
+          cc: data.cc || undefined,
+        });
+        setShowCvAlert(true);
+      }
+    }
+  };
+
+  const handleConfirmSendWithSummary = () => {
+    if (pendingEmailData) {
       sendCandidateProfileMutation.mutate({
-        candidateId,
-        to: data.to,
-        cc: data.cc || undefined,
+        ...pendingEmailData,
+        includeSummary: true,
+      });
+    }
+  };
+
+  const handleConfirmSendBasicOnly = () => {
+    if (pendingEmailData) {
+      sendCandidateProfileMutation.mutate({
+        ...pendingEmailData,
+        includeSummary: false,
       });
     }
   };
@@ -419,6 +471,57 @@ export function EmailDialog({
           </Form>
         )}
       </DialogContent>
+
+      {/* CV Alert Dialog */}
+      <AlertDialog open={showCvAlert} onOpenChange={setShowCvAlert}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              אין קובץ קורות חיים במערכת
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-2">
+              <p>למועמד זה אין קובץ קורות חיים במערכת.</p>
+              {candidate?.manualCv && candidate.manualCv.trim() && (
+                <p className="text-sm bg-blue-50 p-3 rounded border-r-4 border-blue-400">
+                  <strong>קיימת תמצית קורות חיים במערכת:</strong><br />
+                  האם לשלוח את התמצית כקובץ מצורף?
+                </p>
+              )}
+              <p className="font-medium">איך תרצה להמשיך?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2">
+            <AlertDialogCancel 
+              onClick={() => {
+                setShowCvAlert(false);
+                setPendingEmailData(null);
+              }}
+              data-testid="button-cancel-send"
+            >
+              ביטול
+            </AlertDialogCancel>
+            
+            <AlertDialogAction
+              onClick={handleConfirmSendBasicOnly}
+              className="bg-gray-600 hover:bg-gray-700"
+              data-testid="button-send-basic-only"
+            >
+              שלח פרטים בסיסיים בלבד
+            </AlertDialogAction>
+            
+            {candidate?.manualCv && candidate.manualCv.trim() && (
+              <AlertDialogAction
+                onClick={handleConfirmSendWithSummary}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="button-send-with-summary"
+              >
+                שלח עם תמצית קורות חיים
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
