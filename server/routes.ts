@@ -2075,7 +2075,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   });
 
   // Update job landing page settings
-  app.put('/api/jobs/:id/landing-settings', isAuthenticated, upload.single('landingImage'), async (req, res) => {
+  app.put('/api/jobs/:id/landing-settings', upload.single('landingImage'), async (req, res) => {
     try {
       const jobId = req.params.id;
       
