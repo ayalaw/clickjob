@@ -1,0 +1,1248 @@
+import { useState, useEffect } from "react";
+import { useLocation, useRoute } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Upload,
+  FileText,
+  Check,
+  X,
+  Mail,
+  Phone,
+  Home,
+  Briefcase,
+  Edit, 
+  MapPin, 
+  User, 
+  Eye, 
+  ArrowRight,
+  Calendar,
+  GraduationCap,
+  Heart,
+  Car,
+  Baby,
+  Download,
+  Save,
+  Clock,
+  History,
+  MessageCircle,
+  Trash2
+} from "lucide-react";
+
+
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+import type { Candidate, Job } from "@shared/schema";
+
+interface CandidateFormProps {
+  candidate?: Candidate;
+  onSuccess: () => void;
+}
+
+// File upload interface
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  file?: File;
+}
+
+const formSchema = z.object({
+  firstName: z.string().min(1, "שם פרטי הוא שדה חובה"),
+  lastName: z.string().min(1, "שם משפחה הוא שדה חובה"),
+  email: z.string().email("כתובת דוא״ל לא תקינה").optional().or(z.literal("")),
+  mobile: z.string().optional(),
+  phone: z.string().optional(),
+  phone2: z.string().optional(),
+  nationalId: z.string().optional(),
+  city: z.string().optional(),
+  street: z.string().optional(),
+  houseNumber: z.string().optional(),
+  zipCode: z.string().optional(),
+  gender: z.enum(["male", "female", "other"]).optional(),
+  maritalStatus: z.enum(["single", "married", "divorced", "widowed", "other"]).optional(),
+  birthDate: z.string().optional(),
+  age: z.string().optional(),
+  drivingLicense: z.string().optional(),
+  address: z.string().optional(),
+  profession: z.string().optional(),
+  experience: z.string().optional(),
+  expectedSalary: z.string().optional(),
+  status: z.enum(["available", "employed", "inactive", "blacklisted"]).default("available"),
+  rating: z.number().min(1).max(5).optional(),
+  notes: z.string().optional(),
+  tags: z.string().optional(),
+  recruitmentSource: z.string().optional(),
+  manualCv: z.string().optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+export default function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { isAuthenticated, isLoading } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // File handling
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    open: boolean;
+    candidateData: any;
+    existingCandidateId: string;
+  }>({ open: false, candidateData: null, existingCandidateId: '' });
+  
+  // State for duplicate warnings
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    phone?: string;
+    email?: string;
+    nationalId?: string;
+    existing?: any;
+  }>({});
+  
+  // Field values for inline editing
+  const [fieldValues, setFieldValues] = useState<any>({});
+  
+  // Track if form has been changed since last save or auto-creation
+  const [hasFormChanged, setHasFormChanged] = useState(false);
+  const [wasAutoCreated, setWasAutoCreated] = useState(false);
+  const [autoCreatedCandidateId, setAutoCreatedCandidateId] = useState<string | null>(null);
+  
+  // Function to check for duplicates
+  const checkDuplicates = async (mobile?: string, email?: string, nationalId?: string) => {
+    if (!mobile && !email && !nationalId) {
+      setDuplicateWarning({});
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/candidates/check-duplicate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mobile, email, nationalId }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.exists) {
+          setDuplicateWarning({
+            phone: mobile && result.candidate.mobile === mobile ? mobile : undefined,
+            email: email && result.candidate.email === email ? email : undefined,
+            nationalId: nationalId && result.candidate.nationalId === nationalId ? nationalId : undefined,
+            existing: result.candidate
+          });
+        } else {
+          setDuplicateWarning({});
+        }
+      }
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+    }
+  };
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: candidate?.firstName || "",
+      lastName: candidate?.lastName || "",
+      email: candidate?.email || "",
+      mobile: candidate?.mobile || "",
+      phone: candidate?.phone || "",
+      phone2: candidate?.phone2 || "",
+      nationalId: candidate?.nationalId || "",
+      city: candidate?.city || "",
+      street: candidate?.street || "",
+      houseNumber: candidate?.houseNumber || "",
+      zipCode: candidate?.zipCode || "",
+      gender: candidate?.gender as "male" | "female" | "other" | undefined,
+      maritalStatus: candidate?.maritalStatus as "single" | "married" | "divorced" | "widowed" | "other" | undefined,
+      birthDate: candidate?.birthDate || "",
+      age: candidate?.age?.toString() || "",
+      drivingLicense: candidate?.drivingLicense || "",
+      address: candidate?.address || "",
+      profession: candidate?.profession || "",
+      experience: candidate?.experience?.toString() || "",
+      expectedSalary: candidate?.expectedSalary?.toString() || "",
+      status: (candidate?.status as "available" | "employed" | "inactive" | "blacklisted") || "available",
+      rating: candidate?.rating || undefined,
+      notes: candidate?.notes || "",
+      tags: Array.isArray(candidate?.tags) ? candidate.tags.join(', ') : candidate?.tags || "",
+      recruitmentSource: candidate?.recruitmentSource || "",
+      manualCv: candidate?.manualCv || "",
+    },
+  });
+
+  // Watch for form changes
+  const watchedValues = form.watch();
+  
+  useEffect(() => {
+    // If we have a candidate (editing) or if auto-created, enable change tracking
+    if (candidate || wasAutoCreated) {
+      setHasFormChanged(form.formState.isDirty);
+    } else {
+      // For new candidates, always allow saving
+      setHasFormChanged(true);
+    }
+  }, [watchedValues, candidate, wasAutoCreated, form.formState.isDirty]);
+
+  // Load existing CV if candidate exists - BUT DON'T CLEAR if it's a new candidate
+  useEffect(() => {
+    if (candidate && candidate?.cvPath && candidate.cvPath.trim()) {
+      let cvPath = candidate.cvPath.trim();
+      
+      // Build proper URL - handle both "uploads/file.pdf" and "file.pdf" formats
+      let finalUrl;
+      if (cvPath.startsWith('uploads/')) {
+        finalUrl = `/${cvPath}`;
+      } else if (cvPath.startsWith('/uploads/')) {
+        finalUrl = cvPath;
+      } else {
+        finalUrl = `/uploads/${cvPath}`;
+      }
+      
+      // Extract filename for display
+      const fileName = cvPath.split('/').pop() || 'קורות חיים';
+      
+      const existingCvFile: UploadedFile = {
+        id: 'existing-cv',
+        name: fileName,
+        size: 0,
+        type: fileName.toLowerCase().includes('.pdf') ? 'application/pdf' : 
+               fileName.toLowerCase().includes('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+               fileName.toLowerCase().includes('.doc') ? 'application/msword' : 
+               fileName.toLowerCase().includes('.jpg') || fileName.toLowerCase().includes('.jpeg') ? 'image/jpeg' :
+               fileName.toLowerCase().includes('.png') ? 'image/png' :
+               fileName.toLowerCase().includes('.gif') ? 'image/gif' : 'application/octet-stream',
+        url: finalUrl,
+      };
+      
+      setUploadedFiles([existingCvFile]);
+      setSelectedFile(existingCvFile);
+    }
+    // DON'T clear files if no candidate - this allows new file uploads to work
+  }, [candidate]);
+
+  // Watch for changes in duplicate-sensitive fields
+  const watchedMobile = form.watch("mobile");
+  const watchedEmail = form.watch("email");
+  const watchedNationalId = form.watch("nationalId");
+
+  useEffect(() => {
+    // Only check for duplicates if we're not editing an existing candidate
+    // ⚠️ השתקת בדיקה אוטומטית כי היא מתבצעת אחרי יצירת מועמד ומזהה כפול שגוי
+    if (!candidate && !wasAutoCreated) {
+      const timeoutId = setTimeout(() => {
+        checkDuplicates(watchedMobile, watchedEmail, watchedNationalId);
+      }, 500); // Debounce by 500ms
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [watchedMobile, watchedEmail, watchedNationalId, candidate, wasAutoCreated]);
+
+  useEffect(() => {
+    if (candidate) {
+      setFieldValues({
+        firstName: candidate.firstName || '',
+        lastName: candidate.lastName || '',
+        email: candidate.email || '',
+        mobile: candidate.mobile || '',
+        phone: candidate.phone || '',
+        phone2: candidate.phone2 || '',
+        nationalId: candidate.nationalId || '',
+        city: candidate.city || '',
+        street: candidate.street || '',
+        houseNumber: candidate.houseNumber || '',
+        zipCode: candidate.zipCode || '',
+        gender: candidate.gender || '',
+        maritalStatus: candidate.maritalStatus || '',
+        birthDate: candidate.birthDate || '',
+        age: candidate.age || '',
+        drivingLicense: candidate.drivingLicense || false,
+        address: candidate.address || '',
+        profession: candidate.profession || '',
+        experience: candidate.experience || '',
+        expectedSalary: candidate.expectedSalary || '',
+        status: candidate.status || 'available',
+        rating: candidate.rating || '',
+        notes: candidate.notes || '',
+        tags: candidate.tags || '',
+        recruitmentSource: candidate.recruitmentSource || '',
+        manualCv: candidate.manualCv || ''
+      });
+    }
+  }, [candidate]);
+
+  const updateFieldValue = (field: string, value: any) => {
+    setFieldValues((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  // File helper functions
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0]; // Take only the first file
+    const newFile: UploadedFile = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: URL.createObjectURL(file),
+      file,
+    };
+    
+    // Replace existing files
+    setUploadedFiles([newFile]);
+    setSelectedFile(newFile);
+    
+    console.log('File uploaded:', newFile);
+    console.log('Selected file set to:', newFile);
+    
+    // Extract data automatically
+    try {
+      const formData = new FormData();
+      formData.append('cv', file);
+      
+      const response = await fetch('/api/extract-cv-data', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Extracted data:', result);
+        
+        // The actual data is inside extractedData
+        const data = result.extractedData || result;
+        
+
+        // Check if a duplicate candidate was found
+        if (result.extractedData && result.extractedData.duplicateInfo && result.extractedData.duplicateInfo.exists) {
+          console.log('🚨 נמצא מועמד כפול! לא נוצר מועמד חדש');
+          const existingCandidate = result.extractedData.duplicateInfo.existingCandidate;
+          
+          toast({
+            title: "מועמד כפול זוהה!",
+            description: `המועמד ${existingCandidate.firstName} ${existingCandidate.lastName} כבר קיים במערכת. לא נוצר מועמד חדש.`,
+            variant: "destructive"
+          });
+          
+          // מציע אפשרות לעבור למועמד הקיים
+          if (result.extractedData.existingCandidateId) {
+            setTimeout(() => {
+              const goToExisting = confirm(`האם תרצה לעבור לכרטיס המועמד הקיים?`);
+              if (goToExisting) {
+                navigate(`/candidates/${result.extractedData.existingCandidateId}`);
+              }
+            }, 2000);
+          }
+          
+          return; // לא ממשיך לעדכן טופס
+        }
+
+        // If candidate was created automatically, show success message and navigate
+        if (result.extractedData && result.extractedData.candidateCreated) {
+          setWasAutoCreated(true);
+          setHasFormChanged(false); // Reset form change tracking
+          
+          // Save the candidate ID for navigation button
+          if (result.extractedData.candidateId) {
+            setAutoCreatedCandidateId(result.extractedData.candidateId);
+            
+            toast({
+              title: "מועמד נוצר בהצלחה!",
+              description: result.extractedData.message || "מועמד נוצר אוטומטית מקורות החיים",
+              variant: "default"
+            });
+            
+            // Navigate to the candidate immediately to show the CV
+            setTimeout(() => {
+              navigate(`/candidates/${result.extractedData.candidateId}`);
+            }, 1500);
+          }
+        }
+
+        // Check if there's an error indicating candidate creation failed
+        if ((result.error && result.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה')) || 
+            (result.extractedData && result.extractedData.error && result.extractedData.error.includes('נתונים חולצו בהצלחה אך יצירת המועמד נכשלה'))) {
+          // Show general error message
+          toast({
+            title: "שגיאה ביצירת מועמד",
+            description: "נתונים חולצו בהצלחה אך לא ניתן ליצור מועמד אוטומטית",
+            variant: "destructive"
+          });
+        }
+        
+        // Update form fields with extracted data - זה התיקון הנכון!
+        console.log('מעדכן שדות הטופס עם הנתונים:', data);
+        
+        // עדכון הטופס עם הנתונים שחולצו
+        if (data.firstName) {
+          form.setValue('firstName', data.firstName);
+          console.log('שם פרטי עודכן:', data.firstName);
+        }
+        if (data.lastName) {
+          form.setValue('lastName', data.lastName);
+          console.log('שם משפחה עודכן:', data.lastName);
+        }
+        if (data.email) {
+          form.setValue('email', data.email);
+          console.log('אימייל עודכן:', data.email);
+        }
+        // ★ תיקון: טלפון נייד צריך להיכנס לשדה mobile (למעלה)
+        if (data.mobile) {
+          form.setValue('mobile', data.mobile);
+          console.log('נייד עודכן בשדה העליון:', data.mobile);
+        }
+        // טלפון בית/עבודה נכנס לשדה phone
+        if (data.phone) {
+          form.setValue('phone', data.phone);
+          console.log('טלפון נוסף עודכן:', data.phone);
+        }
+        if (data.nationalId) form.setValue('nationalId', data.nationalId);
+        if (data.city) form.setValue('city', data.city);
+        if (data.street) form.setValue('street', data.street);
+        if (data.houseNumber) form.setValue('houseNumber', data.houseNumber);
+        if (data.zipCode) form.setValue('zipCode', data.zipCode);
+        if (data.profession) form.setValue('profession', data.profession);
+        
+        // הרענת הטופס לוודא שהשינויים מוצגים
+        form.trigger();
+        
+        toast({
+          title: "נתונים חולצו בהצלחה!",
+          description: `שם: ${data.firstName || ''} ${data.lastName || ''} | אימייל: ${data.email || 'לא נמצא'}`,
+        });
+      } else {
+        console.error('Failed to extract data');
+        toast({
+          title: "קובץ נבחר בהצלחה",
+          description: "קובץ קורות החיים מוכן לצפייה במקור",
+        });
+      }
+    } catch (error) {
+      console.error('Error extracting data:', error);
+      toast({
+        title: "קובץ נבחר בהצלחה",
+        description: "קובץ קורות החיים מוכן לצפייה במקור",
+      });
+    }
+  };
+
+  const removeFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    if (selectedFile?.id === fileId) {
+      setSelectedFile(uploadedFiles.find(f => f.id !== fileId) || null);
+    }
+  };
+
+  const createCandidate = useMutation({
+    mutationFn: async (data: FormData & { cvPath?: string }) => {
+      console.log('🔍 DEBUG CLIENT: Sending data:', data);
+      
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add all form fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+      
+      // Add CV file if selected
+      if (selectedFile?.file) {
+        formData.append('cv', selectedFile.file);
+      }
+      
+      const response = await fetch("/api/candidates", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create candidate");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "מועמד נוצר בהצלחה",
+        description: `${result.candidate.firstName} ${result.candidate.lastName} נוסף למערכת`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setHasFormChanged(false);
+      onSuccess();
+    },
+    onError: (error) => {
+      toast({
+        title: "שגיאה ביצירת מועמד",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCandidate = useMutation({
+    mutationFn: async (data: FormData & { cvPath?: string }) => {
+      console.log('🔍 DEBUG CLIENT UPDATE: Sending data:', data);
+      
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add all form fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+      
+      // Add CV file if selected
+      if (selectedFile?.file) {
+        formData.append('cv', selectedFile.file);
+      }
+      
+      const response = await fetch(`/api/candidates/${candidate!.id}`, {
+        method: "PUT",
+        body: formData,
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update candidate");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "מועמד עודכן בהצלחה",
+        description: `${result.candidate.firstName} ${result.candidate.lastName} עודכן במערכת`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/enriched"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setHasFormChanged(false);
+      onSuccess();
+    },
+    onError: (error) => {
+      toast({
+        title: "שגיאה בעדכון מועמד",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      let cvPath: string | undefined;
+
+      // Upload CV file if there's one selected
+      if (selectedFile?.file) {
+        const formData = new FormData();
+        formData.append("cv", selectedFile.file);
+
+        const uploadResult = await fetch("/api/candidates/upload-cv", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+
+        if (!uploadResult.ok) {
+          throw new Error("Failed to upload CV");
+        }
+
+        const result = await uploadResult.json();
+        cvPath = result.cvPath;
+      } else if (candidate?.cvPath) {
+        // Keep existing CV if no new file uploaded
+        cvPath = candidate.cvPath;
+      }
+
+      const candidateData = {
+        ...data,
+        ...(cvPath && { cvPath }),
+      };
+
+      if (candidate) {
+        updateCandidate.mutate(candidateData);
+      } else {
+        createCandidate.mutate(candidateData);
+      }
+    } catch (error) {
+      console.error('Error in onSubmit:', error);
+      // Only show error if it's not related to CV upload (which is optional)
+      if (error instanceof Error && !error.message.includes("Failed to upload CV")) {
+        toast({
+          title: "שגיאה בשמירה",
+          description: "אירעה שגיאה בשמירת המועמד",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async (updatedData: Record<string, string>) => {
+      return apiRequest('PUT', `/api/candidates/${candidate?.id}`, updatedData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/candidates/${candidate?.id}`] });
+      toast({
+        title: "פרטי המועמד עודכנו",
+        description: "השינויים נשמרו בהצלחה",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "שגיאה בעדכון",
+        description: "לא ניתן לעדכן את פרטי המועמד",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const saveAllChanges = async () => {
+    if (!candidate?.id) return;
+    updateMutation.mutate(fieldValues);
+  };
+
+  return (
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="space-y-8">
+        {/* Header Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center space-x-4 space-x-reverse">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-8 h-8 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {candidate ? 
+                      `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 'מועמד ללא שם' :
+                      'מועמד חדש'
+                    }
+                  </h1>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Navigation and Action Buttons */}
+        <div className="mb-6 flex justify-between items-center">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/candidates")}
+            className="flex items-center gap-2"
+          >
+            <ArrowRight className="w-4 h-4" />
+            חזור לרשימת המועמדים
+          </Button>
+        </div>
+
+        {/* Main Layout - 68% CV, 32% Details - EXACT COPY FROM CANDIDATE DETAIL */}
+        <div className="flex gap-6 h-[calc(100vh-12rem)]">
+          {/* CV Display Card - 68% */}
+          <div className="w-[68%] min-w-0">
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {selectedFile ? "קורות חיים" : "העלאת קורות חיים"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
+                {!selectedFile ? (
+                  // Upload area when no file is uploaded
+                  <div className="h-full">
+                    <label className="cursor-pointer h-full w-full block">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors h-full flex flex-col items-center justify-center">
+                        <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-lg text-gray-600 mb-4">גרור קבצים או לחץ כאן לבחירה</p>
+                        <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
+                          בחר קבצים
+                        </div>
+                        <p className="text-sm text-gray-500 mt-4">
+                          PDF, DOC, DOCX, JPG, PNG (עד 10MB)
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col">
+                    {/* File info */}
+                    <div className="flex justify-center p-3 bg-gray-50 rounded mb-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <FileText className="w-4 h-4" />
+                        קובץ קורות חיים - {selectedFile.name}
+                      </div>
+                    </div>
+                    
+                    {/* CV Display - Show file preview */}
+                    <div className="flex-1 bg-white rounded border overflow-hidden">
+                      {selectedFile?.url ? (
+                        <>
+                          {selectedFile.type === 'application/pdf' ? (
+                            <div className="w-full h-full">
+                              <iframe 
+                                src={selectedFile.url}
+                                className="w-full h-full border-0"
+                                title="קורות חיים PDF"
+                                style={{ minHeight: '400px' }}
+                              />
+                            </div>
+                          ) : selectedFile.type?.startsWith('image/') ? (
+                            <img
+                              src={selectedFile.url}
+                              alt="קורות חיים"
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <div className="text-center">
+                                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                <p className="text-sm text-gray-600">{selectedFile.name}</p>
+                                <p className="text-xs text-gray-500 mt-1">קובץ הועלה בהצלחה - {selectedFile.type || 'סוג קובץ לא ידוע'}</p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-2"
+                                  onClick={() => window.open(selectedFile.url, '_blank')}
+                                >
+                                  פתח בחלון חדש
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className="text-sm text-gray-600">לא נבחר קובץ</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Manual CV Section */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="mb-3">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">תמצית קורות חיים</h3>
+                    <p className="text-sm text-gray-600">
+                      {candidate?.manualCv && candidate.manualCv.includes('נוצרה אוטומטית') 
+                        ? "תמצית זו נוצרה אוטומטית מחילוץ נתוני הקובץ. ניתן לערוך ולעדכן לפי הצורך."
+                        : "הכנס תמצית קורות חיים ידנית במקרה שאין קובץ או שהחילוץ הוא לא מדויק"
+                      }
+                    </p>
+                    {candidate?.manualCv && candidate.manualCv.includes('נוצרה אוטומטית') && (
+                      <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 rounded-md">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs text-blue-700 font-medium">תמצית אוטומטית - נוצרה מהעלאת קורות החיים</span>
+                      </div>
+                    )}
+                  </div>
+                  <Textarea
+                    value={candidate ? (fieldValues?.manualCv || candidate.manualCv || '') : form.watch('manualCv') || ''}
+                    onChange={(e) => {
+                      if (candidate) {
+                        updateFieldValue('manualCv', e.target.value);
+                      } else {
+                        form.setValue('manualCv', e.target.value);
+                      }
+                    }}
+                    placeholder="הכנס כאן קורות חיים ידני... כולל השכלה, ניסיון תעסוקתי, כישורים וכל מידע רלוונטי אחר"
+                    className="min-h-[150px] text-sm"
+                    rows={8}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Candidate Details Card - 32% - EXACT COPY FROM CANDIDATE DETAIL */}
+          <div className="w-[32%] min-w-0">
+            <div className="h-full overflow-y-auto">
+              {/* Single Card with all candidate details */}
+              <Card className="h-full">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-center">
+                    {/* כפתור עבור למועמד - מופיע אחרי יצירה אוטומטית */}
+                    {autoCreatedCandidateId && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => navigate(`/candidates/${autoCreatedCandidateId}`)}
+                        className="flex items-center gap-2 text-green-600 border-green-200"
+                      >
+                        👤 עבור למועמד
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      onClick={form.handleSubmit(onSubmit)} 
+                      disabled={
+                        createCandidate.isPending || 
+                        updateCandidate.isPending || 
+                        (!hasFormChanged && !!(candidate || wasAutoCreated))
+                      }
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      {candidate ? 'עדכן מועמד' : 'שמור מועמד'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">שם פרטי:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.firstName || candidate.firstName || '') : form.watch('firstName') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('firstName', e.target.value);
+                        } else {
+                          form.setValue('firstName', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס שם פרטי"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">שם משפחה:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.lastName || candidate.lastName || '') : form.watch('lastName') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('lastName', e.target.value);
+                        } else {
+                          form.setValue('lastName', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס שם משפחה"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">מס' נייד:</span>
+                      <Input
+                        value={candidate ? (fieldValues?.mobile || candidate.mobile || '') : form.watch('mobile') || ''}
+                        onChange={(e) => {
+                          if (candidate) {
+                            updateFieldValue('mobile', e.target.value);
+                          } else {
+                            form.setValue('mobile', e.target.value);
+                          }
+                        }}
+                        className={`w-48 text-base ${duplicateWarning.phone ? 'border-red-500 bg-red-50' : ''}`}
+                        placeholder="הכנס טלפון נייד"
+                      />
+                    </div>
+                    {duplicateWarning.phone && duplicateWarning.existing && (
+                      <div className="text-red-600 text-sm font-bold bg-red-100 p-3 rounded border-2 border-red-400 shadow-lg">
+                        ⚠️⚠️⚠️ מספר טלפון זה כבר קיים במערכת! ⚠️⚠️⚠️<br />
+                        <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
+                        אימייל: {duplicateWarning.existing.email}<br />
+                        <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/candidates/${duplicateWarning.existing.id}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="button-go-to-duplicate-candidate"
+                          >
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                            מעבר לכרטיס המועמד
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">דוא״ל:</span>
+                      <Input
+                        value={candidate ? (fieldValues?.email || candidate.email || '') : form.watch('email') || ''}
+                        onChange={(e) => {
+                          if (candidate) {
+                            updateFieldValue('email', e.target.value);
+                          } else {
+                            form.setValue('email', e.target.value);
+                          }
+                        }}
+                        className={`w-48 text-base ${duplicateWarning.email ? 'border-red-500 bg-red-50' : ''}`}
+                        placeholder="הכנס דוא״ל"
+                      />
+                    </div>
+                    {duplicateWarning.email && duplicateWarning.existing && (
+                      <div className="text-red-600 text-sm font-bold bg-red-100 p-3 rounded border-2 border-red-400 shadow-lg">
+                        ⚠️⚠️⚠️ דוא״ל זה כבר קיים במערכת! ⚠️⚠️⚠️<br />
+                        <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
+                        נייד: {duplicateWarning.existing.mobile}<br />
+                        <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/candidates/${duplicateWarning.existing.id}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="button-go-to-duplicate-email-candidate"
+                          >
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                            מעבר לכרטיס המועמד
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">טלפון 1:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.phone || candidate.phone || '') : form.watch('phone') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('phone', e.target.value);
+                        } else {
+                          form.setValue('phone', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס טלפון"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">טלפון 2:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.phone2 || candidate.phone2 || '') : form.watch('phone2') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('phone2', e.target.value);
+                        } else {
+                          form.setValue('phone2', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס טלפון 2"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row-reverse justify-between items-center">
+                      <span className="text-base font-medium">תעודת זהות:</span>
+                      <Input
+                        value={candidate ? (fieldValues?.nationalId || candidate.nationalId || '') : form.watch('nationalId') || ''}
+                        onChange={(e) => {
+                          if (candidate) {
+                            updateFieldValue('nationalId', e.target.value);
+                          } else {
+                            form.setValue('nationalId', e.target.value);
+                          }
+                        }}
+                        className={`w-48 text-base ${duplicateWarning.nationalId ? 'border-red-500 bg-red-50' : ''}`}
+                        placeholder="הכנס ת.ז."
+                      />
+                    </div>
+                    {duplicateWarning.nationalId && duplicateWarning.existing && (
+                      <div className="text-red-600 text-sm font-bold bg-red-100 p-3 rounded border-2 border-red-400 shadow-lg">
+                        ⚠️⚠️⚠️ תעודת זהות זו כבר קיימת במערכת! ⚠️⚠️⚠️<br />
+                        <strong>מועמד: {duplicateWarning.existing.firstName} {duplicateWarning.existing.lastName}</strong><br />
+                        דוא״ל: {duplicateWarning.existing.email}<br />
+                        נייד: {duplicateWarning.existing.mobile}<br />
+                        <span className="text-red-800 font-bold">זהו כנראה מועמד משוכפל!</span>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/candidates/${duplicateWarning.existing.id}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="button-go-to-duplicate-nationalid-candidate"
+                          >
+                            <ArrowRight className="w-4 h-4 ml-1" />
+                            מעבר לכרטיס המועמד
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">עיר:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.city || candidate.city || '') : form.watch('city') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('city', e.target.value);
+                        } else {
+                          form.setValue('city', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס עיר"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">רחוב:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.street || candidate.street || '') : form.watch('street') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('street', e.target.value);
+                        } else {
+                          form.setValue('street', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס רחוב"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">מספר בית:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.houseNumber || candidate.houseNumber || '') : form.watch('houseNumber') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('houseNumber', e.target.value);
+                        } else {
+                          form.setValue('houseNumber', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס מספר בית"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">מיקוד:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.zipCode || candidate.zipCode || '') : form.watch('zipCode') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('zipCode', e.target.value);
+                        } else {
+                          form.setValue('zipCode', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס מיקוד"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">תאריך לידה:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.birthDate || candidate.birthDate || '') : form.watch('birthDate') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('birthDate', e.target.value);
+                        } else {
+                          form.setValue('birthDate', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס תאריך לידה (DD/MM/YYYY או שנה)"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">גיל:</span>
+                    <Input
+                      type="number"
+                      value={candidate ? (fieldValues?.age || candidate.age || '') : form.watch('age') || ''}
+                      onChange={(e) => {
+                        const age = parseInt(e.target.value) || '';
+                        if (candidate) {
+                          updateFieldValue('age', age);
+                        } else {
+                          form.setValue('age', age as any);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס גיל"
+                      min="16"
+                      max="120"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">מקצוע:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.profession || candidate.profession || '') : form.watch('profession') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('profession', e.target.value);
+                        } else {
+                          form.setValue('profession', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס מקצוע"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">ניסיון:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.experience || candidate.experience || '') : form.watch('experience') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('experience', e.target.value);
+                        } else {
+                          form.setValue('experience', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס ניסיון"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">שכר צפוי:</span>
+                    <Input
+                      value={candidate ? (fieldValues?.expectedSalary || candidate.expectedSalary || '') : form.watch('expectedSalary') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('expectedSalary', e.target.value);
+                        } else {
+                          form.setValue('expectedSalary', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס שכר צפוי"
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-start">
+                    <span className="text-base font-medium mt-2">הערות:</span>
+                    <Textarea
+                      value={candidate ? (fieldValues?.notes || candidate.notes || '') : form.watch('notes') || ''}
+                      onChange={(e) => {
+                        if (candidate) {
+                          updateFieldValue('notes', e.target.value);
+                        } else {
+                          form.setValue('notes', e.target.value);
+                        }
+                      }}
+                      className="w-48 text-base"
+                      placeholder="הכנס הערות"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex flex-row-reverse justify-between items-center">
+                    <span className="text-base font-medium">סטטוס:</span>
+                    <Select
+                      value={candidate ? (fieldValues?.status || candidate.status || 'available') : form.watch('status') || 'available'}
+                      onValueChange={(value) => {
+                        if (candidate) {
+                          updateFieldValue('status', value);
+                        } else {
+                          form.setValue('status', value as any);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="בחר סטטוס" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">חדש במערכת</SelectItem>
+                        <SelectItem value="pending_initial_screening">ממתין לסינון ראשוני</SelectItem>
+                        <SelectItem value="in_initial_screening">בסינון ראשוני</SelectItem>
+                        <SelectItem value="passed_initial_screening">עבר סינון ראשוני</SelectItem>
+                        <SelectItem value="rejected_initial_screening">נפסל בסינון ראשוני</SelectItem>
+                        <SelectItem value="sent_to_employer">נשלח למעסיק</SelectItem>
+                        <SelectItem value="whatsapp_sent">נשלחה הודעת ווצאפ</SelectItem>
+                        <SelectItem value="phone_contacted">נוצר קשר טלפוני</SelectItem>
+                        <SelectItem value="waiting_employer_response">מועמד ממתין לתשובת מעסיק</SelectItem>
+                        <SelectItem value="invited_to_interview">זומן לראיון אצל מעסיק</SelectItem>
+                        <SelectItem value="attended_interview">הגיע לראיון אצל מעסיק</SelectItem>
+                        <SelectItem value="missed_interview">לא הגיע לראיון</SelectItem>
+                        <SelectItem value="passed_interview">עבר ראיון אצל מעסיק</SelectItem>
+                        <SelectItem value="rejected_by_employer">נפסל בראיון</SelectItem>
+                        <SelectItem value="hired">התקבל לעבודה</SelectItem>
+                        <SelectItem value="employment_ended">סיים העסקה</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Duplicate Candidate Dialog */}
+      <Dialog open={duplicateDialog.open} onOpenChange={(open) => setDuplicateDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">מועמד קיים/דומה</DialogTitle>
+            <DialogDescription className="text-right">
+              המועמד {duplicateDialog.candidateData?.firstName} {duplicateDialog.candidateData?.lastName} כבר רשום במערכת
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button 
+              onClick={() => window.location.href = `/candidates/${duplicateDialog.existingCandidateId}`}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              מעבר לכרטיס המועמד
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setDuplicateDialog(prev => ({ ...prev, open: false }))}
+            >
+              סגור
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
