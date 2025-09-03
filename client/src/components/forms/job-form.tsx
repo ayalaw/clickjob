@@ -46,17 +46,14 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
       title: job?.title || "",
       description: job?.description || "",
       requirements: job?.requirements || "",
-      location: job?.location || "",
-      salaryRange: job?.salaryRange || "",
-      jobType: job?.jobType || "",
-      isRemote: job?.isRemote || false,
-      status: job?.status || "active",
-      priority: job?.priority || "medium",
-      deadline: job?.deadline ? new Date(job.deadline).toISOString().split('T')[0] : undefined,
+      recruiterNotes: job?.recruiterNotes || "",
+      additionalCode: job?.additionalCode || "",
       clientId: job?.clientId || "",
       selectedContactIds: job?.selectedContactIds || [],
-      positions: job?.positions || 1,
-      additionalCodes: job?.additionalCodes || [],
+      isUrgent: job?.isUrgent || false,
+      isSuperUrgent: job?.isSuperUrgent || false,
+      workMethod: job?.workMethod || "interview",
+      status: job?.status || "active",
     },
   });
 
@@ -152,16 +149,11 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
   });
 
   const onSubmit = (data: any) => {
-    // Convert deadline to Date if provided
     const submitData = {
       ...data,
-      deadline: data.deadline ? new Date(data.deadline) : null,
       requirements: data.requirements || null,
-      location: data.location || null,
-      salaryRange: data.salaryRange || null,
-      jobType: data.jobType || null,
-      priority: data.priority || "medium",
-      additionalCodes: data.additionalCodes || [],
+      recruiterNotes: data.recruiterNotes || null,
+      additionalCode: data.additionalCode || null,
     };
 
     if (job) {
@@ -196,51 +188,17 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
               </h2>
 
               <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">שם תפקיד:</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-job-title" className="text-right" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="deadline"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">תאריך סיום:</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input 
-                            type="date" 
-                            {...field}
-                            data-testid="input-deadline"
-                            className="text-right"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                {/* בחירת לקוח */}
                 <FormField
                   control={form.control}
                   name="clientId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-right">*לקוח נשרת ראשית:</FormLabel>
+                      <FormLabel className="text-right">בחירת לקוח:</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-client" className="text-right">
-                            <SelectValue placeholder="" />
+                            <SelectValue placeholder="בחר לקוח מהרשימה" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -251,6 +209,36 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* קוד משרה נוסף */}
+                <FormField
+                  control={form.control}
+                  name="additionalCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">קוד משרה נוסף (ידני):</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-additional-code" className="text-right" placeholder="קוד נוסף למשרה" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* כותרת המשרה */}
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-right">כותרת המשרה:</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-job-title" className="text-right" placeholder="הזן כותרת למשרה" />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -335,84 +323,19 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="additionalCodes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">קודים נוספים (אופציונלי):</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <Input
-                              value={additionalCodesInput}
-                              onChange={(e) => setAdditionalCodesInput(e.target.value)}
-                              placeholder="הקלד קוד נוסף"
-                              className="text-right"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && additionalCodesInput.trim()) {
-                                  e.preventDefault();
-                                  const currentCodes = field.value || [];
-                                  if (!currentCodes.includes(additionalCodesInput.trim())) {
-                                    field.onChange([...currentCodes, additionalCodesInput.trim()]);
-                                    setAdditionalCodesInput("");
-                                  }
-                                }
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                if (additionalCodesInput.trim()) {
-                                  const currentCodes = field.value || [];
-                                  if (!currentCodes.includes(additionalCodesInput.trim())) {
-                                    field.onChange([...currentCodes, additionalCodesInput.trim()]);
-                                    setAdditionalCodesInput("");
-                                  }
-                                }
-                              }}
-                            >
-                              הוסף
-                            </Button>
-                          </div>
-                          {field.value && field.value.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {field.value.map((code: string, index: number) => (
-                                <div key={index} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                                  <span>{code}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newCodes = field.value.filter((_: string, i: number) => i !== index);
-                                      field.onChange(newCodes);
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                {/* תיאור המשרה */}
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-right">*תיאור:</FormLabel>
+                      <FormLabel className="text-right">תיאור המשרה:</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field}
                           data-testid="textarea-job-description"
                           className="min-h-[120px] text-right"
+                          placeholder="תאר את המשרה בפירוט"
                         />
                       </FormControl>
                       <FormMessage />
@@ -420,17 +343,19 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
                   )}
                 />
 
+                {/* דרישות המשרה */}
                 <FormField
                   control={form.control}
                   name="requirements"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-right">*תאור נשרת פנימיות:</FormLabel>
+                      <FormLabel className="text-right">דרישות המשרה:</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field}
                           data-testid="textarea-job-requirements"
                           className="min-h-[120px] text-right"
+                          placeholder="פרט את הדרישות מהמועמד"
                         />
                       </FormControl>
                       <FormMessage />
@@ -438,155 +363,158 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
                   )}
                 />
 
+                {/* הערות לרכזים */}
                 <FormField
                   control={form.control}
-                  name="isRemote"
+                  name="recruiterNotes"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-x-reverse space-y-0">
+                    <FormItem>
+                      <FormLabel className="text-right">הערות לרכזים:</FormLabel>
                       <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-is-remote"
+                        <Textarea 
+                          {...field}
+                          data-testid="textarea-recruiter-notes"
+                          className="min-h-[120px] text-right"
+                          placeholder="הערות פנימיות לרכזי הגיוס"
                         />
                       </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>האם נערכה פגישת בעלים ראשונים</FormLabel>
-                      </div>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
             </div>
 
-            {/* עדות אדמיניסטרטיביים */}
+            {/* רמת דחיפות */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">עדות אדמיניסטרטיביים</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">רמת דחיפות</h2>
 
-              <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">רמת צניון אנטיביו:</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-job-priority" className="text-right">
-                            <SelectValue placeholder="טלפוני" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">נמוכה</SelectItem>
-                          <SelectItem value="medium">בינונית</SelectItem>
-                          <SelectItem value="high">גבוהה</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  {/* כפתור משרה דחופה */}
+                  <FormField
+                    control={form.control}
+                    name="isUrgent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Button
+                          type="button"
+                          variant={field.value ? "default" : "outline"}
+                          className={`px-6 py-3 ${field.value ? 'bg-green-500 hover:bg-green-600 text-white' : 'border-green-500 text-green-600 hover:bg-green-50'}`}
+                          onClick={() => {
+                            field.onChange(!field.value);
+                            if (!field.value) {
+                              // אם בוחרים דחופה, מבטלים סופר דחופה
+                              form.setValue("isSuperUrgent", false);
+                            }
+                          }}
+                          data-testid="button-urgent"
+                        >
+                          {field.value ? "✓ " : ""}משרה דחופה
+                        </Button>
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">יסטת שלווה:</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-job-status" className="text-right">
-                            <SelectValue placeholder="האייל" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">פעילה</SelectItem>
-                          <SelectItem value="paused">מושהית</SelectItem>
-                          <SelectItem value="closed">סגורה</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="salaryRange"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">שילוח תחתותני:</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="text-right">
-                            <SelectValue placeholder="כן" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="yes">כן</SelectItem>
-                          <SelectItem value="no">לא</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-right">רכב עטמני:</FormLabel>
-                      <Select>
-                        <FormControl>
-                          <SelectTrigger className="text-right">
-                            <SelectValue placeholder="..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="option1">אופציה 1</SelectItem>
-                          <SelectItem value="option2">אופציה 2</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1">
-                  <FormItem>
-                    <FormLabel className="text-right">רכב תוכן:</FormLabel>
-                    <Select>
-                      <FormControl>
-                        <SelectTrigger className="text-right">
-                          <SelectValue placeholder="..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="option1">אופציה 1</SelectItem>
-                        <SelectItem value="option2">אופציה 2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
+                  {/* כפתור משרה סופר דחופה */}
+                  <FormField
+                    control={form.control}
+                    name="isSuperUrgent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Button
+                          type="button"
+                          variant={field.value ? "default" : "outline"}
+                          className={`px-6 py-3 ${field.value ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-red-500 text-red-600 hover:bg-red-50'}`}
+                          onClick={() => {
+                            field.onChange(!field.value);
+                            if (!field.value) {
+                              // אם בוחרים סופר דחופה, מבטלים דחופה רגילה
+                              form.setValue("isUrgent", false);
+                            }
+                          }}
+                          data-testid="button-super-urgent"
+                        >
+                          {field.value ? "✓ " : ""}משרה סופר דחופה!
+                        </Button>
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
-                <div>
-                  <FormLabel className="text-right">תקים פתוחים:</FormLabel>
-                  <Input className="mt-2 text-right" />
-                </div>
-
-                <div className="flex items-center gap-8">
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Checkbox />
-                    <span>נשרת רחוקה</span>
-                  </div>
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Checkbox />
-                    <span>נשרת מופר טלפוני</span>
-                  </div>
+                <div className="text-sm text-gray-600">
+                  {form.watch("isUrgent") && !form.watch("isSuperUrgent") && (
+                    <p className="text-green-600">• משרה דחופה תופיע בירוק בהיר בראש הדף</p>
+                  )}
+                  {form.watch("isSuperUrgent") && (
+                    <p className="text-red-600">• משרה סופר דחופה תופיע באדום בהיר בעמוד הראיונות</p>
+                  )}
+                  {!form.watch("isUrgent") && !form.watch("isSuperUrgent") && (
+                    <p className="text-gray-500">• לחץ על כפתור לסימון רמת דחיפות</p>
+                  )}
                 </div>
               </div>
+            </div>
+
+            {/* שיטת עבודה עם הלקוח */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">שיטת עבודה עם הלקוח</h2>
+
+              <FormField
+                control={form.control}
+                name="workMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 space-x-reverse">
+                        <input
+                          type="radio"
+                          id="interview"
+                          value="interview"
+                          checked={field.value === "interview"}
+                          onChange={() => field.onChange("interview")}
+                          className="w-4 h-4 text-blue-600"
+                          data-testid="radio-interview"
+                        />
+                        <label htmlFor="interview" className="text-sm font-medium">
+                          <span className="font-semibold">ראיון</span>
+                          <span className="text-gray-600 block text-xs">המועמד יועבר לדף ראיונות כמו עכשיו ללא שינוי</span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center space-x-3 space-x-reverse">
+                        <input
+                          type="radio"
+                          id="automatic"
+                          value="automatic"
+                          checked={field.value === "automatic"}
+                          onChange={() => field.onChange("automatic")}
+                          className="w-4 h-4 text-green-600"
+                          data-testid="radio-automatic"
+                        />
+                        <label htmlFor="automatic" className="text-sm font-medium">
+                          <span className="font-semibold">אוטומטי</span>
+                          <span className="text-gray-600 block text-xs">נשלח ללקוח כל מועמד שמגיש מועמדות למשרה באופן אוטומטי</span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center space-x-3 space-x-reverse opacity-50 cursor-not-allowed">
+                        <input
+                          type="radio"
+                          id="bot"
+                          value="bot"
+                          disabled
+                          className="w-4 h-4 text-gray-400"
+                        />
+                        <label htmlFor="bot" className="text-sm font-medium text-gray-400">
+                          <span className="font-semibold">בוט ראיונות</span>
+                          <span className="block text-xs">לא פעיל כרגע</span>
+                        </label>
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* כפתור שמירה */}

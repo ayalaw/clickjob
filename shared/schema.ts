@@ -193,20 +193,26 @@ export const clientContacts = pgTable("client_contacts", {
 export const jobs = pgTable("jobs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobCode: varchar("job_code", { length: 7 }).unique(), // קוד משרה בן 7 ספרות
-  additionalCodes: text("additional_codes").array(), // קודים נוספים (אופציונלי)
+  additionalCode: varchar("additional_code"), // קוד נוסף ידני
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   requirements: text("requirements"),
-  location: varchar("location"),
-  salaryRange: varchar("salary_range"),
-  jobType: varchar("job_type"), // full-time, part-time, contract
-  isRemote: boolean("is_remote").default(false),
-  status: jobStatusEnum("status").default('active'),
-  priority: varchar("priority").default('medium'), // low, medium, high
-  deadline: timestamp("deadline"),
+  recruiterNotes: text("recruiter_notes"), // הערות לרכזים
   clientId: varchar("client_id").references(() => clients.id),
   selectedContactIds: text("selected_contact_ids").array().default(sql`'{}'`), // רשימת אנשי קשר נבחרים לקבלת מועמדים
+  isUrgent: boolean("is_urgent").default(false), // משרה דחופה - ירוק בהיר
+  isSuperUrgent: boolean("is_super_urgent").default(false), // משרה סופר דחופה - אדום בהיר
+  workMethod: varchar("work_method").default('interview'), // interview, automatic, bot (not active)
+  status: jobStatusEnum("status").default('active'),
+  // Legacy fields - need to be kept nullable until migration
+  location: varchar("location"),
+  salaryRange: varchar("salary_range"),
+  jobType: varchar("job_type"),
+  isRemote: boolean("is_remote").default(false),
+  priority: varchar("priority").default('medium'),
+  deadline: timestamp("deadline"),
   positions: integer("positions").default(1),
+  additionalCodes: text("additional_codes").array(),
   // Landing page fields
   landingImage: varchar("landing_image"), // תמונה לדף הנחיתה
   landingImageOriginalName: varchar("landing_image_original_name"), // שם המקורי של התמונה
@@ -228,7 +234,6 @@ export const jobs = pgTable("jobs", {
   index("jobs_title_idx").on(table.title),
   index("jobs_status_idx").on(table.status),
   index("jobs_client_id_idx").on(table.clientId),
-  index("jobs_priority_idx").on(table.priority),
   index("jobs_created_at_idx").on(table.createdAt),
 ]);
 
