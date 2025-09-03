@@ -494,8 +494,16 @@ export class DatabaseStorage implements IStorage {
     
     const nextNumber = lastCandidate.length > 0 ? (lastCandidate[0].candidateNumber || 99) + 1 : 100;
     
+    // נירמול מספר הטלפון לפני השמירה
+    const normalizedCandidate = { ...candidate };
+    if (normalizedCandidate.mobile) {
+      const originalMobile = normalizedCandidate.mobile;
+      normalizedCandidate.mobile = this.normalizePhone(normalizedCandidate.mobile);
+      console.log(`📱 נירמול טלפון בשמירה: "${originalMobile}" → "${normalizedCandidate.mobile}"`);
+    }
+    
     const candidateWithNumber = {
-      ...candidate,
+      ...normalizedCandidate,
       candidateNumber: nextNumber
     };
     
@@ -550,7 +558,25 @@ export class DatabaseStorage implements IStorage {
     // טלפון נייד - נירמול ובדיקה
     if (mobile) {
       const normalizedMobile = this.normalizePhone(mobile);
-      conditions.push(sql`REPLACE(REPLACE(REPLACE(${candidates.mobile}, '-', ''), ' ', ''), '+972', '0') = ${normalizedMobile}`);
+      console.log(`🔍 מחפש טלפון מנורמל: "${normalizedMobile}" (מקורי: "${mobile}")`);
+      
+      // גישה פשוטה יותר - נבדוק כמה אפשרויות שונות של המספר
+      const phoneVariations = [
+        normalizedMobile, // 0501234567
+        normalizedMobile.substring(1), // 501234567 (בלי 0 בהתחלה)
+        '+972' + normalizedMobile.substring(1), // +972501234567
+        '972' + normalizedMobile.substring(1) // 972501234567
+      ];
+      
+      const phoneConditions = phoneVariations.map(variation => 
+        sql`REPLACE(REPLACE(REPLACE(REPLACE(${candidates.mobile}, '-', ''), ' ', ''), '(', ''), ')', '') = ${variation}`
+      );
+      
+      const phoneCondition = phoneConditions.reduce((acc, condition) => 
+        acc ? sql`${acc} OR ${condition}` : condition
+      );
+      
+      conditions.push(sql`(${phoneCondition})`);
     }
     
     // אימייל - בדיקה מדויקת (case insensitive)
@@ -732,9 +758,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCandidate(id: string, candidate: Partial<InsertCandidate>): Promise<Candidate> {
+    // נירמול מספר הטלפון בעדכון
+    const normalizedCandidate = { ...candidate };
+    if (normalizedCandidate.mobile) {
+      const originalMobile = normalizedCandidate.mobile;
+      normalizedCandidate.mobile = this.normalizePhone(normalizedCandidate.mobile);
+      console.log(`📱 נירמול טלפון בעדכון: "${originalMobile}" → "${normalizedCandidate.mobile}"`);
+    }
+    
     const [updatedCandidate] = await db
       .update(candidates)
-      .set({ ...candidate, updatedAt: new Date() })
+      .set({ ...normalizedCandidate, updatedAt: new Date() })
       .where(eq(candidates.id, id))
       .returning();
     return updatedCandidate;
