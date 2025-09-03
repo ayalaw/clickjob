@@ -27,7 +27,7 @@ export const sessions = pgTable(
 
 // User storage table for Replit Auth
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   email: varchar("email").unique(),
   username: varchar("username").unique(), // שם משתמש לכניסה
   firstName: varchar("first_name"),
@@ -51,7 +51,7 @@ export const roleTypeEnum = pgEnum('role_type', ['super_admin', 'admin', 'user',
 
 // Roles table
 export const roles = pgTable("roles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   name: varchar("name").notNull().unique(),
   type: roleTypeEnum("type").notNull(),
   description: text("description"),
@@ -62,7 +62,7 @@ export const roles = pgTable("roles", {
 
 // Permissions table
 export const permissions = pgTable("permissions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   name: varchar("name").notNull().unique(),
   resource: varchar("resource").notNull(), // כמו 'candidates', 'jobs', 'settings'
   action: varchar("action").notNull(), // כמו 'create', 'read', 'update', 'delete'
@@ -72,7 +72,7 @@ export const permissions = pgTable("permissions", {
 
 // User roles junction table
 export const userRoles = pgTable("user_roles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   userId: varchar("user_id").notNull(),
   roleId: varchar("role_id").notNull(),
   assignedBy: varchar("assigned_by"), // מי הקצה את התפקיד
@@ -84,7 +84,7 @@ export const userRoles = pgTable("user_roles", {
 
 // Role permissions junction table
 export const rolePermissions = pgTable("role_permissions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   roleId: varchar("role_id").notNull(),
   permissionId: varchar("permission_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -92,7 +92,7 @@ export const rolePermissions = pgTable("role_permissions", {
 
 // Message templates table
 export const messageTemplates = pgTable("message_templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   name: varchar("name").notNull(),
   content: text("content").notNull(),
   icon: varchar("icon").default("💬"),
@@ -101,7 +101,7 @@ export const messageTemplates = pgTable("message_templates", {
 });
 
 export const systemSettings = pgTable("system_settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   key: varchar("key").notNull().unique(),
   value: text("value").notNull(),
   description: text("description"),
@@ -111,7 +111,7 @@ export const systemSettings = pgTable("system_settings", {
 
 // Candidates table
 export const candidates = pgTable("candidates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   candidateNumber: integer("candidate_number").unique(),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
@@ -160,7 +160,7 @@ export const candidates = pgTable("candidates", {
 
 // Clients table
 export const clients = pgTable("clients", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   companyName: varchar("company_name").notNull(),
   address: text("address"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -181,7 +181,7 @@ export const clients = pgTable("clients", {
 
 // Client contacts table
 export const clientContacts = pgTable("client_contacts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   clientId: varchar("client_id").notNull(),
   name: varchar("name").notNull(),
   phone: varchar("phone"),
@@ -194,7 +194,7 @@ export const clientContacts = pgTable("client_contacts", {
 
 // Jobs table
 export const jobs = pgTable("jobs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   jobCode: varchar("job_code", { length: 7 }).unique(), // קוד משרה בן 7 ספרות
   additionalCode: varchar("additional_code"), // קוד נוסף ידני
   title: varchar("title").notNull(),
@@ -242,7 +242,7 @@ export const jobs = pgTable("jobs", {
 
 // Job Applications (many-to-many between candidates and jobs)
 export const jobApplications = pgTable("job_applications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   candidateId: varchar("candidate_id").references(() => candidates.id),
   jobId: varchar("job_id").references(() => jobs.id),
   status: applicationStatusEnum("status").default('submitted'),
@@ -258,7 +258,7 @@ export const jobApplications = pgTable("job_applications", {
 
 // Tasks table
 export const tasks = pgTable("tasks", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   title: varchar("title").notNull(),
   description: text("description"),
   dueDate: timestamp("due_date"),
@@ -273,7 +273,7 @@ export const tasks = pgTable("tasks", {
 
 // Events table for tracking candidate interactions
 export const candidateEvents = pgTable("candidate_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   candidateId: varchar("candidate_id").references(() => candidates.id).notNull(),
   eventType: varchar("event_type").notNull(), // email_application, phone_call, interview, status_change, etc.
   description: text("description").notNull(),
@@ -283,7 +283,7 @@ export const candidateEvents = pgTable("candidate_events", {
 
 // Reminders table
 export const reminders = pgTable("reminders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   title: varchar("title").notNull(),
   description: text("description"),
   reminderDate: timestamp("reminder_date").notNull(),
@@ -299,7 +299,7 @@ export const reminders = pgTable("reminders", {
 
 // Interview Events table - for tracking interview schedules and appointments
 export const interviewEvents = pgTable("interview_events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   title: varchar("title").notNull(),
   description: text("description"),
   eventDate: timestamp("event_date").notNull(),
@@ -508,7 +508,7 @@ export type User = typeof users.$inferSelect;
 
 // Email table for tracking sent emails
 export const emails = pgTable("emails", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`uuid_generate_v4()`),
   from: varchar("from").notNull(),
   to: varchar("to").notNull(),
   cc: varchar("cc"),
