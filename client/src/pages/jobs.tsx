@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import JobForm from "@/components/forms/job-form";
+import LandingPageForm from "@/components/forms/landing-page-form";
 import SearchFilter from "@/components/search-filter";
-import { Plus, Search, MapPin, Calendar, Building2, Edit, Trash2, Users, Share2, ExternalLink } from "lucide-react";
+import { Plus, Search, MapPin, Calendar, Building2, Edit, Trash2, Users, Share2, ExternalLink, Settings } from "lucide-react";
 import { format } from "date-fns";
 import type { JobWithClient } from "@shared/schema";
 
@@ -25,6 +26,7 @@ export default function Jobs() {
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobWithClient | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isLandingEditOpen, setIsLandingEditOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -198,6 +200,19 @@ export default function Jobs() {
             </PermissionWrapper>
           </div>
 
+          {/* Dialog for Landing Page Editing */}
+          <Dialog open={isLandingEditOpen} onOpenChange={setIsLandingEditOpen}>
+            {selectedJob && (
+              <LandingPageForm
+                job={selectedJob}
+                onSuccess={() => {
+                  setIsLandingEditOpen(false);
+                  setSelectedJob(null);
+                }}
+              />
+            )}
+          </Dialog>
+
           {jobsLoading ? (
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded mb-4"></div>
@@ -302,6 +317,19 @@ export default function Jobs() {
                                 title="דף נחיתה למפרסום"
                               >
                                 <ExternalLink className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedJob(job);
+                                  setIsLandingEditOpen(true);
+                                }}
+                                className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300"
+                                data-testid={`button-edit-landing-${job.id}`}
+                                title="עריכת דף פרסום"
+                              >
+                                <Settings className="h-4 w-4" />
                               </Button>
                               <EditButton
                                 permission="edit_jobs"

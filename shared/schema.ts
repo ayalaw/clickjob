@@ -192,6 +192,17 @@ export const jobs = pgTable("jobs", {
   deadline: timestamp("deadline"),
   clientId: varchar("client_id").references(() => clients.id),
   positions: integer("positions").default(1),
+  // Landing page fields
+  landingImage: varchar("landing_image"), // תמונה לדף הנחיתה
+  landingImageOriginalName: varchar("landing_image_original_name"), // שם המקורי של התמונה
+  benefits: text("benefits"), // הטבות
+  companyDescription: text("company_description"), // תיאור החברה
+  requiredFields: text("required_fields").array().default(sql`'{}'`), // שדות חובה
+  optionalFields: text("optional_fields").array().default(sql`'{}'`), // שדות אופציונליים
+  customFields: jsonb("custom_fields"), // שדות מותאמים אישית
+  showSalary: boolean("show_salary").default(true), // האם להציג שכר
+  showCompanyName: boolean("show_company_name").default(true), // האם להציג שם החברה
+  landingPageActive: boolean("landing_page_active").default(true), // האם דף הנחיתה פעיל
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

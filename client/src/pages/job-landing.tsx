@@ -201,30 +201,45 @@ export default function JobLanding() {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* עמודה ראשית - פרטי המשרה */}
           <div className="lg:col-span-2 space-y-6">
+            {/* תמונה ראשית למשרה */}
+            {job.landingImage && (
+              <Card className="overflow-hidden">
+                <img
+                  src={`/uploads/${job.landingImage}`}
+                  alt={job.title}
+                  className="w-full h-48 sm:h-64 object-cover"
+                />
+              </Card>
+            )}
+
             {/* כותרת המשרה וחברה */}
             <Card className="border-l-4 border-l-blue-500">
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <CardTitle className="text-2xl mb-2">{job.title}</CardTitle>
-                    <div className="flex items-center gap-4 text-gray-600 dark:text-gray-300">
-                      <div className="flex items-center">
-                        <Building2 className="h-4 w-4 ml-1" />
-                        {job.client?.companyName}
-                      </div>
+                    <CardTitle className="text-xl sm:text-2xl mb-2 leading-tight">{job.title}</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-300">
+                      {(job.showCompanyName ?? true) && job.client?.companyName && (
+                        <div className="flex items-center">
+                          <Building2 className="h-4 w-4 ml-1 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">{job.client.companyName}</span>
+                        </div>
+                      )}
                       {job.location && (
                         <div className="flex items-center">
-                          <MapPin className="h-4 w-4 ml-1" />
-                          {job.location}
-                          {job.isRemote && " (עבודה מהבית)"}
+                          <MapPin className="h-4 w-4 ml-1 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">
+                            {job.location}
+                            {job.isRemote && " (עבודה מהבית)"}
+                          </span>
                         </div>
                       )}
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 self-start">
                     <CheckCircle className="h-3 w-3 ml-1" />
                     פעילה
                   </Badge>
@@ -235,42 +250,85 @@ export default function JobLanding() {
             {/* פרטי המשרה */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-lg sm:text-xl">
                   <Briefcase className="h-5 w-5 ml-2" />
                   פרטי המשרה
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {job.salaryRange && (
-                    <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 ml-2 text-green-600" />
-                      <span className="font-medium ml-2">שכר:</span>
-                      <span>{job.salaryRange}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(job.showSalary ?? true) && job.salaryRange && (
+                    <div className="flex items-center flex-wrap gap-2">
+                      <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span className="font-medium">שכר:</span>
+                      <span className="text-sm sm:text-base">{job.salaryRange}</span>
                     </div>
                   )}
                   {job.jobType && (
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 ml-2 text-blue-600" />
-                      <span className="font-medium ml-2">סוג משרה:</span>
-                      <span>{job.jobType}</span>
+                    <div className="flex items-center flex-wrap gap-2">
+                      <Clock className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                      <span className="font-medium">סוג משרה:</span>
+                      <span className="text-sm sm:text-base">{job.jobType}</span>
                     </div>
                   )}
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 ml-2 text-purple-600" />
-                    <span className="font-medium ml-2">מספר משרות:</span>
-                    <span>{job.positions}</span>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <Users className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                    <span className="font-medium">מספר משרות:</span>
+                    <span className="text-sm sm:text-base">{job.positions}</span>
                   </div>
                   {job.deadline && (
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 ml-2 text-orange-600" />
-                      <span className="font-medium ml-2">תאריך יעד:</span>
-                      <span>{format(new Date(job.deadline.toString()), 'dd MMMM yyyy', { locale: he })}</span>
+                    <div className="flex items-center flex-wrap gap-2">
+                      <Calendar className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                      <span className="font-medium">תאריך יעד:</span>
+                      <span className="text-sm sm:text-base">{format(new Date(job.deadline.toString()), 'dd MMMM yyyy', { locale: he })}</span>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* תיאור החברה */}
+            {job.companyDescription && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg sm:text-xl">
+                    <Building2 className="h-5 w-5 ml-2" />
+                    אודות החברה
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose max-w-none text-gray-700 dark:text-gray-300">
+                    {job.companyDescription.split('\n').map((paragraph, index) => (
+                      <p key={index} className="mb-4 leading-relaxed text-sm sm:text-base">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* הטבות */}
+            {job.benefits && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg sm:text-xl">
+                    <Star className="h-5 w-5 ml-2 text-yellow-500" />
+                    הטבות ויתרונות
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose max-w-none text-gray-700 dark:text-gray-300">
+                    {job.benefits.split('\n').map((benefit, index) => (
+                      <div key={index} className="flex items-start mb-2">
+                        <CheckCircle className="h-4 w-4 ml-2 mt-0.5 text-green-500 flex-shrink-0" />
+                        <span className="leading-relaxed text-sm sm:text-base">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* תיאור המשרה */}
             {job.description && (
@@ -316,23 +374,24 @@ export default function JobLanding() {
           {/* עמודה צדדית - פעולות ושיתוף */}
           <div className="space-y-6">
             {/* הגשת מועמדות */}
-            <Card className="border-2 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-              <CardHeader>
-                <CardTitle className="text-blue-800 dark:text-blue-200">
-                  מעוניין במשרה?
-                </CardTitle>
-                <CardDescription>
-                  הגש מועמדות עכשיו ונחזור אליך בהקדם
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Dialog open={isApplicationOpen} onOpenChange={setIsApplicationOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-                      <Send className="h-4 w-4 ml-2" />
-                      הגש מועמדות
-                    </Button>
-                  </DialogTrigger>
+            {(job.landingPageActive ?? true) ? (
+              <Card className="border-2 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 sticky top-4">
+                <CardHeader>
+                  <CardTitle className="text-blue-800 dark:text-blue-200 text-lg sm:text-xl">
+                    מעוניין במשרה?
+                  </CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
+                    הגש מועמדות עכשיו ונחזור אליך בהקדם
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Dialog open={isApplicationOpen} onOpenChange={setIsApplicationOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-sm sm:text-base" size="lg">
+                        <Send className="h-4 w-4 ml-2" />
+                        הגש מועמדות
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
                     <DialogHeader>
                       <DialogTitle>הגשת מועמדות - {job.title}</DialogTitle>
@@ -438,57 +497,69 @@ export default function JobLanding() {
                 </Dialog>
               </CardContent>
             </Card>
+            ) : (
+              <Card className="border-2 border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-gray-600 dark:text-gray-400">
+                    הגשת מועמדויות סגורה
+                  </CardTitle>
+                  <CardDescription>
+                    כרגע לא ניתן להגיש מועמדות למשרה זו
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
 
             {/* שיתוף ברשתות חברתיות */}
             <Card>
               <CardHeader>
-                <CardTitle>שתף את המשרה</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">שתף את המשרה</CardTitle>
+                <CardDescription className="text-sm sm:text-base">
                   עזור לחברים שלך למצוא את המשרה המושלמת
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleShare('facebook')}
-                    className="text-blue-600 hover:bg-blue-50"
+                    className="text-blue-600 hover:bg-blue-50 text-xs sm:text-sm"
                   >
-                    <Facebook className="h-4 w-4 ml-2" />
+                    <Facebook className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                     Facebook
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleShare('linkedin')}
-                    className="text-blue-700 hover:bg-blue-50"
+                    className="text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
                   >
-                    <Linkedin className="h-4 w-4 ml-2" />
+                    <Linkedin className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                     LinkedIn
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleShare('twitter')}
-                    className="text-blue-400 hover:bg-blue-50"
+                    className="text-blue-400 hover:bg-blue-50 text-xs sm:text-sm"
                   >
-                    <Twitter className="h-4 w-4 ml-2" />
+                    <Twitter className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                     Twitter
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleShare('whatsapp')}
-                    className="text-green-600 hover:bg-green-50"
+                    className="text-green-600 hover:bg-green-50 text-xs sm:text-sm"
                   >
-                    <Phone className="h-4 w-4 ml-2" />
+                    <Phone className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                     WhatsApp
                   </Button>
                 </div>
                 <Button
                   variant="outline"
-                  className="w-full mt-2"
+                  className="w-full text-sm sm:text-base"
                   onClick={copyToClipboard}
                 >
                   <Share2 className="h-4 w-4 ml-2" />
@@ -498,36 +569,49 @@ export default function JobLanding() {
             </Card>
 
             {/* פרטי יצירת קשר */}
-            {job.client && (
+            {(job.showCompanyName ?? true) && job.client && (
               <Card>
                 <CardHeader>
-                  <CardTitle>פרטי החברה</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">פרטי החברה</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Building2 className="h-4 w-4 ml-2 text-gray-500" />
-                      <span className="font-medium">{job.client.companyName}</span>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">{job.client.companyName}</span>
                     </div>
                     {job.client.contactEmail && (
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 ml-2 text-gray-500" />
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <a 
                           href={`mailto:${job.client.contactEmail}`}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline text-sm sm:text-base break-all"
                         >
                           {job.client.contactEmail}
                         </a>
                       </div>
                     )}
                     {job.client.contactPhone && (
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 ml-2 text-gray-500" />
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         <a 
                           href={`tel:${job.client.contactPhone}`}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline text-sm sm:text-base"
                         >
                           {job.client.contactPhone}
+                        </a>
+                      </div>
+                    )}
+                    {job.client.website && (
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <a 
+                          href={job.client.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm sm:text-base break-all"
+                        >
+                          אתר החברה
                         </a>
                       </div>
                     )}

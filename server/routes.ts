@@ -2074,6 +2074,63 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
     }
   });
 
+  // Update job landing page settings
+  app.put('/api/jobs/:id/landing-settings', isAuthenticated, upload.single('landingImage'), async (req, res) => {
+    try {
+      const jobId = req.params.id;
+      
+      // Check if job exists
+      const job = await storage.getJob(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      
+      const updateData: any = {};
+      
+      // Handle regular fields
+      if (req.body.benefits !== undefined) updateData.benefits = req.body.benefits;
+      if (req.body.companyDescription !== undefined) updateData.companyDescription = req.body.companyDescription;
+      if (req.body.showSalary !== undefined) updateData.showSalary = req.body.showSalary === 'true';
+      if (req.body.showCompanyName !== undefined) updateData.showCompanyName = req.body.showCompanyName === 'true';
+      if (req.body.landingPageActive !== undefined) updateData.landingPageActive = req.body.landingPageActive === 'true';
+      
+      // Handle array fields
+      if (req.body.requiredFields) {
+        try {
+          updateData.requiredFields = JSON.parse(req.body.requiredFields);
+        } catch (e) {
+          return res.status(400).json({ message: "Invalid requiredFields format" });
+        }
+      }
+      
+      if (req.body.optionalFields) {
+        try {
+          updateData.optionalFields = JSON.parse(req.body.optionalFields);
+        } catch (e) {
+          return res.status(400).json({ message: "Invalid optionalFields format" });
+        }
+      }
+      
+      // Handle image upload
+      if (req.file) {
+        updateData.landingImage = req.file.filename;
+        updateData.landingImageOriginalName = req.file.originalname;
+      }
+      
+      // Update the job
+      const updatedJob = await storage.updateJob(jobId, updateData);
+      
+      res.json({ 
+        message: "Landing page settings updated successfully",
+        job: updatedJob 
+      });
+      
+    } catch (error) {
+      console.error("Error updating job landing settings:", error);
+      res.status(500).json({ message: "Failed to update landing page settings" });
+    }
+  });
+
   // Job application routes
   app.get('/api/job-applications', isAuthenticated, async (req, res) => {
     try {
