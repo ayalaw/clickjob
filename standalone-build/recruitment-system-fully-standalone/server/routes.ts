@@ -2598,7 +2598,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         if (result.success) {
           // Save email to database
           await storage.createEmail({
-            from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+            from: process.env.CPANEL_EMAIL_USER || 'noreply@yourcompany.com',
             to: recipient.email,
             cc,
             subject: template.subject,
@@ -2614,7 +2614,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           errorMessage += `נכשל בשליחה ל-${recipient.name} (${recipient.email}): ${result.error}; `;
           
           await storage.createEmail({
-            from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+            from: process.env.CPANEL_EMAIL_USER || 'noreply@yourcompany.com',
             to: recipient.email,
             cc,
             subject: template.subject,
@@ -2688,7 +2688,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
       
       if (result.success) {
         await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+          from: process.env.CPANEL_EMAIL_USER || 'noreply@yourcompany.com',
           to: candidate.email,
           subject: template.subject,
           body: template.html,
@@ -2721,7 +2721,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         res.json({ success: true });
       } else {
         await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+          from: process.env.CPANEL_EMAIL_USER || 'noreply@yourcompany.com',
           to: candidate.email,
           subject: template.subject,
           body: template.html,
@@ -2766,7 +2766,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
       
       if (result.success) {
         await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+          from: process.env.CPANEL_EMAIL_USER || 'noreply@yourcompany.com',
           to,
           cc,
           subject: template.subject,
@@ -2800,7 +2800,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         res.json({ success: true });
       } else {
         await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+          from: process.env.CPANEL_EMAIL_USER || 'noreply@yourcompany.com',
           to,
           cc,
           subject: template.subject,
@@ -2911,7 +2911,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
       
       if (result.success) {
         await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@h-group.org.il',
+          from: process.env.CPANEL_EMAIL_USER || 'noreply@h-group.org.il',
           to: recipientEmail,
           subject: emailData.subject,
           body: emailContent,
@@ -2939,7 +2939,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         res.json({ success: true });
       } else {
         await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@h-group.org.il',
+          from: process.env.CPANEL_EMAIL_USER || 'noreply@h-group.org.il',
           to: recipientEmail,
           subject: emailData.subject,
           body: emailContent,
