@@ -52,10 +52,12 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
     resolver: zodResolver(insertClientSchema),
     defaultValues: {
       companyName: client?.companyName || "",
+      address: client?.address || "",
+      documents: client?.documents || [],
+      // Legacy fields for compatibility
       contactName: client?.contactName || "",
       email: client?.email || "",
       phone: client?.phone || "",
-      address: client?.address || "",
       website: client?.website || "",
       industry: client?.industry || "",
       commissionRate: client?.commissionRate || undefined,
@@ -206,66 +208,22 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>שם החברה *</FormLabel>
-                <FormControl>
-                  <Input placeholder="הכנס שם החברה" {...field} data-testid="input-company-name" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* שם החברה */}
+        <FormField
+          control={form.control}
+          name="companyName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>שם החברה *</FormLabel>
+              <FormControl>
+                <Input placeholder="הכנס שם החברה" {...field} data-testid="input-company-name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="contactName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>איש קשר *</FormLabel>
-                <FormControl>
-                  <Input placeholder="שם איש הקשר" {...field} data-testid="input-contact-name" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>אימייל *</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="example@company.com" {...field} data-testid="input-email" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>טלפון</FormLabel>
-                <FormControl>
-                  <Input placeholder="05X-XXXXXXX" {...field} value={field.value || ""} data-testid="input-phone" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
+        {/* כתובת */}
         <FormField
           control={form.control}
           name="address"
@@ -274,93 +232,6 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
               <FormLabel>כתובת</FormLabel>
               <FormControl>
                 <Input placeholder="כתובת החברה" {...field} value={field.value || ""} data-testid="input-address" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="website"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>אתר אינטרנט</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://company.com" {...field} value={field.value || ""} data-testid="input-website" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="industry"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>תחום פעילות</FormLabel>
-                <FormControl>
-                  <Input placeholder="הייטק, פיננסים, וכו'" {...field} value={field.value || ""} data-testid="input-industry" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="commissionRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>אחוז עמלה (%)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="15"
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                    data-testid="input-commission-rate"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="paymentTerms"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>תנאי תשלום</FormLabel>
-                <FormControl>
-                  <Input placeholder="שוטף+30, מראש, וכו'" {...field} value={field.value || ""} data-testid="input-payment-terms" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>הערות</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="הערות נוספות על הלקוח"
-                  className="min-h-[100px]"
-                  {...field}
-                  value={field.value || ""}
-                  data-testid="textarea-notes"
-                />
               </FormControl>
               <FormMessage />
             </FormItem>

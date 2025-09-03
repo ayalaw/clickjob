@@ -161,20 +161,26 @@ export const candidates = pgTable("candidates", {
 // Clients table
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientNumber: varchar("client_number", { length: 8 }).unique(), // מספר לקוח אוטומטי בן 8 ספרות
   companyName: varchar("company_name").notNull(),
-  contactName: varchar("contact_name").notNull(),
-  email: varchar("email").notNull(),
-  phone: varchar("phone"),
   address: text("address"),
+  documents: text("documents").array().default(sql`'{}'`), // מסמכים מועלים
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // Legacy fields - kept for compatibility
+  contactName: varchar("contact_name"),
+  email: varchar("email"),
+  phone: varchar("phone"),
   website: varchar("website"),
   industry: varchar("industry"),
-  commissionRate: integer("commission_rate"), // percentage
+  commissionRate: integer("commission_rate"),
   paymentTerms: varchar("payment_terms"),
   notes: text("notes"),
   isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("clients_client_number_idx").on(table.clientNumber),
+  index("clients_company_name_idx").on(table.companyName),
+]);
 
 // Client contacts table
 export const clientContacts = pgTable("client_contacts", {
