@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, UserPlus, Shield, Users, Plus, Mail, Settings, Lock, Eye, Edit, UserCheck, UserX } from "lucide-react";
+import { Trash2, UserPlus, Shield, Users, Plus, Mail, Settings, Lock, Eye, Edit, UserCheck, UserX, RotateCcw } from "lucide-react";
+import { LoginDetailsPopup } from "@/components/login-details-popup";
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -28,6 +29,11 @@ export default function UserManagement() {
   const [newUserRole, setNewUserRole] = useState<string>("");
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUserPermissions, setSelectedUserPermissions] = useState<UserWithRoles | null>(null);
+  const [loginDetailsPopup, setLoginDetailsPopup] = useState<{
+    isOpen: boolean;
+    loginDetails: any;
+    title?: string;
+  }>({ isOpen: false, loginDetails: null });
 
   // Get all users with their roles
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithRoles[]>({
@@ -88,8 +94,69 @@ export default function UserManagement() {
     },
   });
 
-  // Add user mutation
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest('POST', `/api/users/${userId}/reset-password`);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
+      setLoginDetailsPopup({
+        isOpen: true,
+        loginDetails: data.loginDetails,
+        title: "סיסמא חדשה נוצרה"
+      });
+      toast({
+        title: "הסיסמא אופסה בהצלחה",
+        description: "הסיסמא החדשה מוצגת בחלון",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא ניתן היה לאפס את הסיסמא",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add user mutation with password
   const addUserMutation = useMutation({
+    mutationFn: async (userData: { email: string; firstName?: string; lastName?: string; roleId?: string }) => {
+      const response = await apiRequest('POST', '/api/users/create-with-password', userData);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/all'] });
+      setIsAddUserDialogOpen(false);
+      resetAddUserForm();
+      
+      // הצגת פרטי הכניסה החדשים
+      setLoginDetailsPopup({
+        isOpen: true,
+        loginDetails: data.loginDetails,
+        title: "משתמש חדש נוצר בהצלחה"
+      });
+      
+      toast({
+        title: "המשתמש נוצר בהצלחה",
+        description: "פרטי הכניסה מוצגים בחלון",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error adding user:', error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא ניתן היה ליצור את המשתמש",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Legacy add user mutation (old method)
+  const addUserLegacyMutation = useMutation({
     mutationFn: async (userData: { email: string; firstName?: string; lastName?: string; roleId?: string }) => {
       const response = await apiRequest('POST', '/api/users', userData);
       return response;
@@ -395,6 +462,22 @@ export default function UserManagement() {
                     הרשאות מפורטות
                   </Button>
                   {canManageUsers && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm(`האם אתה בטוח שברצונך לאפס את הסיסמא של ${user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}?`)) {
+                          resetPasswordMutation.mutate(user.id);
+                        }
+                      }}
+                      disabled={resetPasswordMutation.isPending}
+                      data-testid={`button-reset-password-${user.id}`}
+                    >
+                      <RotateCcw className="h-4 w-4 ml-2" />
+                      {resetPasswordMutation.isPending ? "מאפס..." : "איפוס סיסמא"}
+                    </Button>
+                  )}
+                  {canManageUsers && (
                     <Button 
                       variant="destructive" 
                       size="sm" 
@@ -645,6 +728,14 @@ export default function UserManagement() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* פופ אפ פרטי כניסה */}
+        <LoginDetailsPopup
+          isOpen={loginDetailsPopup.isOpen}
+          onClose={() => setLoginDetailsPopup({ isOpen: false, loginDetails: null })}
+          loginDetails={loginDetailsPopup.loginDetails}
+          title={loginDetailsPopup.title}
+        />
       </div>
     </div>
   );

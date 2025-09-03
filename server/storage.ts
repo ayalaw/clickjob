@@ -338,18 +338,40 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: { email: string; firstName?: string | null; lastName?: string | null; password?: string }): Promise<User> {
-    const userData_with_password = {
-      email: userData.email,
-      firstName: userData.firstName || null,
-      lastName: userData.lastName || null,
-      password: userData.password ? await bcrypt.hash(userData.password, 10) : null,
-    };
-    
+  async createUser(userData: { 
+    email: string; 
+    username?: string;
+    firstName?: string | null; 
+    lastName?: string | null; 
+    password?: string;
+    isActive?: boolean;
+  }): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(userData_with_password)
+      .values({
+        email: userData.email,
+        username: userData.username || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        password: userData.password || null,
+        isActive: userData.isActive ?? true,
+      })
       .returning();
+    return user;
+  }
+
+  async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        password: passwordHash,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserById(userId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
     return user;
   }
 

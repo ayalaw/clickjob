@@ -4214,6 +4214,105 @@ ${recommendation}
     }
   });
 
+  // API ליצירת משתמש עם סיסמא אוטומטית
+  app.post('/api/users/create-with-password', isAuthenticated, async (req, res) => {
+    try {
+      const { generateSecurePassword, generateUsername } = await import('./passwordGenerator.js');
+      const bcrypt = await import('bcrypt');
+      
+      const { email, firstName, lastName, roleId } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "נדרש מייל" });
+      }
+      
+      // בדיקה שהמשתמש לא קיים
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "משתמש עם מייל זה כבר קיים" });
+      }
+      
+      // יצירת שם משתמש וסיסמא
+      const username = generateUsername(email);
+      const password = generateSecurePassword();
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      // יצירת המשתמש
+      const newUser = await storage.createUser({
+        email,
+        username,
+        password: passwordHash,
+        firstName,
+        lastName,
+        isActive: true
+      });
+      
+      // הקצאת תפקיד אם נבחר
+      if (roleId && newUser.id) {
+        await storage.assignRole(newUser.id, roleId);
+      }
+      
+      // החזרת פרטי הכניסה (כולל סיסמא לא מוצפנת לתצוגה חד פעמית)
+      res.json({
+        user: newUser,
+        loginDetails: {
+          username,
+          password, // רק לתצוגה חד פעמית!
+          email,
+          loginUrl: `${req.protocol}://${req.get('host')}/login`
+        }
+      });
+    } catch (error) {
+      console.error('שגיאה ביצירת משתמש עם סיסמא:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת המשתמש' });
+    }
+  });
+
+  // API לאיפוס סיסמא
+  app.post('/api/users/:userId/reset-password', isAuthenticated, async (req, res) => {
+    try {
+      const { generateSecurePassword } = await import('./passwordGenerator.js');
+      const bcrypt = await import('bcrypt');
+      
+      const { userId } = req.params;
+      
+      // בדיקת הרשאות - רק אדמינים יכולים לאפס סיסמאות
+      const sessionUser = req.user as any;
+      const hasAdminRole = await storage.hasRole(sessionUser.claims.sub, 'admin') || 
+                          await storage.hasRole(sessionUser.claims.sub, 'super_admin');
+      
+      if (!hasAdminRole) {
+        return res.status(403).json({ message: "אין הרשאה לאיפוס סיסמאות" });
+      }
+      
+      // בדיקה שהמשתמש קיים
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "משתמש לא נמצא" });
+      }
+      
+      // יצירת סיסמא חדשה
+      const newPassword = generateSecurePassword();
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      
+      // עדכון הסיסמא במסד הנתונים
+      await storage.updateUserPassword(userId, passwordHash);
+      
+      res.json({
+        message: "הסיסמא אופסה בהצלחה",
+        loginDetails: {
+          username: user.username || user.email,
+          password: newPassword,
+          email: user.email,
+          loginUrl: `${req.protocol}://${req.get('host')}/login`
+        }
+      });
+    } catch (error) {
+      console.error('שגיאה באיפוס סיסמא:', error);
+      res.status(500).json({ message: 'שגיאה באיפוס הסיסמא' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -29,10 +29,14 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
+  username: varchar("username").unique(), // שם משתמש לכניסה
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   password: varchar("password"), // For password-based authentication
+  passwordResetToken: varchar("password_reset_token"), // טוקן לאיפוס סיסמא
+  passwordResetExpires: timestamp("password_reset_expires"), // תפוגת טוקן איפוס
+  lastLogin: timestamp("last_login"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
