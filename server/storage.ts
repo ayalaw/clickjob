@@ -741,6 +741,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCandidate(id: string): Promise<void> {
+    // First delete all candidate events
+    await db.delete(candidateEvents).where(eq(candidateEvents.candidateId, id));
+    // Then delete the candidate
     await db.delete(candidates).where(eq(candidates.id, id));
   }
 
