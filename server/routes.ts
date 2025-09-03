@@ -1323,7 +1323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'attended_interview': 'הגיע לראיון אצל מעסיק',
           'missed_interview': 'לא הגיע לראיון',
           'passed_interview': 'עבר ראיון אצל מעסיק',
-          'rejected_by_employer': 'נפסל ע"י מעסיק',
+          'rejected_by_employer': 'נפסל בראיון',
           'hired': 'התקבל לעבודה',
           'employment_ended': 'סיים העסקה'
         };

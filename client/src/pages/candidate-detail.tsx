@@ -948,7 +948,7 @@ export default function CandidateDetail() {
                           <SelectItem value="attended_interview">הגיע לראיון אצל מעסיק</SelectItem>
                           <SelectItem value="missed_interview">לא הגיע לראיון</SelectItem>
                           <SelectItem value="passed_interview">עבר ראיון אצל מעסיק</SelectItem>
-                          <SelectItem value="rejected_by_employer">נפסל ע"י מעסיק</SelectItem>
+                          <SelectItem value="rejected_by_employer">נפסל בראיון</SelectItem>
                           <SelectItem value="hired">התקבל לעבודה</SelectItem>
                           <SelectItem value="employment_ended">סיים העסקה</SelectItem>
                         </SelectContent>

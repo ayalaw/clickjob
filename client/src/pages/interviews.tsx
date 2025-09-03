@@ -88,7 +88,7 @@ export default function Interviews() {
       case 'rejected': return 'נדחה';
       case 'accepted': return 'התקבל';
       case 'sent_to_employer': return 'נשלח למעסיק';
-      case 'rejected_by_employer': return 'נפסל ע"י מעסיק';
+      case 'rejected_by_employer': return 'נפסל בראיון';
       case 'invited_to_interview': return 'זומן לראיון';
       case 'available': return 'זמין';
       case 'pending': return 'ממתין';
