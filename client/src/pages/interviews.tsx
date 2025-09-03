@@ -87,6 +87,25 @@ export default function Interviews() {
       case 'interview_scheduled': return 'זומן לראיון';
       case 'rejected': return 'נדחה';
       case 'accepted': return 'התקבל';
+      case 'sent_to_employer': return 'נשלח למעסיק';
+      case 'rejected_by_employer': return 'נפסל ע"י מעסיק';
+      case 'invited_to_interview': return 'זומן לראיון';
+      case 'available': return 'זמין';
+      case 'pending': return 'ממתין';
+      case 'in_interview': return 'בתהליך ראיון';
+      case 'hired': return 'התקבל';
+      case 'not_relevant': return 'לא רלוונטי';
+      case 'whatsapp_sent': return 'נשלחה הודעת ווצאפ';
+      case 'phone_contact_made': return 'נוצר קשר טלפוני';
+      case 'waiting_employer_response': return 'ממתין לתשובת מעסיק';
+      case 'attended_interview': return 'הגיע לראיון';
+      case 'missed_interview': return 'לא הגיע לראיון';
+      case 'passed_interview': return 'עבר ראיון';
+      case 'employment_ended': return 'סיים העסקה';
+      case 'employed': return 'מועסק';
+      case 'inactive': return 'לא פעיל';
+      case 'blacklisted': return 'ברשימה שחורה';
+      case 'new_application': return 'מועמדות חדשה';
       default: return status || 'לא הוגדר';
     }
   };
@@ -422,11 +441,7 @@ export default function Interviews() {
                             </TableCell>
                             <TableCell className="px-4 py-4">
                               <span className="text-sm px-3 py-2 bg-blue-100 text-blue-800 rounded-full font-medium">
-                                {candidate.status === 'invited_to_interview' ? 'זומן לראיון' :
-                                 candidate.status === 'submitted' ? 'ממתין לסקירה' :
-                                 candidate.status === 'interview' ? 'נשלח למעסיק' :
-                                 candidate.status === 'rejected' ? 'נפסל' :
-                                 getStatusText(candidate.status || '')}
+                                {getStatusText(candidate.status || '')}
                               </span>
                             </TableCell>
                             <TableCell className="px-4 py-4 text-center">
