@@ -346,14 +346,15 @@ export default function UserManagement() {
           <p className="text-muted-foreground">נהל משתמשים ותפקידים במערכת</p>
         </div>
         <div className="flex items-center gap-4">
-          <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-add-user">
-                <Plus className="h-4 w-4 ml-2" />
-                הוסף משתמש
-              </Button>
-            </DialogTrigger>
-            <DialogContent dir="rtl">
+          {(canManageUsers || canManageRoles) && (
+            <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-user">
+                  <Plus className="h-4 w-4 ml-2" />
+                  הוסף משתמש
+                </Button>
+              </DialogTrigger>
+              <DialogContent dir="rtl">
               <DialogHeader>
                 <DialogTitle>הוספת משתמש חדש</DialogTitle>
                 <DialogDescription>
@@ -425,6 +426,7 @@ export default function UserManagement() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
           <Users className="h-8 w-8 text-muted-foreground" />
         </div>
       </div>
@@ -807,6 +809,43 @@ function getPermissionDisplayName(permission: string): string {
     'clients': 'לקוחות',
     'tasks': 'משימות',
     'dashboard': 'לוח מחוונים',
+    
+    // תרגומים לכל מה שאני רואה בתמונה
+    'view_candidate_details': 'צפייה בפרטי מועמד',
+    'schedule_interviews': 'תזמון ראיונות',
+    'manage_interviews': 'ניהול ראיונות',
+    'view_analytics': 'צפייה באנליטיקה',
+    'manage_system_settings': 'ניהול הגדרות מערכת',
+    
+    // הרשאות בסיסיות נפוצות
+    'view': 'צפייה',
+    'edit': 'עריכה',
+    'add': 'הוספה',
+    'remove': 'הסרה',
+    'access': 'גישה',
+    'modify': 'שינוי',
+    'view_all': 'צפייה בכל',
+    'create_all': 'יצירת כל',
+    'edit_all': 'עריכת כל',
+    'delete_all': 'מחיקת כל',
+    
+    // שילובים של הרשאות שיכולים להופיע
+    'candidates_read': 'קריאת מועמדים',
+    'candidates_create': 'יצירת מועמדים',
+    'candidates_update': 'עדכון מועמדים',
+    'candidates_delete': 'מחיקת מועמדים',
+    'jobs_read': 'קריאת משרות',
+    'jobs_create': 'יצירת משרות',
+    'jobs_update': 'עדכון משרות',
+    'jobs_delete': 'מחיקת משרות',
+    'clients_read': 'קריאת לקוחות',
+    'clients_create': 'יצירת לקוחות',
+    'clients_update': 'עדכון לקוחות',
+    'clients_delete': 'מחיקת לקוחות',
+    'users_read': 'קריאת משתמשים',
+    'users_create': 'יצירת משתמשים',
+    'users_update': 'עדכון משתמשים',
+    'users_delete': 'מחיקת משתמשים',
   };
   
   return displayNames[permission] || permission;
