@@ -1161,6 +1161,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Handle age conversion from string to number
+      if (bodyData.age !== undefined && bodyData.age !== null && bodyData.age !== '') {
+        const ageNum = parseInt(String(bodyData.age));
+        bodyData.age = isNaN(ageNum) ? null : ageNum;
+      } else if (bodyData.age === '') {
+        bodyData.age = null;
+      }
+      
       const candidateData = insertCandidateSchema.partial().parse(bodyData);
       
       // If CV file was uploaded, add the path
