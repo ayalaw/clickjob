@@ -81,10 +81,10 @@ export function EmailDialog({
   const [pendingEmailData, setPendingEmailData] = useState<any>(null);
 
   // Get candidate details to check if CV exists
-  const { data: candidate } = useQuery({
+  const { data: candidate, isLoading: candidateLoading } = useQuery({
     queryKey: ["/api/candidates", candidateId],
     enabled: !!candidateId && type === "candidate",
-  }) as { data: { cvPath?: string; manualCv?: string } | undefined };
+  }) as { data: { cvPath?: string; manualCv?: string; cvContent?: string } | undefined; isLoading: boolean };
 
   // Forms for different email types
   const candidateForm = useForm<z.infer<typeof candidateEmailSchema>>({
@@ -186,6 +186,11 @@ export function EmailDialog({
 
   const handleCandidateSubmit = (data: z.infer<typeof candidateEmailSchema>) => {
     if (candidateId) {
+      // Wait for candidate data to load
+      if (candidateLoading) {
+        return;
+      }
+      
       // Check if candidate has CV file
       if (candidate?.cvPath) {
         // Has CV file - send directly
