@@ -113,7 +113,7 @@ export const candidates = pgTable("candidates", {
   phone: varchar("phone"), // טלפון נ'
   phone2: varchar("phone2"), // טלפון נ' 2
   nationalId: varchar("national_id"), // תעודת זהות
-  city: varchar("city").notNull(), // עיר*
+  city: varchar("city"), // עיר
   street: varchar("street"), // רחוב
   houseNumber: varchar("house_number"), // מס' בית
   zipCode: varchar("zip_code"), // מיקוד

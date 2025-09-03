@@ -1045,25 +1045,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Convert string values to appropriate types
-      if (bodyData.age && typeof bodyData.age === 'string') {
+      if (bodyData.age && typeof bodyData.age === 'string' && bodyData.age.trim()) {
         const ageNum = parseInt(bodyData.age);
-        bodyData.age = isNaN(ageNum) ? null : ageNum;
+        bodyData.age = isNaN(ageNum) ? undefined : ageNum;
+      } else {
+        bodyData.age = undefined;
       }
       
-      if (bodyData.experience && typeof bodyData.experience === 'string') {
+      if (bodyData.experience && typeof bodyData.experience === 'string' && bodyData.experience.trim()) {
         const expNum = parseInt(bodyData.experience);
-        bodyData.experience = isNaN(expNum) ? null : expNum;
+        bodyData.experience = isNaN(expNum) ? undefined : expNum;
+      } else {
+        bodyData.experience = undefined;
       }
       
-      if (bodyData.expectedSalary && typeof bodyData.expectedSalary === 'string') {
+      if (bodyData.expectedSalary && typeof bodyData.expectedSalary === 'string' && bodyData.expectedSalary.trim()) {
         const salaryNum = parseInt(bodyData.expectedSalary);
-        bodyData.expectedSalary = isNaN(salaryNum) ? null : salaryNum;
+        bodyData.expectedSalary = isNaN(salaryNum) ? undefined : salaryNum;
+      } else {
+        bodyData.expectedSalary = undefined;
       }
       
-      if (bodyData.rating && typeof bodyData.rating === 'string') {
+      if (bodyData.rating && typeof bodyData.rating === 'string' && bodyData.rating.trim()) {
         const ratingNum = parseInt(bodyData.rating);
-        bodyData.rating = isNaN(ratingNum) ? null : ratingNum;
+        bodyData.rating = isNaN(ratingNum) ? undefined : ratingNum;
+      } else {
+        bodyData.rating = undefined;
       }
+      
+      // Handle empty strings for optional fields
+      Object.keys(bodyData).forEach(key => {
+        if (bodyData[key] === '') {
+          bodyData[key] = undefined;
+        }
+      });
       
       // Extract jobId if provided
       const jobId = bodyData.jobId;
