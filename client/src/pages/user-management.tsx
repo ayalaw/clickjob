@@ -236,7 +236,13 @@ export default function UserManagement() {
     },
   });
 
-  console.log('Debug permissions:', { canManageUsers, canManageRoles, isAdmin: (userWithRoles?.userRoles?.some((ur: any) => ur.role.type === 'admin' || ur.role.type === 'super_admin')) });
+  // Debug: log permissions
+  console.log('User permissions debug:', { 
+    canManageUsers, 
+    canManageRoles, 
+    userRoles: userWithRoles?.userRoles?.map((ur: any) => ur.role.type),
+    isLoading: permissionsLoading
+  });
   
   if (!canManageUsers && !canManageRoles) {
     return (
