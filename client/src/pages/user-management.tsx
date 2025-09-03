@@ -4,13 +4,15 @@ import { apiRequest } from "@/lib/queryClient";
 import { usePermissions, type UserWithRoles, type Role } from "@/hooks/usePermissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, UserPlus, Shield, Users, Plus, Mail } from "lucide-react";
+import { Trash2, UserPlus, Shield, Users, Plus, Mail, Settings, Lock, Eye, Edit, UserCheck, UserX } from "lucide-react";
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -24,11 +26,19 @@ export default function UserManagement() {
   const [newUserFirstName, setNewUserFirstName] = useState("");
   const [newUserLastName, setNewUserLastName] = useState("");
   const [newUserRole, setNewUserRole] = useState<string>("");
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  const [selectedUserPermissions, setSelectedUserPermissions] = useState<UserWithRoles | null>(null);
 
   // Get all users with their roles
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithRoles[]>({
     queryKey: ['/api/users/all'],
     enabled: canManageUsers,
+  });
+
+  // Get detailed permissions for selected user
+  const { data: detailedPermissions, isLoading: permissionsLoadingDetail } = useQuery({
+    queryKey: ['/api/permissions/detailed', selectedUserPermissions?.id],
+    enabled: !!selectedUserPermissions?.id && permissionsDialogOpen,
   });
 
   // Assign role mutation
@@ -372,6 +382,18 @@ export default function UserManagement() {
                     <Mail className="h-4 w-4 ml-2" />
                     {sendTestEmailMutation.isPending ? "שולח..." : "מייל בדיקה"}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedUserPermissions(user);
+                      setPermissionsDialogOpen(true);
+                    }}
+                    data-testid={`button-view-permissions-${user.id}`}
+                  >
+                    <Lock className="h-4 w-4 ml-2" />
+                    הרשאות מפורטות
+                  </Button>
                   {canManageUsers && (
                     <Button 
                       variant="destructive" 
@@ -493,7 +515,180 @@ export default function UserManagement() {
             </CardContent>
           </Card>
         )}
+
+        {/* חלון הרשאות מפורטות */}
+        <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                הרשאות מפורטות - {selectedUserPermissions?.firstName && selectedUserPermissions?.lastName 
+                  ? `${selectedUserPermissions.firstName} ${selectedUserPermissions.lastName}` 
+                  : selectedUserPermissions?.email}
+              </DialogTitle>
+              <DialogDescription>
+                צפה בכל ההרשאות הספציפיות של המשתמש למסכים, תפריטים וכפתורים
+              </DialogDescription>
+            </DialogHeader>
+            
+            {permissionsLoadingDetail ? (
+              <div className="flex justify-center p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p>טוען הרשאות...</p>
+                </div>
+              </div>
+            ) : detailedPermissions ? (
+              <Tabs defaultValue="pages" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="pages">דפים</TabsTrigger>
+                  <TabsTrigger value="menus">תפריטים</TabsTrigger>
+                  <TabsTrigger value="components">רכיבים</TabsTrigger>
+                  <TabsTrigger value="jobs">משרות</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="pages" className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      גישה לדפים ({detailedPermissions.pages?.length || 0})
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {detailedPermissions.pages?.map((permission: string) => (
+                        <div key={permission} className="flex items-center gap-2 p-2 border rounded">
+                          <UserCheck className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{getPermissionDisplayName(permission)}</span>
+                        </div>
+                      )) || <p className="text-muted-foreground">אין הרשאות דפים</p>}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="menus" className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      הרשאות תפריטים וכפתורים ({detailedPermissions.menus?.length || 0})
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {detailedPermissions.menus?.map((permission: string) => (
+                        <div key={permission} className="flex items-center gap-2 p-2 border rounded">
+                          <UserCheck className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{getPermissionDisplayName(permission)}</span>
+                        </div>
+                      )) || <p className="text-muted-foreground">אין הרשאות תפריטים</p>}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="components" className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      רכיבי מערכת ({detailedPermissions.components?.length || 0})
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {detailedPermissions.components?.map((permission: string) => (
+                        <div key={permission} className="flex items-center gap-2 p-2 border rounded">
+                          <UserCheck className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{getPermissionDisplayName(permission)}</span>
+                        </div>
+                      )) || <p className="text-muted-foreground">אין הרשאות רכיבים</p>}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="jobs" className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      הגבלות משרות וחשיפת מידע
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label className="font-medium">רואה שמות לקוחות:</Label>
+                          {detailedPermissions.canViewClientNames ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              <UserCheck className="h-3 w-3 ml-1" />
+                              כן
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <UserX className="h-3 w-3 ml-1" />
+                              לא (*** מידע מוגבל ***)
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {detailedPermissions.allowedJobIds && detailedPermissions.allowedJobIds.length > 0 && (
+                        <div className="p-4 border rounded-lg">
+                          <h4 className="font-medium mb-2">משרות מותרות (צופה משרות):</h4>
+                          <div className="space-y-1">
+                            {detailedPermissions.allowedJobIds.map((jobId: string) => (
+                              <div key={jobId} className="text-sm bg-blue-50 p-2 rounded">
+                                קוד משרה: {jobId}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="text-center p-8">
+                <p className="text-muted-foreground">לא ניתן לטעון הרשאות</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
+}
+
+// פונקציה לתרגום שמות הרשאות לעברית
+function getPermissionDisplayName(permission: string): string {
+  const displayNames: Record<string, string> = {
+    // הרשאות דפים
+    'view_dashboard': 'צפייה בלוח מחוונים',
+    'view_candidates': 'צפייה במועמדים',
+    'view_jobs': 'צפייה במשרות',
+    'view_clients': 'צפייה בלקוחות',
+    'view_applications': 'צפייה בהגשות',
+    'view_tasks': 'צפייה במשימות',
+    'create_candidates': 'יצירת מועמדים',
+    'edit_candidates': 'עריכת מועמדים',
+    'delete_candidates': 'מחיקת מועמדים',
+    'create_jobs': 'יצירת משרות',
+    'edit_jobs': 'עריכת משרות',
+    'delete_jobs': 'מחיקת משרות',
+    'create_clients': 'יצירת לקוחות',
+    'edit_clients': 'עריכת לקוחות',
+    'delete_clients': 'מחיקת לקוחות',
+    'manage_applications': 'ניהול הגשות',
+    'manage_tasks': 'ניהול משימות',
+    'access_settings': 'גישה להגדרות',
+    'manage_users': 'ניהול משתמשים',
+    
+    // הרשאות תפריטים
+    'export_data': 'ייצוא נתונים',
+    'import_data': 'יבוא נתונים',
+    'send_emails': 'שליחת מיילים',
+    'view_client_names': 'צפייה בשמות לקוחות',
+    'quick_add_candidate': 'הוספה מהירה של מועמד',
+    'quick_add_job': 'הוספה מהירה של משרה',
+    'bulk_operations': 'פעולות מרובות',
+    
+    // הרשאות רכיבים
+    'search_component': 'רכיב חיפוש',
+    'filter_component': 'רכיב סינון',
+    'export_component': 'רכיב ייצוא',
+    'stats_component': 'רכיב סטטיסטיקות',
+  };
+  
+  return displayNames[permission] || permission;
 }
