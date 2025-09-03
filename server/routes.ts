@@ -1162,12 +1162,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Handle age conversion from string to number
+      console.log('🔍 Debugging age field:', {
+        age: bodyData.age,
+        type: typeof bodyData.age,
+        value: bodyData.age
+      });
+      
       if (bodyData.age !== undefined && bodyData.age !== null && bodyData.age !== '') {
         const ageNum = parseInt(String(bodyData.age));
         bodyData.age = isNaN(ageNum) ? null : ageNum;
+        console.log('✅ Age converted:', bodyData.age);
       } else if (bodyData.age === '') {
         bodyData.age = null;
+        console.log('✅ Age set to null (empty string)');
       }
+      
+      console.log('📋 Final bodyData before validation:', { ...bodyData, age: bodyData.age });
       
       const candidateData = insertCandidateSchema.partial().parse(bodyData);
       
