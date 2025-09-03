@@ -98,7 +98,14 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
       return response.json();
     },
     onSuccess: () => {
+      // Clear all job-related caches to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${job.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${job.id}/public`] });
+      
+      // Force refetch of current job data
+      queryClient.refetchQueries({ queryKey: ["/api/jobs"] });
+      
       toast({
         title: "הצלחה",
         description: "דף הפרסום עודכן בהצלחה",

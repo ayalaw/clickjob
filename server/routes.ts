@@ -1895,7 +1895,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         return res.status(404).json({ message: "Job not found" });
       }
       
-      // Only return necessary public information
+      // Only return necessary public information including landing page settings
       const publicJob = {
         id: job.id,
         title: job.title,
@@ -1909,6 +1909,16 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         deadline: job.deadline,
         status: job.status,
         jobCode: job.jobCode,
+        // Landing page specific fields
+        benefits: job.benefits,
+        companyDescription: job.companyDescription,
+        requiredFields: job.requiredFields,
+        optionalFields: job.optionalFields,
+        showSalary: job.showSalary,
+        showCompanyName: job.showCompanyName,
+        landingPageActive: job.landingPageActive,
+        landingImage: job.landingImage,
+        landingImageOriginalName: job.landingImageOriginalName,
         client: job.client ? {
           id: job.client.id,
           companyName: job.client.companyName,
