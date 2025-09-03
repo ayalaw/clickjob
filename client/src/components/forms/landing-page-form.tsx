@@ -225,7 +225,7 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
                     {(imagePreview || job.landingImage) && (
                       <div className="relative w-full max-w-md">
                         <img
-                          src={imagePreview || `/uploads/${job.landingImage}`}
+                          src={imagePreview || (job.landingImage?.startsWith('http') ? job.landingImage : `/uploads/${job.landingImage}`)}
                           alt="תצוגה מקדימה"
                           className="w-full h-48 object-cover rounded-lg border"
                         />
@@ -278,9 +278,9 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
 
               <Card>
                 <CardHeader>
-                  <CardTitle>הטבות ויתרונות</CardTitle>
+                  <CardTitle>דרישות המשרה</CardTitle>
                   <CardDescription>
-                    פרט את ההטבות והיתרונות שהמשרה מציעה
+                    פרט את הדרישות והכישורים הנדרשים למשרה
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -292,7 +292,7 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
                         <FormControl>
                           <Textarea
                             {...field}
-                            placeholder="למשל: ביטוח בריאות, אופציות, ימי חופשה נוספים, אווירה צעירה..."
+                            placeholder="למשל: תואר ראשון במדעי המחשב, ניסיון של 3 שנים, ידע ב-React..."
                             rows={4}
                           />
                         </FormControl>

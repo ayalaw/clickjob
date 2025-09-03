@@ -208,7 +208,7 @@ export default function JobLanding() {
             {job.landingImage && (
               <Card className="overflow-hidden">
                 <img
-                  src={`/uploads/${job.landingImage}`}
+                  src={job.landingImage.startsWith('http') ? job.landingImage : `/uploads/${job.landingImage}`}
                   alt={job.title}
                   className="w-full h-48 sm:h-64 object-cover"
                 />
@@ -308,13 +308,13 @@ export default function JobLanding() {
               </Card>
             )}
 
-            {/* הטבות */}
+            {/* דרישות */}
             {job.benefits && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg sm:text-xl">
                     <Star className="h-5 w-5 ml-2 text-yellow-500" />
-                    הטבות ויתרונות
+                    דרישות המשרה
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
