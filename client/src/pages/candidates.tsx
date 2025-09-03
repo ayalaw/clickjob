@@ -330,7 +330,13 @@ export default function Candidates() {
                             {candidate.lastJobTitle || "-"}
                           </TableCell>
                           <TableCell>
-                            {candidate.recruitmentSource || "-"}
+                            <Badge variant={candidate.arrivalSource === 'landing_page' ? 'default' : candidate.arrivalSource === 'email' ? 'secondary' : 'outline'}>
+                              {candidate.arrivalSource === 'landing_page' ? 'דף פרסום' :
+                               candidate.arrivalSource === 'email' ? 'מייל' :
+                               candidate.arrivalSource === 'manual' ? 'הכנסה ידנית' :
+                               candidate.arrivalSource === 'cv_upload' ? 'העלאת קורות חיים' :
+                               candidate.arrivalSource || 'לא צוין'}
+                            </Badge>
                           </TableCell>
                           <TableCell data-testid={`text-candidate-mobile-${candidate.id}`}>
                             {candidate.mobile ? (
