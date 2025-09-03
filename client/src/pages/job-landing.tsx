@@ -173,33 +173,6 @@ export default function JobLanding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800" dir="rtl">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                מערכת גיוס מתקדמת
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-1">
-                המקום שלך למצוא את המשרה הבאה
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyToClipboard}
-                className="hidden sm:flex"
-              >
-                <Share2 className="h-4 w-4 ml-2" />
-                העתק קישור
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-6xl mx-auto p-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* עמודה ראשית - פרטי המשרה */}
