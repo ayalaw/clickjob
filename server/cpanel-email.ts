@@ -1,6 +1,6 @@
 import Imap from 'imap';
 import nodemailer from 'nodemailer';
-import { storage } from './storage';
+import { storage } from './storage.js';
 import { insertCandidateSchema } from '../shared/schema';
 import fs from 'fs';
 import path from 'path';

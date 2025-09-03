@@ -58,7 +58,7 @@ import {
   type RolePermission,
   type InsertRolePermission,
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, and, desc, asc, like, ilike, sql, count, or, isNotNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import * as fs from 'fs';

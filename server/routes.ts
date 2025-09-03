@@ -4,9 +4,9 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { storage } from "./storage";
-import { setupLocalAuth, isAuthenticated } from "./localAuth";
-import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware";
+import { storage } from "./storage.js";
+import { setupLocalAuth, isAuthenticated } from "./localAuth.js";
+import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware.js";
 import { 
   insertCandidateSchema, 
   insertClientSchema,
@@ -25,9 +25,9 @@ import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
 import mime from 'mime-types';
-import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
-import { generateSecurePassword } from './passwordUtils';
-import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email';
+import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService.js';
+import { generateSecurePassword } from './passwordUtils.js';
+import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email.js';
 import nodemailer from 'nodemailer';
 import { 
   hasPermission, 
@@ -39,7 +39,7 @@ import {
   MENU_PERMISSIONS,
   COMPONENT_PERMISSIONS,
   ROLE_PERMISSIONS
-} from './detailedPermissions';
+} from './detailedPermissions.js';
 
 // Configure multer for file uploads
 const upload = multer({

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { storage } from './storage';
+import { storage } from './storage.js';
 
 // Create transporter based on configuration
 let transporter: nodemailer.Transporter;

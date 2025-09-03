@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 
 // Extend Express Request type to include user permissions
 declare global {
