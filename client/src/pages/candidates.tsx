@@ -3,6 +3,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { PermissionWrapper } from "@/components/permissions/permission-wrapper";
+import { PermissionButton, AddButton, EditButton, DeleteButton, ExportButton } from "@/components/permissions/button-permission";
+import { useDataFiltering } from "@/components/permissions/permission-wrapper";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,7 @@ import type { Candidate, EnrichedCandidate } from "@shared/schema";
 
 export default function Candidates() {
   const { toast } = useToast();
+  const { filterCandidates, canViewClientNames } = useDataFiltering();
   const { isAuthenticated, isLoading } = useAuth();
 
   // Status color and text helpers
@@ -233,38 +237,40 @@ export default function Candidates() {
               <SearchFilter />
             </div>
             
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={handleAddCandidate}
-                  className="btn-primary"
-                  data-testid="button-add-candidate"
-                >
-                  <Plus className="h-4 w-4 ml-2" />
-                  הוסף מועמד
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader className="sr-only">
-                  <DialogTitle>
-                    {selectedCandidate ? "עריכת מועמד" : "הוספת מועמד חדש"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {selectedCandidate ? "ערוך פרטי המועמד" : "הוסף מועמד חדש למאגר"}
-                  </DialogDescription>
-                </DialogHeader>
-                <CandidateForm 
-                  candidate={selectedCandidate || undefined}
-                  onSuccess={() => {
-                    // לא סוגר את הטופס - נשאר פתוח לפרטים נוספים
-                    toast({
-                      title: "הצלחה",
-                      description: "המועמד נשמר בהצלחה. תוכל להוסיף פרטים נוספים",
-                    });
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            <PermissionWrapper permission="create_candidates">
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <AddButton 
+                    onClick={handleAddCandidate}
+                    className="btn-primary"
+                    data-testid="button-add-candidate"
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    הוסף מועמד
+                  </AddButton>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>
+                      {selectedCandidate ? "עריכת מועמד" : "הוספת מועמד חדש"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {selectedCandidate ? "ערוך פרטי המועמד" : "הוסף מועמד חדש למאגר"}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <CandidateForm 
+                    candidate={selectedCandidate || undefined}
+                    onSuccess={() => {
+                      // לא סוגר את הטופס - נשאר פתוח לפרטים נוספים
+                      toast({
+                        title: "הצלחה",
+                        description: "המועמד נשמר בהצלחה. תוכל להוסיף פרטים נוספים",
+                      });
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            </PermissionWrapper>
           </div>
 
           {candidatesLoading ? (
@@ -392,7 +398,8 @@ export default function Candidates() {
                               >
                                 <Send className="h-4 w-4" />
                               </Button>
-                              <Button
+                              <EditButton
+                                permission="edit_candidates"
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
@@ -401,10 +408,12 @@ export default function Candidates() {
                                 }}
                                 className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                                 data-testid={`button-edit-candidate-${candidate.id}`}
+                                hideWhenNoAccess={true}
                               >
                                 <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
+                              </EditButton>
+                              <DeleteButton
+                                permission="delete_candidates"
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
@@ -413,9 +422,10 @@ export default function Candidates() {
                                 }}
                                 className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                                 data-testid={`button-delete-candidate-${candidate.id}`}
+                                hideWhenNoAccess={true}
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </DeleteButton>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -427,13 +437,14 @@ export default function Candidates() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-lg">לא נמצאו מועמדים</p>
-                  <Button 
+                  <AddButton 
                     onClick={handleAddCandidate}
                     className="mt-4 btn-primary"
                     data-testid="button-add-first-candidate"
+                    hideWhenNoAccess={true}
                   >
                     הוסף מועמד ראשון
-                  </Button>
+                  </AddButton>
                 </div>
               )}
             </>

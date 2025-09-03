@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { PermissionWrapper } from "@/components/permissions/permission-wrapper";
+import { PermissionButton, AddButton, EditButton, DeleteButton } from "@/components/permissions/button-permission";
+import { useDataFiltering } from "@/components/permissions/permission-wrapper";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -17,6 +20,7 @@ import type { JobWithClient } from "@shared/schema";
 
 export default function Jobs() {
   const { toast } = useToast();
+  const { filterJobs, filterClientName, canViewClientNames } = useDataFiltering();
   const { isAuthenticated, isLoading } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobWithClient | null>(null);
@@ -39,6 +43,10 @@ export default function Jobs() {
   const { data: jobsData, isLoading: jobsLoading } = useQuery<{ jobs: JobWithClient[]; total: number }>({
     queryKey: ["/api/jobs", { search }],
     enabled: isAuthenticated,
+    select: (data) => ({
+      ...data,
+      jobs: filterJobs(data.jobs)
+    })
   });
 
   const deleteJob = useMutation({
@@ -160,17 +168,18 @@ export default function Jobs() {
               <SearchFilter />
             </div>
             
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={handleAddJob}
-                  className="btn-primary"
-                  data-testid="button-add-job"
-                >
-                  <Plus className="h-4 w-4 ml-2" />
-                  הוסף משרה
-                </Button>
-              </DialogTrigger>
+            <PermissionWrapper permission="create_jobs">
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <AddButton 
+                    onClick={handleAddJob}
+                    className="btn-primary"
+                    data-testid="button-add-job"
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    הוסף משרה
+                  </AddButton>
+                </DialogTrigger>
               <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="sr-only">
                   <DialogTitle>
@@ -185,7 +194,8 @@ export default function Jobs() {
                   onSuccess={() => setIsFormOpen(false)}
                 />
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </PermissionWrapper>
           </div>
 
           {jobsLoading ? (
@@ -247,7 +257,7 @@ export default function Jobs() {
                             </div>
                           </TableCell>
                           <TableCell data-testid={`text-job-client-${job.id}`}>
-                            {job.client?.companyName || "-"}
+                            {filterClientName(job.client?.companyName) || "-"}
                           </TableCell>
                           <TableCell data-testid={`text-job-location-${job.id}`}>
                             {job.location ? (
@@ -283,24 +293,28 @@ export default function Jobs() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2 space-x-reverse">
-                              <Button
+                              <EditButton
+                                permission="edit_jobs"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleEditJob(job)}
                                 className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                                 data-testid={`button-edit-job-${job.id}`}
+                                hideWhenNoAccess={true}
                               >
                                 <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
+                              </EditButton>
+                              <DeleteButton
+                                permission="delete_jobs"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteJob(job.id)}
                                 className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                                 data-testid={`button-delete-job-${job.id}`}
+                                hideWhenNoAccess={true}
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </DeleteButton>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -311,13 +325,14 @@ export default function Jobs() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 text-lg">לא נמצאו משרות</p>
-                  <Button 
+                  <AddButton 
                     onClick={handleAddJob}
                     className="mt-4 btn-primary"
                     data-testid="button-add-first-job"
+                    hideWhenNoAccess={true}
                   >
                     הוסף משרה ראשונה
-                  </Button>
+                  </AddButton>
                 </div>
               )}
             </>
