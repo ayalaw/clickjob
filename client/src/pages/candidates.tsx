@@ -295,6 +295,7 @@ export default function Candidates() {
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">עדכון אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[150px]">מתעניין במשרה אחרון</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">מקור גיוס אחרון</TableHead>
+                          <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[120px]">מקור הגעה</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[130px]">מס' נייד</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[200px]">דוא״ל</TableHead>
                           <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300 min-w-[140px]">אירוע ידני אחרון</TableHead>
@@ -329,6 +330,14 @@ export default function Candidates() {
                           </TableCell>
                           <TableCell>
                             {candidate.recruitmentSource || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={candidate.source === 'landing_page' ? 'default' : candidate.source === 'email' ? 'secondary' : 'outline'}>
+                              {candidate.source === 'landing_page' ? 'דף פרסום' : 
+                               candidate.source === 'email' ? 'אימייל' : 
+                               candidate.source === 'manual' ? 'ידני' : 
+                               candidate.source || 'לא ידוע'}
+                            </Badge>
                           </TableCell>
                           <TableCell data-testid={`text-candidate-mobile-${candidate.id}`}>
                             {candidate.mobile ? (

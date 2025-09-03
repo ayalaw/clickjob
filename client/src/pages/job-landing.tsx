@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -39,11 +39,18 @@ export default function JobLanding() {
     motivation: ""
   });
 
-  // קבלת פרטי המשרה
+  // קבלת פרטי המשרה ועדכון צפיות
   const { data: job, isLoading: jobLoading } = useQuery<JobWithClient>({
     queryKey: [`/api/jobs/${id}/public`],
     enabled: !!id,
   });
+
+  // עדכון צפיות כשהדף נטען
+  React.useEffect(() => {
+    if (job && id) {
+      fetch(`/api/jobs/${id}/view`, { method: 'POST' }).catch(() => {});
+    }
+  }, [job, id]);
 
   // שליחת הגשת מועמדות
   const submitApplication = useMutation({
@@ -438,14 +445,14 @@ export default function JobLanding() {
                         <Input
                           id="cv"
                           type="file"
-                          accept=".pdf,.doc,.docx"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                           onChange={(e) => setApplicationData(prev => ({ 
                             ...prev, 
                             cvFile: e.target.files?.[0] 
                           }))}
                         />
                         <p className="text-sm text-gray-500 mt-1">
-                          פורמטים נתמכים: PDF, DOC, DOCX
+                          פורמטים נתמכים: PDF, DOC, DOCX, תמונות (JPG, PNG)
                         </p>
                       </div>
                       <Separator />

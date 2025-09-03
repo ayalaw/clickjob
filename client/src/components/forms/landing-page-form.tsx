@@ -177,7 +177,7 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="content" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 תוכן
@@ -189,6 +189,10 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
               <TabsTrigger value="design" className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
                 עיצוב
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                📊
+                סטטיסטיקות
               </TabsTrigger>
               <TabsTrigger value="preview" className="flex items-center gap-2">
                 <Eye className="h-4 w-4" />
@@ -470,6 +474,77 @@ export default function LandingPageForm({ job, onSuccess }: LandingPageFormProps
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="analytics" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    📊
+                    סטטיסטיקות דף הפרסום
+                  </CardTitle>
+                  <CardDescription>
+                    צפה בנתונים על הביצועים של דף הנחיתה שלך
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">צפיות בדף</p>
+                          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {job.landingViews || 0}
+                          </p>
+                        </div>
+                        <div className="h-8 w-8 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
+                          👁️
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">הגשות מועמדות</p>
+                          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {job.landingApplications || 0}
+                          </p>
+                        </div>
+                        <div className="h-8 w-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                          📝
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">שיעור המרה</p>
+                          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                            {job.landingViews > 0 ? 
+                              Math.round(((job.landingApplications || 0) / job.landingViews) * 100) : 0}%
+                          </p>
+                        </div>
+                        <div className="h-8 w-8 bg-purple-100 dark:bg-purple-800 rounded-full flex items-center justify-center">
+                          📈
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h4 className="font-medium mb-2">טיפים לשיפור הביצועים:</h4>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• הוסף תמונה אטרקטיבית לדף הנחיתה</li>
+                      <li>• כתב תיאור חברה מעניין ומפורט</li>
+                      <li>• הגדר דרישות ברורות ומדויקות</li>
+                      <li>• שתף את הדף ברשתות חברתיות</li>
+                      <li>• בדק את הדף במכשירים שונים</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

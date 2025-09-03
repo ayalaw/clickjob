@@ -252,6 +252,8 @@ export interface IStorage {
   createJob(job: InsertJob): Promise<Job>;
   updateJob(id: string, job: Partial<InsertJob>): Promise<Job>;
   deleteJob(id: string): Promise<void>;
+  incrementJobViews(jobId: string): Promise<void>;
+  incrementJobApplications(jobId: string): Promise<void>;
 
   // Job application operations
   getJobApplications(jobId?: string, candidateId?: string): Promise<JobApplicationWithDetails[]>;
@@ -991,6 +993,26 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJob(id: string): Promise<void> {
     await db.delete(jobs).where(eq(jobs.id, id));
+  }
+
+  async incrementJobViews(jobId: string): Promise<void> {
+    await db
+      .update(jobs)
+      .set({ 
+        landingViews: sql`${jobs.landingViews} + 1`,
+        updatedAt: new Date() 
+      })
+      .where(eq(jobs.id, jobId));
+  }
+
+  async incrementJobApplications(jobId: string): Promise<void> {
+    await db
+      .update(jobs)
+      .set({ 
+        landingApplications: sql`${jobs.landingApplications} + 1`,
+        updatedAt: new Date() 
+      })
+      .where(eq(jobs.id, jobId));
   }
 
   // Job application operations

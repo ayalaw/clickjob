@@ -1989,8 +1989,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         try {
           // Update candidate with CV file
           await storage.updateCandidate(candidate.id, {
-            cvFile: req.file.filename,
-            cvOriginalName: req.file.originalname
+            cvPath: req.file.filename
           });
         } catch (error) {
           console.error("Error saving CV file:", error);
@@ -2007,6 +2006,9 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         };
         
         const application = await storage.createJobApplication(applicationData);
+        
+        // Update application statistics
+        await storage.incrementJobApplications(jobId);
         
         // Add candidate event
         await storage.addCandidateEvent({
@@ -2071,6 +2073,21 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
     } catch (error) {
       console.error("Error processing job application:", error);
       res.status(500).json({ message: "Failed to process application" });
+    }
+  });
+
+  // Track job landing page view
+  app.post('/api/jobs/:id/view', async (req, res) => {
+    try {
+      const jobId = req.params.id;
+      
+      // Update view count
+      await storage.incrementJobViews(jobId);
+      
+      res.json({ message: "View tracked successfully" });
+    } catch (error) {
+      console.error("Error tracking view:", error);
+      res.status(500).json({ message: "Failed to track view" });
     }
   });
 

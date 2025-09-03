@@ -135,6 +135,7 @@ export const candidates = pgTable("candidates", {
   experience: integer("experience"), // years of experience
   achievements: text("achievements"), // הישגים
   recruitmentSource: varchar("recruitment_source"), // מקור גיוס
+  source: varchar("source").default('manual'), // מקור הגעה: manual, landing_page, email
   expectedSalary: integer("expected_salary"),
   cvPath: varchar("cv_path"), // file path for uploaded CV
   cvContent: text("cv_content"), // extracted text content from CV for searching
@@ -203,6 +204,8 @@ export const jobs = pgTable("jobs", {
   showSalary: boolean("show_salary").default(true), // האם להציג שכר
   showCompanyName: boolean("show_company_name").default(true), // האם להציג שם החברה
   landingPageActive: boolean("landing_page_active").default(true), // האם דף הנחיתה פעיל
+  landingViews: integer("landing_views").default(0), // מספר צפיות בדף הנחיתה
+  landingApplications: integer("landing_applications").default(0), // מספר הגשות מועמדות מדף הנחיתה
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
