@@ -99,6 +99,8 @@ export default function Candidates() {
     type: "candidate",
   });
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -163,9 +165,21 @@ export default function Candidates() {
   };
 
   const handleDeleteCandidate = (id: string) => {
-    if (confirm("האם אתה בטוח שברצונך למחוק את המועמד?")) {
-      deleteCandidate.mutate(id);
+    setCandidateToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCandidate = () => {
+    if (candidateToDelete) {
+      deleteCandidate.mutate(candidateToDelete);
+      setDeleteDialogOpen(false);
+      setCandidateToDelete(null);
     }
+  };
+
+  const cancelDeleteCandidate = () => {
+    setDeleteDialogOpen(false);
+    setCandidateToDelete(null);
   };
 
 
@@ -424,6 +438,34 @@ export default function Candidates() {
               )}
             </>
           )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">מחיקת מועמד</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              האם למחוק מועמד לצמיתות?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 justify-end mt-6">
+            <Button
+              variant="outline"
+              onClick={cancelDeleteCandidate}
+              className="px-6"
+            >
+              לא
+            </Button>
+            <Button
+              onClick={confirmDeleteCandidate}
+              className="bg-red-600 hover:bg-red-700 text-white px-6"
+              disabled={deleteCandidate.isPending}
+            >
+              {deleteCandidate.isPending ? "מוחק..." : "כן"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <EmailDialog
         isOpen={emailDialog.isOpen}
