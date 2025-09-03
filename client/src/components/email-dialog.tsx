@@ -482,7 +482,7 @@ export function EmailDialog({
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right space-y-2">
               <p>למועמד זה אין קובץ קורות חיים במערכת.</p>
-              {candidate?.manualCv && candidate.manualCv.trim() && (
+              {((candidate as any)?.manualCv || (candidate as any)?.cvContent) && (
                 <p className="text-sm bg-blue-50 p-3 rounded border-r-4 border-blue-400">
                   <strong>קיימת תמצית קורות חיים במערכת:</strong><br />
                   האם לשלוח את התמצית כקובץ מצורף?
@@ -510,7 +510,7 @@ export function EmailDialog({
               שלח פרטים בסיסיים בלבד
             </AlertDialogAction>
             
-            {candidate?.manualCv && candidate.manualCv.trim() && (
+            {((candidate as any)?.manualCv || (candidate as any)?.cvContent) && (
               <AlertDialogAction
                 onClick={handleConfirmSendWithSummary}
                 className="bg-blue-600 hover:bg-blue-700"

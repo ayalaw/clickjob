@@ -1044,6 +1044,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Convert string values to appropriate types
+      if (bodyData.age && typeof bodyData.age === 'string') {
+        const ageNum = parseInt(bodyData.age);
+        bodyData.age = isNaN(ageNum) ? null : ageNum;
+      }
+      
+      if (bodyData.experience && typeof bodyData.experience === 'string') {
+        const expNum = parseInt(bodyData.experience);
+        bodyData.experience = isNaN(expNum) ? null : expNum;
+      }
+      
+      if (bodyData.expectedSalary && typeof bodyData.expectedSalary === 'string') {
+        const salaryNum = parseInt(bodyData.expectedSalary);
+        bodyData.expectedSalary = isNaN(salaryNum) ? null : salaryNum;
+      }
+      
+      if (bodyData.rating && typeof bodyData.rating === 'string') {
+        const ratingNum = parseInt(bodyData.rating);
+        bodyData.rating = isNaN(ratingNum) ? null : ratingNum;
+      }
+      
       // Extract jobId if provided
       const jobId = bodyData.jobId;
       delete bodyData.jobId; // Remove from candidate data
@@ -2143,12 +2164,15 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         }
       }
       // If no CV file BUT user approved sending summary
-      else if (!candidate.cvPath && includeSummary && candidate.manualCv && candidate.manualCv.trim()) {
-        attachments.push({
-          filename: `תמצית_קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
-          content: Buffer.from(candidate.manualCv, 'utf8').toString('base64'),
-          contentType: 'text/plain; charset=utf-8'
-        });
+      else if (!candidate.cvPath && includeSummary && (candidate.manualCv || candidate.cvContent)) {
+        const summaryContent = candidate.manualCv || candidate.cvContent || '';
+        if (summaryContent.trim()) {
+          attachments.push({
+            filename: `תמצית_קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
+            content: Buffer.from(summaryContent, 'utf8').toString('base64'),
+            contentType: 'text/plain; charset=utf-8'
+          });
+        }
       }
 
       const emailData = {
@@ -2406,10 +2430,10 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             ${candidate.experience ? `<p><strong>ניסיון תעסוקתי:</strong> ${candidate.experience}</p>` : ''}
           </div>
 
-          ${candidate.manualCv ? `
+          ${(candidate.manualCv || candidate.cvContent) ? `
           <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #f59e0b;">
             <h3 style="color: #92400e; margin-top: 0;">תמצית קורות חיים</h3>
-            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #374151;">${candidate.manualCv}</div>
+            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #374151;">${candidate.manualCv || candidate.cvContent || ''}</div>
           </div>
           ` : ''}
 
@@ -2439,12 +2463,15 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         }
       }
       // If no CV file BUT user approved sending summary
-      else if (!candidate.cvPath && includeSummary && candidate.manualCv && candidate.manualCv.trim()) {
-        attachments.push({
-          filename: `תמצית_קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
-          content: Buffer.from(candidate.manualCv, 'utf8').toString('base64'),
-          contentType: 'text/plain; charset=utf-8'
-        });
+      else if (!candidate.cvPath && includeSummary && (candidate.manualCv || candidate.cvContent)) {
+        const summaryContent = candidate.manualCv || candidate.cvContent || '';
+        if (summaryContent.trim()) {
+          attachments.push({
+            filename: `תמצית_קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
+            content: Buffer.from(summaryContent, 'utf8').toString('base64'),
+            contentType: 'text/plain; charset=utf-8'
+          });
+        }
       }
 
       const emailData = {
