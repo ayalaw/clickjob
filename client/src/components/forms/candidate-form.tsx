@@ -721,8 +721,19 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                 {/* Manual CV Section */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="mb-3">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">קורות חיים ידני</h3>
-                    <p className="text-sm text-gray-600">כתוב קורות חיים ידנית במקרה שאין קובץ מעודכן</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">תמצית קורות חיים</h3>
+                    <p className="text-sm text-gray-600">
+                      {candidate?.manualCv && candidate.manualCv.includes('נוצרה אוטומטית') 
+                        ? "תמצית זו נוצרה אוטומטית מחילוץ נתוני הקובץ. ניתן לערוך ולעדכן לפי הצורך."
+                        : "הכנס תמצית קורות חיים ידנית במקרה שאין קובץ או שהחילוץ הוא לא מדויק"
+                      }
+                    </p>
+                    {candidate?.manualCv && candidate.manualCv.includes('נוצרה אוטומטית') && (
+                      <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 rounded-md">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-xs text-blue-700 font-medium">תמצית אוטומטית - נוצרה מהעלאת קורות החיים</span>
+                      </div>
+                    )}
                   </div>
                   <Textarea
                     value={candidate ? fieldValues.manualCv || '' : form.watch('manualCv') || ''}
