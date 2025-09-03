@@ -1054,41 +1054,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.file) {
         candidateData.cvPath = req.file.path;
         
-        // Extract text content from CV for search functionality
+        // Extract text content from CV for search functionality using the main extraction function
         try {
-          const fs = require('fs');
-          const { execSync } = require('child_process');
-          
-          const fileBuffer = fs.readFileSync(req.file.path);
-          let fileText = '';
-          
-          if (req.file.mimetype === 'application/pdf') {
-            try {
-              const stringsOutput = execSync(`strings "${req.file.path}"`, { encoding: 'utf8' });
-              const lines = stringsOutput.split('\n').filter((line: string) => 
-                line.trim().length > 2 && (
-                  /[\u0590-\u05FF]/.test(line) || // Hebrew characters
-                  /@/.test(line) || // Email
-                  /05\d/.test(line) // Mobile phone
-                )
-              );
-              fileText = lines.join(' ');
-            } catch (error) {
-              console.log('Error extracting PDF text for search:', error);
-            }
-          } else if (req.file.mimetype.includes('word')) {
-            try {
-              const mammoth = require('mammoth');
-              const result = await mammoth.extractRawText({ buffer: fileBuffer });
-              fileText = result.value;
-            } catch (error) {
-              console.log('Error extracting Word text for search:', error);
-            }
-          } else if (req.file.mimetype === 'text/plain') {
-            fileText = fileBuffer.toString('utf8');
-          }
-          
+          console.log(`🔍 מחלץ תוכן מקובץ CV: ${req.file.path}`);
+          const { extractTextFromCVFile } = await import('./storage');
+          const fileText = await extractTextFromCVFile(req.file.path);
           candidateData.cvContent = fileText;
+          console.log(`✅ חילוץ הושלם, ${fileText.length} תווים`);
         } catch (error) {
           console.log('Error processing CV file for search:', error);
         }

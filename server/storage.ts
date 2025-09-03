@@ -76,8 +76,8 @@ export interface SearchResult {
   extractedAt: Date;
 }
 
-// פונקציה לחילוץ טקסט מקובץ קורות חיים (PDF/DOCX)
-async function extractTextFromCVFile(cvPath: string): Promise<string> {
+// פונקציה לחילוץ טקסט מקובץ קורות חיים (PDF/DOCX/Images)
+export async function extractTextFromCVFile(cvPath: string): Promise<string> {
   try {
     // נתיב מלא לקובץ
     const fullPath = cvPath.startsWith('uploads/') ? cvPath : path.join('uploads', cvPath);
@@ -98,15 +98,25 @@ async function extractTextFromCVFile(cvPath: string): Promise<string> {
     if (isImage) {
       console.log(`🖼️ מחלץ טקסט מתמונה עם OCR: ${cvPath}`);
       try {
-        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'heb+eng', {
+        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'heb+eng+ara', {
           logger: m => {
             if (m.status === 'recognizing text') {
               console.log(`📝 OCR התקדמות: ${Math.round(m.progress * 100)}%`);
             }
           }
         });
-        console.log(`✅ OCR הושלם, ${text.length} תווים חולצו`);
-        return text || '';
+        // ניקוי הטקסט מרווחים מיותרים ושורות ריקות
+        const cleanedText = text.replace(/\s+/g, ' ').trim();
+        
+        console.log(`✅ OCR הושלם, ${cleanedText.length} תווים חולצו`);
+        console.log(`📄 דוגמה מהטקסט שחולץ: "${cleanedText.substring(0, 100)}..."`);
+        
+        // בדיקה שיש תוכן מינימלי
+        if (cleanedText.length < 10) {
+          console.log('⚠️ טקסט שחולץ קצר מדי, ייתכן שהתמונה לא ברורה');
+        }
+        
+        return cleanedText || '';
       } catch (ocrError) {
         console.error('שגיאה בחילוץ OCR:', ocrError);
         return '';
