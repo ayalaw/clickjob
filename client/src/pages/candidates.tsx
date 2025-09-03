@@ -52,6 +52,7 @@ export default function Candidates() {
       case 'interview': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'interview_scheduled': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
       case 'accepted': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
+      case 'new_application': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
@@ -82,6 +83,7 @@ export default function Candidates() {
       case 'interview': return 'ראיון';
       case 'interview_scheduled': return 'זומן לראיון';
       case 'accepted': return 'התקבל';
+      case 'new_application': return 'מועמדות חדשה';
       default: return status || 'לא הוגדר';
     }
   };
