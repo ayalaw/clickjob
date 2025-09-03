@@ -1705,17 +1705,6 @@ export default function CandidateDetail() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    <div className="flex flex-row-reverse justify-between items-center">
-                      <span className="text-base font-medium">מקור גיוס נוכחי:</span>
-                      <div className="w-48 p-2 bg-gray-50 rounded border text-base">
-                        {candidate.arrivalSource === 'landing_page' ? 'דף פרסום' :
-                         candidate.arrivalSource === 'email' ? 'מייל' :
-                         candidate.arrivalSource === 'manual' ? 'הכנסה ידנית' :
-                         candidate.arrivalSource === 'cv_upload' ? 'העלאת קורות חיים' :
-                         candidate.arrivalSource || 'לא צוין'}
-                      </div>
-                    </div>
 
                     {/* Notes Section */}
                     <div className="border-t pt-4 mt-4">
