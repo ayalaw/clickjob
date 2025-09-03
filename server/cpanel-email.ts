@@ -587,7 +587,13 @@ async function processCVEmailAttachment(imap: any, seqno: number, headers: any, 
                             filename.toLowerCase().includes('קורות') ||
                             filename.endsWith('.pdf') ||
                             filename.endsWith('.doc') ||
-                            filename.endsWith('.docx');
+                            filename.endsWith('.docx') ||
+                            filename.endsWith('.jpg') ||
+                            filename.endsWith('.jpeg') ||
+                            filename.endsWith('.png') ||
+                            filename.endsWith('.tiff') ||
+                            filename.endsWith('.bmp') ||
+                            attachment.contentType?.startsWith('image/');
                 
                 if (isCV && attachment.content) {
                   console.log(`💼 מעבד קובץ CV: ${filename}`);

@@ -1476,8 +1476,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📊 ציון איכות נתונים: ${qualityScore}/4`);
         console.log('📊 פירוט איכות:', dataQuality);
         
-        // בדיקה אם יש מספיק נתונים איכותיים ליצירת מועמד
-        const hasRequiredData = qualityScore >= 2 && dataQuality.hasValidName;
+        // ★ תמיד ניצור מועמד, גם עם שדות ריקים (כפי שביקש המשתמש)
+        const hasRequiredData = true; // תמיד ניצור מועמד
         
         if (hasRequiredData) {
           console.log('✅ יש מספיק נתונים ליצירת מועמד - מתחיל בדיקת כפולים');
