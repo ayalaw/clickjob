@@ -236,15 +236,6 @@ export default function UserManagement() {
     },
   });
 
-  // Debug: log permissions (remove after testing)
-  if (userWithRoles) {
-    console.log('User permissions debug:', { 
-      canManageUsers, 
-      canManageRoles, 
-      userRoles: userWithRoles?.userRoles?.map((ur: any) => ur.role.type),
-      isLoading: permissionsLoading
-    });
-  }
   
   if (!canManageUsers && !canManageRoles) {
     return (
@@ -578,13 +569,18 @@ export default function UserManagement() {
                         >
                           {userRole.role.name}
                         </Badge>
-                        {canManageRoles && userRole.role.type !== 'super_admin' && (
+                        {canManageRoles && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRemoveRole(user.id, userRole.role.id)}
+                            onClick={() => {
+                              if (window.confirm(`האם אתה בטוח שברצונך להסיר את התפקיד "${userRole.role.name}" מהמשתמש?`)) {
+                                handleRemoveRole(user.id, userRole.role.id);
+                              }
+                            }}
                             disabled={removeRoleMutation.isPending}
                             data-testid={`button-remove-role-${userRole.role.id}`}
+                            title="הסר תפקיד"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -764,6 +760,11 @@ function getPermissionDisplayName(permission: string): string {
     'view_clients': 'צפייה בלקוחות',
     'view_applications': 'צפייה בהגשות',
     'view_tasks': 'צפייה במשימות',
+    'view_cv_search': 'חיפוש בקורות חיים',
+    'view_calendar': 'יומן',
+    'view_interviews': 'ראיונות',
+    'view_emails': 'מערכת מיילים',
+    'view_reports': 'דוחות ואנליטיקה',
     'create_candidates': 'יצירת מועמדים',
     'edit_candidates': 'עריכת מועמדים',
     'delete_candidates': 'מחיקת מועמדים',
@@ -777,6 +778,7 @@ function getPermissionDisplayName(permission: string): string {
     'manage_tasks': 'ניהול משימות',
     'access_settings': 'גישה להגדרות',
     'manage_users': 'ניהול משתמשים',
+    'manage_email_settings': 'הגדרות מייל',
     
     // הרשאות תפריטים
     'export_data': 'ייצוא נתונים',
@@ -792,6 +794,19 @@ function getPermissionDisplayName(permission: string): string {
     'filter_component': 'רכיב סינון',
     'export_component': 'רכיב ייצוא',
     'stats_component': 'רכיב סטטיסטיקות',
+    
+    // הרשאות נוספות שיכולות להופיע
+    'read': 'קריאה',
+    'create': 'יצירה',
+    'update': 'עדכון',
+    'delete': 'מחיקה',
+    'manage': 'ניהול',
+    'users': 'משתמשים',
+    'candidates': 'מועמדים',
+    'jobs': 'משרות',
+    'clients': 'לקוחות',
+    'tasks': 'משימות',
+    'dashboard': 'לוח מחוונים',
   };
   
   return displayNames[permission] || permission;
