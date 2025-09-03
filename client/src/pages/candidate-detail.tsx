@@ -28,6 +28,7 @@ import {
   Car,
   Baby,
   Download,
+  Upload,
   Save,
   X,
   Clock,
@@ -610,6 +611,73 @@ export default function CandidateDetail() {
   const saveAllChanges = () => {
     // Use fieldValues instead of editValues
     updateMutation.mutate(fieldValues);
+  };
+
+  // Handle CV upload
+  const handleCvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("cv", file);
+
+      const uploadResult = await fetch("/api/candidates/upload-cv", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error("Failed to upload CV");
+      }
+
+      const result = await uploadResult.json();
+      
+      // Update candidate with new CV path
+      await updateMutation.mutateAsync({ cvPath: result.cvPath });
+      
+      toast({
+        title: "קורות חיים הועלו בהצלחה",
+        description: "הקובץ הועלה ונשמר במערכת",
+      });
+
+      // Clear the input
+      event.target.value = '';
+      
+    } catch (error) {
+      console.error('Error uploading CV:', error);
+      toast({
+        title: "שגיאה בהעלאת קורות חיים",
+        description: "לא ניתן להעלות את הקובץ. אנא נסה שוב.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle CV deletion
+  const handleCvDelete = async () => {
+    if (!window.confirm('האם אתה בטוח שברצונך למחוק את קובץ קורות החיים?')) {
+      return;
+    }
+
+    try {
+      // Update candidate to remove CV path
+      await updateMutation.mutateAsync({ cvPath: '' });
+      
+      toast({
+        title: "קובץ קורות החיים נמחק",
+        description: "הקובץ הוסר מהמערכת",
+      });
+      
+    } catch (error) {
+      console.error('Error deleting CV:', error);
+      toast({
+        title: "שגיאה במחיקת קורות חיים",
+        description: "לא ניתן למחוק את הקובץ. אנא נסה שוב.",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -1313,10 +1381,55 @@ export default function CandidateDetail() {
             <div className="flex-[2] min-w-0">
               <Card className="h-full">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    קורות חיים
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      קורות חיים
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      {candidate.cvPath && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/uploads/${candidate.cvPath?.replace('uploads/', '')}`, '_blank')}
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="w-4 h-4" />
+                            הורד
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCvDelete}
+                            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4" />
+                            מחק קובץ
+                          </Button>
+                        </>
+                      )}
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleCvUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                          asChild
+                        >
+                          <span>
+                            <Upload className="w-4 h-4" />
+                            {candidate.cvPath ? 'החלף קובץ' : 'העלה קובץ'}
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="h-[calc(100%-4rem)] overflow-hidden">
                   {candidate.cvPath ? (

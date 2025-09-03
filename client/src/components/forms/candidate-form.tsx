@@ -556,11 +556,15 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         createCandidate.mutate(candidateData);
       }
     } catch (error) {
-      toast({
-        title: "שגיאה בשמירה",
-        description: "אירעה שגיאה בשמירת המועמד",
-        variant: "destructive",
-      });
+      console.error('Error in onSubmit:', error);
+      // Only show error if it's not related to CV upload (which is optional)
+      if (error instanceof Error && !error.message.includes("Failed to upload CV")) {
+        toast({
+          title: "שגיאה בשמירה",
+          description: "אירעה שגיאה בשמירת המועמד",
+          variant: "destructive",
+        });
+      }
     }
   };
 
