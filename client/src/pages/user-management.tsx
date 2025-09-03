@@ -18,7 +18,7 @@ import { LoginDetailsPopup } from "@/components/login-details-popup";
 export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { canManageUsers, canManageRoles, allRoles, isLoading: permissionsLoading } = usePermissions();
+  const { canManageUsers, canManageRoles, allRoles, userWithRoles, isLoading: permissionsLoading } = usePermissions();
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
@@ -236,13 +236,15 @@ export default function UserManagement() {
     },
   });
 
-  // Debug: log permissions
-  console.log('User permissions debug:', { 
-    canManageUsers, 
-    canManageRoles, 
-    userRoles: userWithRoles?.userRoles?.map((ur: any) => ur.role.type),
-    isLoading: permissionsLoading
-  });
+  // Debug: log permissions (remove after testing)
+  if (userWithRoles) {
+    console.log('User permissions debug:', { 
+      canManageUsers, 
+      canManageRoles, 
+      userRoles: userWithRoles?.userRoles?.map((ur: any) => ur.role.type),
+      isLoading: permissionsLoading
+    });
+  }
   
   if (!canManageUsers && !canManageRoles) {
     return (
