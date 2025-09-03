@@ -84,7 +84,7 @@ const upload = multer({
 });
 
 interface AuthenticatedRequest extends Request {
-  user?: any; // The user object from Replit Auth middleware
+  user?: any; // The user object from local auth middleware
 }
 
 // רשימת ערים בישראל

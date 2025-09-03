@@ -1,39 +1,34 @@
 import Imap from 'imap';
-import nodemailer from 'nodemailer';
-import { storage } from './storage';
-import { insertCandidateSchema } from '../shared/schema';
-import fs from 'fs';
-import path from 'path';
 import { simpleParser } from 'mailparser';
+import { storage } from './storage';
 
-// cPanel Email Configuration - Load from environment variables and database
-let currentImapConfig: any = null;
-let currentSmtpConfig: any = null;
+// שירות מעקב מיילים שעובד **אך ורק דרך cPanel IMAP** - ללא שירותי מייל אחרים!
+let currentCpanelImapConfig: any = null;
+let isMonitoringActive = false;
 
-// Load cPanel configuration from database and environment
-async function loadCpanelConfig() {
+// טעינת הגדרות cPanel IMAP ממסד הנתונים
+async function loadCpanelImapConfig() {
   try {
-    // Load IMAP settings from database first
+    console.log('🔧 טוען הגדרות cPanel IMAP...');
+    
     const imapHost = await storage.getSystemSetting('INCOMING_EMAIL_HOST');
     const imapPort = await storage.getSystemSetting('INCOMING_EMAIL_PORT');
     const imapSecure = await storage.getSystemSetting('INCOMING_EMAIL_SECURE');
     const imapUser = await storage.getSystemSetting('INCOMING_EMAIL_USER');
     const imapPass = await storage.getSystemSetting('INCOMING_EMAIL_PASS');
 
-    // Load SMTP settings from database
-    const smtpHost = await storage.getSystemSetting('CPANEL_SMTP_HOST');
-    const smtpPort = await storage.getSystemSetting('CPANEL_SMTP_PORT');
-    const smtpSecure = await storage.getSystemSetting('CPANEL_SMTP_SECURE');
-    const smtpUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
-    const smtpPass = await storage.getSystemSetting('CPANEL_EMAIL_PASS');
+    // וידוא שכל ההגדרות קיימות
+    if (!imapHost?.value || !imapUser?.value || !imapPass?.value) {
+      console.warn('⚠️ הגדרות cPanel IMAP חסרות במסד הנתונים');
+      return false;
+    }
 
-    // Fallback to environment variables if database settings are not available
-    currentImapConfig = {
-      user: imapUser?.value || process.env.INCOMING_EMAIL_USER || '',
-      password: imapPass?.value || process.env.INCOMING_EMAIL_PASS || '',
-      host: imapHost?.value || process.env.INCOMING_EMAIL_HOST || '',
-      port: parseInt(imapPort?.value || process.env.INCOMING_EMAIL_PORT || '993'),
-      tls: (imapSecure?.value || process.env.INCOMING_EMAIL_SECURE) === 'true',
+    currentCpanelImapConfig = {
+      user: imapUser.value,
+      password: imapPass.value,
+      host: imapHost.value,
+      port: parseInt(imapPort?.value || '993'),
+      tls: (imapSecure?.value || 'true') === 'true',
       authTimeout: 30000,
       connTimeout: 30000,
       socketTimeout: 30000,
@@ -43,339 +38,236 @@ async function loadCpanelConfig() {
       }
     };
 
-    currentSmtpConfig = {
-      host: smtpHost?.value || process.env.CPANEL_SMTP_HOST || '',
-      port: parseInt(smtpPort?.value || process.env.CPANEL_SMTP_PORT || '587'),
-      secure: (smtpSecure?.value || process.env.CPANEL_SMTP_SECURE) === 'true',
-      auth: {
-        user: smtpUser?.value || process.env.CPANEL_EMAIL_USER || '',
-        pass: smtpPass?.value || process.env.CPANEL_EMAIL_PASS || ''
-      },
-      tls: { rejectUnauthorized: false }
-    };
-
-    console.log('✅ הגדרות cPanel נטענו בהצלחה');
+    console.log('✅ הגדרות cPanel IMAP נטענו בהצלחה');
     return true;
   } catch (error) {
-    console.error('❌ שגיאה בטעינת הגדרות cPanel:', error);
+    console.error('❌ שגיאה בטעינת הגדרות cPanel IMAP:', error);
     return false;
   }
 }
 
-// Test cPanel IMAP connection
+// בדיקת חיבור לcPanel IMAP
 export async function testCpanelImap(): Promise<boolean> {
-  console.log('🔄 בדיקת חיבור cPanel IMAP...');
+  console.log('🔄 בודק חיבור לcPanel IMAP...');
   
-  if (!currentImapConfig) {
-    await loadCpanelConfig();
-  }
-
-  if (!currentImapConfig.user || !currentImapConfig.password || !currentImapConfig.host) {
-    console.log('❌ הגדרות IMAP חסרות - נא להגדיר בקובץ .env או במסד הנתונים');
-    return false;
+  if (!currentCpanelImapConfig) {
+    const loaded = await loadCpanelImapConfig();
+    if (!loaded) return false;
   }
 
   return new Promise((resolve) => {
-    console.log(`📧 IMAP: ${currentImapConfig.user}@${currentImapConfig.host}:${currentImapConfig.port} (SSL: ${currentImapConfig.tls})`);
+    const imap = new Imap(currentCpanelImapConfig);
     
-    const imap = new Imap(currentImapConfig);
-    
+    const timeout = setTimeout(() => {
+      imap.destroy();
+      resolve(false);
+    }, 15000);
+
     imap.once('ready', () => {
-      console.log('✅ חיבור IMAP מוצלח');
+      clearTimeout(timeout);
+      console.log('✅ חיבור לcPanel IMAP הצליח');
       imap.end();
       resolve(true);
     });
 
-    imap.once('error', (err: any) => {
-      console.error('❌ שגיאת חיבור cPanel:', err.message);
+    imap.once('error', (err) => {
+      clearTimeout(timeout);
+      console.error('❌ שגיאה בחיבור לcPanel IMAP:', err.message);
       resolve(false);
-    });
-
-    imap.once('end', () => {
-      console.log('🔌 חיבור IMAP נסגר');
     });
 
     try {
       imap.connect();
     } catch (error) {
-      console.error('❌ שגיאה בחיבור IMAP:', error);
+      clearTimeout(timeout);
+      console.error('❌ שגיאה ביצירת חיבור לcPanel IMAP:', error);
       resolve(false);
     }
   });
 }
 
-// Test cPanel SMTP connection
-export async function testCpanelSmtp(): Promise<boolean> {
-  console.log('🔄 בדיקת חיבור cPanel SMTP...');
-  
-  if (!currentSmtpConfig) {
-    await loadCpanelConfig();
-  }
-
-  if (!currentSmtpConfig.auth.user || !currentSmtpConfig.auth.pass || !currentSmtpConfig.host) {
-    console.log('❌ הגדרות SMTP חסרות - נא להגדיר בקובץ .env או במסד הנתונים');
-    return false;
-  }
-
-  try {
-    const transporter = nodemailer.createTransporter(currentSmtpConfig);
-    await transporter.verify();
-    console.log('✅ חיבור SMTP מוצלח');
-    return true;
-  } catch (error) {
-    console.error('❌ שגיאת חיבור SMTP:', error);
-    return false;
-  }
-}
-
-// Monitor cPanel email for new candidates
-export async function startCpanelEmailMonitoring() {
-  console.log('🔄 מפעיל מעקב מיילים cPanel...');
-  
-  if (!currentImapConfig) {
-    await loadCpanelConfig();
-  }
-
-  if (!currentImapConfig.user || !currentImapConfig.password || !currentImapConfig.host) {
-    console.log('❌ לא ניתן להפעיל מעקב מיילים - הגדרות IMAP חסרות');
+// מעקב אחרי מיילים חדשים בcPanel
+export async function startCpanelEmailMonitoring(): Promise<void> {
+  if (isMonitoringActive) {
+    console.log('⚠️ מעקב מיילים cPanel כבר פעיל');
     return;
   }
 
-  // Check for new emails every 5 minutes
-  setInterval(async () => {
-    await checkForNewEmails();
-  }, 5 * 60 * 1000);
-
-  // Initial check
-  setTimeout(async () => {
-    await checkForNewEmails();
-  }, 10000); // Wait 10 seconds before first check
-}
-
-// Check for new emails
-async function checkForNewEmails() {
-  if (!currentImapConfig.user || !currentImapConfig.password) {
-    console.log('❌ Timeout בבדיקת מיילים');
-    return;
+  console.log('🚀 מפעיל מעקב מיילים cPanel');
+  
+  if (!currentCpanelImapConfig) {
+    const loaded = await loadCpanelImapConfig();
+    if (!loaded) {
+      console.error('❌ לא ניתן להפעיל מעקב - הגדרות cPanel IMAP לא תקינות');
+      return;
+    }
   }
 
-  const imap = new Imap(currentImapConfig);
-  
-  return new Promise<void>((resolve) => {
-    console.log('📧 בודק מיילים חדשים בcPanel...');
+  isMonitoringActive = true;
+  monitorCpanelEmails();
+}
+
+// פונקציה פנימית למעקב מיילים
+async function monitorCpanelEmails() {
+  const CHECK_INTERVAL = 60000; // בדיקה כל דקה
+
+  const checkEmails = async () => {
+    if (!isMonitoringActive) return;
+
+    try {
+      console.log('📧 בודק מיילים חדשים בcPanel...');
+      await processCpanelInbox();
+    } catch (error) {
+      console.error('❌ שגיאה בבדיקת מיילים cPanel:', error);
+    }
+
+    // קביעת הבדיקה הבאה
+    if (isMonitoringActive) {
+      setTimeout(checkEmails, CHECK_INTERVAL);
+    }
+  };
+
+  checkEmails();
+}
+
+// עיבוד תיבת הדואר של cPanel
+async function processCpanelInbox(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const imap = new Imap(currentCpanelImapConfig);
     
     const timeout = setTimeout(() => {
-      console.log('❌ Timeout בבדיקת מיילים');
       imap.destroy();
-      resolve();
-    }, 15000); // 15 second timeout
+      reject(new Error('Timeout בחיבור לcPanel'));
+    }, 20000);
 
     imap.once('ready', () => {
       clearTimeout(timeout);
+      
       imap.openBox('INBOX', false, (err, box) => {
         if (err) {
-          console.error('❌ שגיאה בפתיחת תיבת דואר:', err.message);
+          console.error('❌ שגיאה בפתיחת תיבת דואר cPanel:', err);
           imap.end();
-          resolve();
-          return;
+          return reject(err);
         }
 
-        // Search for unread emails
+        // חיפוש מיילים לא נקראים
         imap.search(['UNSEEN'], (err, results) => {
           if (err) {
-            console.error('❌ שגיאה בחיפוש מיילים:', err.message);
+            console.error('❌ שגיאה בחיפוש מיילים cPanel:', err);
             imap.end();
-            resolve();
-            return;
+            return reject(err);
           }
 
-          if (results.length === 0) {
-            console.log('📭 אין מיילים חדשים');
+          if (!results || results.length === 0) {
+            console.log('📭 אין מיילים חדשים בcPanel');
             imap.end();
-            resolve();
-            return;
+            return resolve();
           }
 
-          console.log(`📬 נמצאו ${results.length} מיילים חדשים`);
-          processNewEmails(imap, results).then(() => {
+          console.log(`📬 נמצאו ${results.length} מיילים חדשים בcPanel`);
+          
+          // עיבוד כל מייל
+          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
+          let processedCount = 0;
+
+          fetch.on('message', (msg, seqno) => {
+            let buffer = Buffer.alloc(0);
+            
+            msg.on('body', (stream) => {
+              stream.on('data', (chunk) => {
+                buffer = Buffer.concat([buffer, chunk]);
+              });
+            });
+
+            msg.once('end', async () => {
+              try {
+                const parsed = await simpleParser(buffer);
+                await processCpanelEmail(parsed);
+                processedCount++;
+                
+                if (processedCount === results.length) {
+                  imap.end();
+                  resolve();
+                }
+              } catch (error) {
+                console.error('❌ שגיאה בעיבוד מייל cPanel:', error);
+                processedCount++;
+                
+                if (processedCount === results.length) {
+                  imap.end();
+                  resolve();
+                }
+              }
+            });
+          });
+
+          fetch.once('error', (err) => {
+            console.error('❌ שגיאה בקריאת מיילים מcPanel:', err);
             imap.end();
-            resolve();
+            reject(err);
           });
         });
       });
     });
 
-    imap.once('error', (err: any) => {
+    imap.once('error', (err) => {
       clearTimeout(timeout);
       console.error('❌ שגיאת חיבור cPanel:', err.message);
-      resolve();
+      reject(err);
     });
 
-    imap.once('end', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
-
-    try {
-      imap.connect();
-    } catch (error) {
-      clearTimeout(timeout);
-      console.error('❌ שגיאה בחיבור למיילים:', error);
-      resolve();
-    }
+    imap.connect();
   });
 }
 
-// Process new emails and extract CV data
-async function processNewEmails(imap: any, results: number[]) {
-  return new Promise<void>((resolve) => {
-    const fetch = imap.fetch(results, {
-      bodies: '',
-      markSeen: true
-    });
-
-    fetch.on('message', (msg: any, seqno: number) => {
-      console.log(`📧 מעבד מייל #${seqno}`);
-      
-      msg.on('body', (stream: any) => {
-        simpleParser(stream, async (err, parsed) => {
-          if (err) {
-            console.error('❌ שגיאה בפענוח מייל:', err);
-            return;
-          }
-
-          await processEmailForCandidate(parsed);
-        });
-      });
-    });
-
-    fetch.once('error', (err: any) => {
-      console.error('❌ שגיאה בעיבוד מיילים:', err);
-      resolve();
-    });
-
-    fetch.once('end', () => {
-      console.log('✅ סיום עיבוד מיילים');
-      resolve();
-    });
-  });
-}
-
-// Process email and extract candidate data
-async function processEmailForCandidate(email: any) {
+// עיבוד מייל בודד מcPanel
+async function processCpanelEmail(parsed: any): Promise<void> {
   try {
-    console.log(`📧 מעבד מייל מ: ${email.from?.text || 'לא ידוע'}`);
-    console.log(`📧 נושא: ${email.subject || 'ללא נושא'}`);
-
-    // Extract sender email
-    const senderEmail = email.from?.value?.[0]?.address || email.from?.text?.match(/<(.+?)>/)?.[1] || '';
+    const senderEmail = parsed.from?.value?.[0]?.address || 'לא זוהה';
+    const subject = parsed.subject || 'ללא נושא';
     
-    if (!senderEmail) {
-      console.log('❌ לא ניתן לחלץ כתובת מייל מהשולח');
-      return;
-    }
+    console.log(`📧 מעבד מייל חדש מcPanel: ${senderEmail} - ${subject}`);
 
-    // Check if candidate already exists
-    const existingCandidate = await storage.getCandidateByEmail(senderEmail);
-    if (existingCandidate) {
-      console.log(`ℹ️ מועמד כבר קיים במערכת: ${senderEmail}`);
-      return;
-    }
+    // חיפוש קובץ CV במייל
+    if (parsed.attachments && parsed.attachments.length > 0) {
+      for (const attachment of parsed.attachments) {
+        const filename = attachment.filename?.toLowerCase() || '';
+        
+        // בדיקה שזה קובץ CV
+        if (filename.includes('cv') || filename.includes('resume') || 
+            filename.endsWith('.pdf') || filename.endsWith('.doc') || filename.endsWith('.docx')) {
+          
+          console.log(`📎 נמצא קובץ CV: ${attachment.filename}`);
+          
+          // שמירת המועמד במסד הנתונים
+          await storage.createCandidate({
+            name: extractNameFromEmail(senderEmail),
+            email: senderEmail,
+            phone: '',
+            experience: '',
+            skills: '',
+            education: '',
+            notes: `נוצר אוטומטית ממייל שהתקבל ב-cPanel\nנושא: ${subject}\nקובץ CV: ${attachment.filename}`
+          });
 
-    // Create candidate from email data
-    const candidateData = {
-      firstName: email.from?.value?.[0]?.name?.split(' ')[0] || 'לא ידוע',
-      lastName: email.from?.value?.[0]?.name?.split(' ').slice(1).join(' ') || '',
-      email: senderEmail,
-      phone: extractPhoneFromEmail(email.text || ''),
-      source: 'מייל נכנס',
-      notes: `מייל נוסף ב-${new Date().toLocaleDateString('he-IL')}\nנושא: ${email.subject}\n\n${email.text || ''}`,
-      status: 'חדש'
-    };
-
-    // Process attachments for CV files
-    if (email.attachments && email.attachments.length > 0) {
-      for (const attachment of email.attachments) {
-        if (isCVFile(attachment.filename)) {
-          const cvPath = await saveAttachment(attachment, senderEmail);
-          if (cvPath) {
-            candidateData.cvFile = cvPath;
-            console.log(`💾 קובץ CV נשמר: ${cvPath}`);
-          }
+          console.log(`✅ מועמד חדש נוסף מcPanel: ${senderEmail}`);
+          break;
         }
       }
     }
-
-    // Create candidate
-    const candidate = await storage.createCandidate(candidateData);
-    console.log(`✅ נוצר מועמד חדש: ${candidate.firstName} ${candidate.lastName} (${candidate.email})`);
-
   } catch (error) {
-    console.error('❌ שגיאה בעיבוד מועמד ממייל:', error);
+    console.error('❌ שגיאה בעיבוד מייל cPanel:', error);
   }
 }
 
-// Helper functions
-function extractPhoneFromEmail(text: string): string {
-  const phoneRegex = /(\+972|0)[\s-]?[5-9]\d{7,8}|\d{2,3}[\s-]?\d{7}/g;
-  const match = text.match(phoneRegex);
-  return match ? match[0].replace(/[\s-]/g, '') : '';
+// חילוץ שם מכתובת מייל
+function extractNameFromEmail(email: string): string {
+  const namePart = email.split('@')[0];
+  return namePart.replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-function isCVFile(filename: string): boolean {
-  if (!filename) return false;
-  const ext = path.extname(filename).toLowerCase();
-  return ['.pdf', '.doc', '.docx'].includes(ext);
+// עצירת מעקב מיילים
+export function stopCpanelEmailMonitoring(): void {
+  console.log('🛑 עוצר מעקב מיילים cPanel');
+  isMonitoringActive = false;
 }
-
-async function saveAttachment(attachment: any, email: string): Promise<string | null> {
-  try {
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const timestamp = Date.now();
-    const cleanEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
-    const ext = path.extname(attachment.filename);
-    const filename = `cv_${cleanEmail}_${timestamp}${ext}`;
-    const savedPath = path.join(uploadsDir, filename);
-    
-    fs.writeFileSync(savedPath, attachment.content);
-    return filename; // Return relative path
-  } catch (error) {
-    console.error('❌ שגיאה בשמירת קובץ:', error);
-    return null;
-  }
-}
-
-// Export reload function
-export async function reloadCpanelConfig() {
-  console.log('🔄 רענון הגדרות cPanel...');
-  const success = await loadCpanelConfig();
-  if (success) {
-    console.log('✅ הגדרות cPanel עודכנו עם הפרטים הנכונים');
-  }
-  return success;
-}
-
-// Test all cPanel functionality
-export async function testAllCpanelEmail() {
-  console.log('🧪 בדיקה מלאה של מערכת cPanel...');
-  
-  const imapResult = await testCpanelImap();
-  const smtpResult = await testCpanelSmtp();
-  
-  if (imapResult && smtpResult) {
-    console.log('✅ כל מערכות cPanel פועלות תקין');
-    // Start monitoring after successful test
-    startCpanelEmailMonitoring();
-  } else {
-    console.log('❌ יש בעיות במערכת cPanel - נא לבדוק הגדרות');
-  }
-  
-  return imapResult && smtpResult;
-}
-
-// Initialize
-loadCpanelConfig();
