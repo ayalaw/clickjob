@@ -236,11 +236,14 @@ export default function UserManagement() {
     },
   });
 
-  // דיבוג זמני
-  console.log('Debug User Management:', { 
+  // דיבוג מפורט
+  console.log('🔍 User Management Debug:', { 
     canManageUsers, 
     canManageRoles, 
-    userRoles: userWithRoles?.userRoles?.map(ur => ur.role.type) 
+    userRoles: userWithRoles?.userRoles?.map(ur => ur.role.type),
+    allUsers: users?.length,
+    allRoles: allRoles?.length,
+    isLoading: permissionsLoading
   });
   
   if (!canManageUsers && !canManageRoles) {
