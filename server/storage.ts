@@ -61,6 +61,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
+import Tesseract from 'tesseract.js';
 
 // CV Search types
 export interface SearchResult {
@@ -88,11 +89,29 @@ async function extractTextFromCVFile(cvPath: string): Promise<string> {
 
     const fileBuffer = fs.readFileSync(fullPath);
     
-    // זיהוי סוג הקובץ לפי ההמצאות
+    // זיהוי סוג הקובץ לפי ההמצאות וסיומת
     const isPDF = fileBuffer.length >= 4 && fileBuffer.toString('ascii', 0, 4) === '%PDF';
     const isDOCX = fileBuffer.length >= 2 && fileBuffer.toString('ascii', 0, 2) === 'PK';
+    const fileExt = path.extname(fullPath).toLowerCase();
+    const isImage = ['.jpg', '.jpeg', '.png', '.tiff', '.bmp'].includes(fileExt);
     
-    if (isDOCX) {
+    if (isImage) {
+      console.log(`🖼️ מחלץ טקסט מתמונה עם OCR: ${cvPath}`);
+      try {
+        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'heb+eng', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              console.log(`📝 OCR התקדמות: ${Math.round(m.progress * 100)}%`);
+            }
+          }
+        });
+        console.log(`✅ OCR הושלם, ${text.length} תווים חולצו`);
+        return text || '';
+      } catch (ocrError) {
+        console.error('שגיאה בחילוץ OCR:', ocrError);
+        return '';
+      }
+    } else if (isDOCX) {
       console.log(`📄 מחלץ טקסט מ-DOCX: ${cvPath}`);
       const result = await mammoth.extractRawText({ buffer: fileBuffer });
       return result.value || '';

@@ -47,18 +47,23 @@ const upload = multer({
       'application/msword', 
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
       'text/plain',
-      'application/octet-stream' // Allow octet-stream for files without proper mime type
+      'application/octet-stream', // Allow octet-stream for files without proper mime type
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/tiff',
+      'image/bmp'
     ];
     
     // Also check file extension if mime type is not recognized
     const fileExt = file.originalname.toLowerCase();
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt'];
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.tiff', '.bmp'];
     const hasAllowedExtension = allowedExtensions.some(ext => fileExt.endsWith(ext));
     
     if (allowedTypes.includes(file.mimetype) || hasAllowedExtension) {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF, DOC, and text files are allowed'));
+      cb(new Error('Only PDF, DOC, text, and image files are allowed'));
     }
   },
   limits: {
@@ -3982,6 +3987,14 @@ ${recommendation}
         mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       } else if (ext === 'doc') {
         mimeType = 'application/msword';
+      } else if (ext === 'jpg' || ext === 'jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (ext === 'png') {
+        mimeType = 'image/png';
+      } else if (ext === 'tiff') {
+        mimeType = 'image/tiff';
+      } else if (ext === 'bmp') {
+        mimeType = 'image/bmp';
       }
       
       res.setHeader('Content-Type', mimeType);
