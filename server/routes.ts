@@ -28,6 +28,17 @@ import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from '
 import { generateSecurePassword } from './passwordUtils';
 import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email';
 import nodemailer from 'nodemailer';
+import { 
+  hasPermission, 
+  getUserPermissions, 
+  canAccessPage, 
+  canUseMenu, 
+  canViewComponent,
+  PAGE_PERMISSIONS,
+  MENU_PERMISSIONS,
+  COMPONENT_PERMISSIONS,
+  ROLE_PERMISSIONS
+} from './detailedPermissions';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -4126,6 +4137,80 @@ ${recommendation}
     } catch (error) {
       console.error('Download CV error:', error);
       res.status(500).json({ error: 'Failed to download CV file' });
+    }
+  });
+
+  // API להרשאות מפורטות - מערכת הרשאות חדשה
+  app.get('/api/permissions/detailed/:userId?', isAuthenticated, async (req, res) => {
+    try {
+      const sessionUser = req.user as any;
+      const requestingUserId = sessionUser.claims.sub;
+      const targetUserId = req.params.userId || requestingUserId;
+      
+      // משתמשים יכולים לראות רק את ההרשאות שלהם, חוץ מאדמינים
+      if (targetUserId !== requestingUserId) {
+        const hasAdminRole = await storage.hasRole(requestingUserId, 'admin') || 
+                            await storage.hasRole(requestingUserId, 'super_admin');
+        if (!hasAdminRole) {
+          return res.status(403).json({ message: "אין הרשאה לצפייה בהרשאות של משתמשים אחרים" });
+        }
+      }
+      
+      // קבל תפקידי המשתמש
+      const userWithRoles = await storage.getUserWithRoles(targetUserId);
+      if (!userWithRoles) {
+        return res.status(404).json({ message: "משתמש לא נמצא" });
+      }
+      
+      const roleTypes = userWithRoles.userRoles.map(ur => ur.role.type);
+      
+      // בנה אובייקט הרשאות מפורט
+      const detailedPermissions = {
+        pages: [] as string[],
+        menus: [] as string[],
+        components: [] as string[],
+        roleTypes,
+        canViewClientNames: hasPermission(roleTypes, MENU_PERMISSIONS.VIEW_CLIENT_NAMES),
+        allowedJobIds: [] as string[]
+      };
+      
+      // אסוף הרשאות מכל התפקידים
+      for (const roleType of roleTypes) {
+        const rolePermissions = ROLE_PERMISSIONS[roleType as keyof typeof ROLE_PERMISSIONS];
+        if (rolePermissions) {
+          rolePermissions.forEach(permission => {
+            // סווג את ההרשאה לפי סוג
+            if (Object.values(PAGE_PERMISSIONS).includes(permission as any)) {
+              if (!detailedPermissions.pages.includes(permission)) {
+                detailedPermissions.pages.push(permission);
+              }
+            } else if (Object.values(MENU_PERMISSIONS).includes(permission as any)) {
+              if (!detailedPermissions.menus.includes(permission)) {
+                detailedPermissions.menus.push(permission);
+              }
+            } else if (Object.values(COMPONENT_PERMISSIONS).includes(permission as any)) {
+              if (!detailedPermissions.components.includes(permission)) {
+                detailedPermissions.components.push(permission);
+              }
+            }
+          });
+        }
+      }
+      
+      // אם המשתמש הוא job_viewer, קבל את רשימת המשרות המותרות
+      const jobViewerRole = userWithRoles.userRoles.find(ur => ur.role.type === 'job_viewer');
+      if (jobViewerRole && jobViewerRole.allowedJobIds) {
+        try {
+          detailedPermissions.allowedJobIds = JSON.parse(jobViewerRole.allowedJobIds);
+        } catch (e) {
+          console.error('שגיאה בפענוח רשימת משרות מותרות:', e);
+        }
+      }
+      
+      res.json(detailedPermissions);
+    } catch (error) {
+      console.error('שגיאה בקבלת הרשאות מפורטות:', error);
+      res.status(500).json({ message: 'שגיאה בקבלת הרשאות מפורטות' });
     }
   });
 

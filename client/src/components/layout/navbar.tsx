@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, Building2, Briefcase, Mail, BarChart3, Settings
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useDetailedPermissions } from "@/hooks/useDetailedPermissions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ export default function Navbar() {
   const [location] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { canManageUsers } = usePermissions();
+  const { getAllowedNavigation, canViewComponent } = useDetailedPermissions();
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
@@ -42,8 +44,26 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8 space-x-reverse">
-            {navigation.map((item) => {
-              const Icon = item.icon;
+            {getAllowedNavigation().map((item) => {
+              // ממפה אייקונים לפי שם
+              const getIcon = (iconName: string) => {
+                switch (iconName) {
+                  case 'LayoutDashboard': return LayoutDashboard;
+                  case 'Users': return Users;
+                  case 'Search': return Search;
+                  case 'Calendar': return Calendar;
+                  case 'Building2': return Building2;
+                  case 'Briefcase': return Briefcase;
+                  case 'UserCheck': return UserCheck;
+                  case 'Mail': return Mail;
+                  case 'Settings': return Settings;
+                  case 'BarChart3': return BarChart3;
+                  case 'Shield': return Shield;
+                  default: return Settings;
+                }
+              };
+              
+              const Icon = getIcon(item.icon);
               const isActive = location === item.href;
               
               return (
