@@ -2390,10 +2390,10 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         </div>
       `;
       
-      // Prepare attachments - CV file or manual CV as text file
+      // Prepare attachments - CV file AND/OR manual CV as text file
       const attachments = [];
       
-      // First try to attach actual CV file
+      // Attach actual CV file if exists
       if (candidate.cvPath) {
         const cvPath = candidate.cvPath.startsWith('uploads/') ? candidate.cvPath : `uploads/${candidate.cvPath}`;
         if (fs.existsSync(cvPath)) {
@@ -2409,10 +2409,11 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         }
       }
       
-      // If no CV file but has manual CV, attach as text file
-      else if (candidate.manualCv && candidate.manualCv.trim()) {
+      // ALWAYS attach manual CV as text file if it exists (as addition OR replacement)
+      if (candidate.manualCv && candidate.manualCv.trim()) {
+        const summaryTitle = candidate.cvPath ? 'תמצית_נוספת' : 'תמצית_קורות_חיים';
         attachments.push({
-          filename: `קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
+          filename: `${summaryTitle}_${candidate.firstName}_${candidate.lastName}.txt`,
           content: Buffer.from(candidate.manualCv, 'utf8').toString('base64'),
           contentType: 'text/plain; charset=utf-8'
         });
