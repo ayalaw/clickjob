@@ -95,6 +95,7 @@ const formSchema = z.object({
   notes: z.string().optional(),
   tags: z.string().optional(),
   recruitmentSource: z.string().optional(),
+  manualCv: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -192,6 +193,7 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
       notes: candidate?.notes || "",
       tags: Array.isArray(candidate?.tags) ? candidate.tags.join(', ') : candidate?.tags || "",
       recruitmentSource: candidate?.recruitmentSource || "",
+      manualCv: candidate?.manualCv || "",
     },
   });
 
@@ -289,7 +291,8 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
         rating: candidate.rating || '',
         notes: candidate.notes || '',
         tags: candidate.tags || '',
-        recruitmentSource: candidate.recruitmentSource || ''
+        recruitmentSource: candidate.recruitmentSource || '',
+        manualCv: candidate.manualCv || ''
       });
     }
   }, [candidate]);
@@ -714,6 +717,27 @@ export default function CandidateForm({ candidate, onSuccess }: CandidateFormPro
                     </div>
                   </div>
                 )}
+                
+                {/* Manual CV Section */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="mb-3">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">קורות חיים ידני</h3>
+                    <p className="text-sm text-gray-600">כתוב קורות חיים ידנית במקרה שאין קובץ מעודכן</p>
+                  </div>
+                  <Textarea
+                    value={candidate ? fieldValues.manualCv || '' : form.watch('manualCv') || ''}
+                    onChange={(e) => {
+                      if (candidate) {
+                        updateFieldValue('manualCv', e.target.value);
+                      } else {
+                        form.setValue('manualCv', e.target.value);
+                      }
+                    }}
+                    placeholder="הכנס כאן קורות חיים ידני... כולל השכלה, ניסיון תעסוקתי, כישורים וכל מידע רלוונטי אחר"
+                    className="min-h-[150px] text-sm"
+                    rows={8}
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>

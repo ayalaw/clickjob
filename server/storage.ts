@@ -613,6 +613,7 @@ export class DatabaseStorage implements IStorage {
           profession: candidates.profession,
           cvContent: candidates.cvContent,
           cvPath: candidates.cvPath,
+          manualCv: candidates.manualCv,
           notes: candidates.notes,
           extractedAt: candidates.createdAt,
         })
@@ -634,6 +635,11 @@ export class DatabaseStorage implements IStorage {
         // אם יש תוכן קורות חיים, הוסף אותו
         if (candidate.cvContent) {
           candidateText += ' ' + candidate.cvContent;
+        }
+        
+        // אם יש קורות חיים ידני, הוסף אותם
+        if (candidate.manualCv) {
+          candidateText += ' ' + candidate.manualCv;
         }
         
         // אם יש קובץ קורות חיים אבל אין תוכן חולץ, נחלץ עכשיו

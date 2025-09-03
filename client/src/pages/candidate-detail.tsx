@@ -1358,6 +1358,20 @@ export default function CandidateDetail() {
                       </div>
                     </div>
                   )}
+                  
+                  {/* Manual CV Section */}
+                  {candidate.manualCv && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="mb-3">
+                        <h3 className="text-lg font-medium text-gray-900">קורות חיים ידני</h3>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                          {candidate.manualCv}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

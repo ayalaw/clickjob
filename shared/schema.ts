@@ -131,6 +131,7 @@ export const candidates = pgTable("candidates", {
   expectedSalary: integer("expected_salary"),
   cvPath: varchar("cv_path"), // file path for uploaded CV
   cvContent: text("cv_content"), // extracted text content from CV for searching
+  manualCv: text("manual_cv"), // קורות חיים ידני שנכתב במערכת
   status: text("status").default('pending'),
   rating: integer("rating"), // 1-5 rating
   notes: text("notes"),
