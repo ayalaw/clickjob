@@ -1922,8 +1922,8 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         client: job.client ? {
           id: job.client.id,
           companyName: job.client.companyName,
-          contactEmail: job.client.contactEmail,
-          contactPhone: job.client.contactPhone,
+          contactEmail: job.client.email,
+          contactPhone: job.client.phone,
           website: job.client.website
         } : null
       };
@@ -2408,7 +2408,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             taskId: task.id,
             taskTitle: task.title,
             taskType: task.type,
-            completedBy: req.user?.claims?.sub,
+            completedBy: req.user?.id || 'unknown',
             timestamp: new Date().toISOString()
           }
         });
@@ -2498,7 +2498,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           status: 'sent',
           sentAt: new Date(),
           candidateId,
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
         });
         
         // Add event for sending candidate profile to employer
@@ -2510,7 +2510,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             recipient: to,
             cc: cc,
             notes: notes,
-            sentBy: req.user.claims.sub,
+            sentBy: req.user.id,
             timestamp: new Date().toISOString()
           }
         });
@@ -2529,7 +2529,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           isHtml: true,
           status: 'failed',
           candidateId,
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
           errorMessage: result.error,
         });
         
@@ -2571,7 +2571,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           status: 'sent',
           sentAt: new Date(),
           candidateId,
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
         });
         
         // Add event for interview invitation
@@ -2603,7 +2603,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           isHtml: true,
           status: 'failed',
           candidateId,
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
           errorMessage: result.error,
         });
         
@@ -2649,7 +2649,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           isHtml: true,
           status: 'sent',
           sentAt: new Date(),
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
         });
         
         // Add events for each candidate in the shortlist
@@ -2663,7 +2663,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
               cc: cc,
               jobTitle: jobTitle,
               shortlistCount: validCandidates.length,
-              sentBy: req.user.claims.sub,
+              sentBy: req.user.id,
               timestamp: new Date().toISOString()
             }
           });
@@ -2682,7 +2682,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           body: template.html,
           isHtml: true,
           status: 'failed',
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
           errorMessage: result.error,
         });
         
@@ -2794,7 +2794,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           status: 'sent',
           sentAt: new Date(),
           candidateId,
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
         });
         
         // Add event for candidate sent to employer
@@ -2821,7 +2821,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           isHtml: true,
           status: 'failed',
           candidateId,
-          sentBy: req.user.claims.sub,
+          sentBy: req.user.id,
           errorMessage: result.error,
         });
         
