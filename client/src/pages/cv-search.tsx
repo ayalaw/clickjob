@@ -555,33 +555,38 @@ export default function CVSearchPage() {
                 />
               </ScrollArea>
             ) : (
-              <div className="h-96 w-full border rounded-md bg-white dark:bg-gray-800">
-                {/* PDF/Document viewer like in candidate card */}
+              <div className="h-96 w-full border rounded-md bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                {/* Direct PDF viewer using object with proper fallback */}
                 <object
-                  data={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
+                  data={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv#view=FitH&toolbar=0&navpanes=0`}
                   type="application/pdf"
-                  className="w-full h-full rounded"
+                  className="w-full h-full"
                   style={{ minHeight: '24rem' }}
                 >
+                  {/* If object fails, try iframe */}
                   <iframe
-                    src={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
-                    className="w-full h-full rounded border-none"
+                    src={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv#view=FitH&toolbar=0&navpanes=0`}
+                    className="w-full h-full border-none"
                     title="קובץ קורות חיים מקורי"
-                  >
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                      <div className="text-center">
-                        <div className="text-4xl mb-4">📄</div>
-                        <p>לא ניתן להציג את הקובץ בדפדפן</p>
-                        <a 
-                          href={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
-                          target="_blank"
-                          className="text-blue-600 hover:underline mt-2 inline-block"
-                        >
-                          לחץ כאן להורדה
-                        </a>
-                      </div>
+                    style={{ minHeight: '24rem' }}
+                  />
+                  {/* If iframe also fails, show download option */}
+                  <div className="flex items-center justify-center h-full text-gray-600">
+                    <div className="text-center p-8">
+                      <div className="text-6xl mb-4">📄</div>
+                      <h3 className="text-lg font-medium mb-2">קובץ קורות החיים</h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        הדפדפן לא תומך בהצגת הקובץ במסך זה
+                      </p>
+                      <a 
+                        href={`/api/candidates/${selectedCandidateForCV.candidateId}/download-cv`}
+                        target="_blank"
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block font-medium"
+                      >
+                        📥 הורד וצפה בקובץ
+                      </a>
                     </div>
-                  </iframe>
+                  </div>
                 </object>
               </div>
             )}

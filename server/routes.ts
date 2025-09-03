@@ -3972,9 +3972,21 @@ ${recommendation}
       const extension = filePath.split('.').pop() || 'pdf';
       const fileName = `CV_${safeId}_${timestamp}.${extension}`;
       
-      // Set headers for inline viewing
-      res.setHeader('Content-Type', extension.toLowerCase() === 'pdf' ? 'application/pdf' : 'application/octet-stream');
+      // Set proper MIME type and headers for inline viewing
+      let mimeType = 'application/octet-stream';
+      const ext = extension.toLowerCase();
+      
+      if (ext === 'pdf') {
+        mimeType = 'application/pdf';
+      } else if (ext === 'docx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      } else if (ext === 'doc') {
+        mimeType = 'application/msword';
+      }
+      
+      res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      res.setHeader('Access-Control-Allow-Origin', '*');
       res.sendFile(path.resolve(fullPath));
     } catch (error) {
       console.error('Download CV error:', error);
