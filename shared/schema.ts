@@ -604,4 +604,5 @@ export type EnrichedCandidate = Candidate & {
   lastReferralDate?: Date | null;
   lastStatusChange?: Date | null;
   lastStatusDescription?: string | null;
+  creatorUsername?: string | null;
 };

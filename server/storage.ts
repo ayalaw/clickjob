@@ -499,7 +499,8 @@ export class DatabaseStorage implements IStorage {
           recruitmentSource: candidate.recruitmentSource || null,
           lastReferralDate: latestReferralEvent[0]?.createdAt || null,
           lastStatusChange: latestStatusEvent[0]?.createdAt || null,
-          lastStatusDescription: latestStatusEvent[0]?.description || null
+          lastStatusDescription: latestStatusEvent[0]?.description || null,
+          creatorUsername: null
         };
       })
     );
