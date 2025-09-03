@@ -1963,7 +1963,8 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             firstName,
             lastName,
             phone,
-            status: 'new_application'
+            status: 'new_application',
+            recruitmentSource: 'דף פרסום'
           });
         } else {
           // Create new candidate
@@ -1973,7 +1974,8 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             email,
             phone,
             status: 'new_application',
-            source: 'landing_page'
+            source: 'landing_page',
+            recruitmentSource: 'דף פרסום'
           });
         }
       } catch (error) {
