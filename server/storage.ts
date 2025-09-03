@@ -375,6 +375,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async assignRole(userId: string, roleId: string): Promise<void> {
+    await db.insert(userRoles).values({
+      userId,
+      roleId,
+      assignedAt: new Date(),
+    });
+  }
+
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
   }
