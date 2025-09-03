@@ -9,7 +9,8 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware";
 import { 
   insertCandidateSchema, 
-  insertClientSchema, 
+  insertClientSchema,
+  insertClientContactSchema,
   insertJobSchema, 
   insertJobApplicationSchema, 
   insertTaskSchema, 
@@ -1821,6 +1822,85 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
     }
   });
 
+  // Client with contacts route
+  app.get('/api/clients/:id/with-contacts', isAuthenticated, async (req, res) => {
+    try {
+      const client = await storage.getClientWithContacts(req.params.id);
+      if (!client) {
+        return res.status(404).json({ message: "לקוח לא נמצא" });
+      }
+      res.json(client);
+    } catch (error) {
+      console.error("Error fetching client with contacts:", error);
+      res.status(500).json({ message: "שגיאה בטעינת לקוח עם אנשי קשר" });
+    }
+  });
+
+  // Client contacts routes
+  app.get('/api/clients/:clientId/contacts', isAuthenticated, async (req, res) => {
+    try {
+      const contacts = await storage.getClientContacts(req.params.clientId);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching client contacts:", error);
+      res.status(500).json({ message: "שגיאה בטעינת אנשי קשר" });
+    }
+  });
+
+  app.get('/api/client-contacts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const contact = await storage.getClientContact(req.params.id);
+      if (!contact) {
+        return res.status(404).json({ message: "איש קשר לא נמצא" });
+      }
+      res.json(contact);
+    } catch (error) {
+      console.error("Error fetching client contact:", error);
+      res.status(500).json({ message: "שגיאה בטעינת איש קשר" });
+    }
+  });
+
+  app.post('/api/clients/:clientId/contacts', isAuthenticated, async (req, res) => {
+    try {
+      const contactData = insertClientContactSchema.parse({
+        ...req.body,
+        clientId: req.params.clientId
+      });
+      const contact = await storage.createClientContact(contactData);
+      res.status(201).json(contact);
+    } catch (error) {
+      console.error("Error creating client contact:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "שגיאת אימות", errors: error.errors });
+      }
+      res.status(500).json({ message: "שגיאה ביצירת איש קשר" });
+    }
+  });
+
+  app.put('/api/client-contacts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const contactData = insertClientContactSchema.partial().parse(req.body);
+      const contact = await storage.updateClientContact(req.params.id, contactData);
+      res.json(contact);
+    } catch (error) {
+      console.error("Error updating client contact:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "שגיאת אימות", errors: error.errors });
+      }
+      res.status(500).json({ message: "שגיאה בעדכון איש קשר" });
+    }
+  });
+
+  app.delete('/api/client-contacts/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteClientContact(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting client contact:", error);
+      res.status(500).json({ message: "שגיאה במחיקת איש קשר" });
+    }
+  });
+
   // Job routes
   app.get('/api/jobs', isAuthenticated, async (req, res) => {
     try {
@@ -2437,11 +2517,33 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Email routes
   app.post('/api/emails/send-candidate-profile', isAuthenticated, async (req: any, res) => {
     try {
-      const { candidateId, to, cc, notes, includeSummary } = req.body;
+      const { candidateId, to, cc, notes, includeSummary, jobId } = req.body;
       
       const candidate = await storage.getCandidate(candidateId);
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      // Check if jobId is provided and has selected contacts
+      let recipients = [{ email: to, name: 'לקוח' }];
+      if (jobId) {
+        const job = await storage.getJob(jobId);
+        if (job && job.selectedContactIds && job.selectedContactIds.length > 0) {
+          // Get selected contacts
+          const selectedContacts = await Promise.all(
+            job.selectedContactIds.map(contactId => storage.getClientContact(contactId))
+          );
+          
+          // Filter valid contacts with emails
+          const validContacts = selectedContacts.filter(contact => contact && contact.email);
+          
+          if (validContacts.length > 0) {
+            recipients = validContacts.map(contact => ({
+              email: contact.email!,
+              name: contact.name
+            }));
+          }
+        }
       }
 
       const template = emailTemplates.candidateProfile(candidate);
@@ -2476,38 +2578,64 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         }
       }
 
-      const emailData = {
-        to,
-        cc,
-        subject: template.subject,
-        html: template.html,
-        attachments: attachments
-      };
+      // Send emails to all recipients
+      const results = [];
+      let allSuccessful = true;
+      let errorMessage = '';
 
-      const result = await sendEmail(emailData);
-      
-      if (result.success) {
-        // Save email to database
-        await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
-          to,
+      for (const recipient of recipients) {
+        const emailData = {
+          to: recipient.email,
           cc,
           subject: template.subject,
-          body: template.html,
-          isHtml: true,
-          status: 'sent',
-          sentAt: new Date(),
-          candidateId,
-          sentBy: req.user.id,
-        });
+          html: template.html,
+          attachments: attachments
+        };
+
+        const result = await sendEmail(emailData);
+        results.push({ recipient: recipient.email, success: result.success, error: result.error });
         
+        if (result.success) {
+          // Save email to database
+          await storage.createEmail({
+            from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+            to: recipient.email,
+            cc,
+            subject: template.subject,
+            body: template.html,
+            isHtml: true,
+            status: 'sent',
+            sentAt: new Date(),
+            candidateId,
+            sentBy: req.user.id,
+          });
+        } else {
+          allSuccessful = false;
+          errorMessage += `נכשל בשליחה ל-${recipient.name} (${recipient.email}): ${result.error}; `;
+          
+          await storage.createEmail({
+            from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+            to: recipient.email,
+            cc,
+            subject: template.subject,
+            body: template.html,
+            isHtml: true,
+            status: 'failed',
+            candidateId,
+            sentBy: req.user.id,
+            errorMessage: result.error,
+          });
+        }
+      }
+
+      if (allSuccessful) {
         // Add event for sending candidate profile to employer
         await storage.addCandidateEvent({
           candidateId,
           eventType: 'sent_to_employer',
-          description: `פרופיל המועמד נשלח למעסיק`,
+          description: `פרופיל המועמד נשלח ל-${recipients.length} אנשי קשר`,
           metadata: {
-            recipient: to,
+            recipients: recipients.map(r => r.email),
             cc: cc,
             notes: notes,
             sentBy: req.user.id,
@@ -2518,22 +2646,19 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         // Update candidate status automatically when sent to employer
         await storage.updateCandidate(candidateId, { status: 'sent_to_employer' });
         
-        res.json({ success: true });
-      } else {
-        await storage.createEmail({
-          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
-          to,
-          cc,
-          subject: template.subject,
-          body: template.html,
-          isHtml: true,
-          status: 'failed',
-          candidateId,
-          sentBy: req.user.id,
-          errorMessage: result.error,
+        res.json({ 
+          success: true, 
+          message: `נשלח בהצלחה ל-${recipients.length} אנשי קשר`,
+          recipients: recipients.map(r => r.email)
         });
-        
-        res.status(500).json({ success: false, error: result.error });
+      } else {
+        const successfulCount = results.filter(r => r.success).length;
+        res.status(500).json({ 
+          success: false, 
+          error: errorMessage,
+          message: `נשלח ל-${successfulCount} מתוך ${recipients.length} אנשי קשר`,
+          results
+        });
       }
     } catch (error) {
       console.error("Error sending candidate profile email:", error);

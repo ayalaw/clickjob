@@ -2,6 +2,7 @@ import {
   users,
   candidates,
   clients,
+  clientContacts,
   jobs,
   jobApplications,
   tasks,
@@ -21,7 +22,10 @@ import {
   type Candidate,
   type InsertCandidate,
   type Client,
+  type ClientWithContacts,
   type InsertClient,
+  type ClientContact,
+  type InsertClientContact,
   type Job,
   type JobWithClient,
   type InsertJob,
@@ -242,9 +246,17 @@ export interface IStorage {
   // Client operations
   getClients(limit?: number, offset?: number, search?: string): Promise<{ clients: Client[]; total: number }>;
   getClient(id: string): Promise<Client | undefined>;
+  getClientWithContacts(id: string): Promise<ClientWithContacts | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, client: Partial<InsertClient>): Promise<Client>;
   deleteClient(id: string): Promise<void>;
+
+  // Client contact operations
+  getClientContacts(clientId: string): Promise<ClientContact[]>;
+  getClientContact(id: string): Promise<ClientContact | undefined>;
+  createClientContact(contact: InsertClientContact): Promise<ClientContact>;
+  updateClientContact(id: string, contact: Partial<InsertClientContact>): Promise<ClientContact>;
+  deleteClientContact(id: string): Promise<void>;
 
   // Job operations
   getJobs(limit?: number, offset?: number, search?: string): Promise<{ jobs: JobWithClient[]; total: number }>;
@@ -860,6 +872,69 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClient(id: string): Promise<void> {
     await db.delete(clients).where(eq(clients.id, id));
+  }
+
+  async getClientWithContacts(id: string): Promise<ClientWithContacts | undefined> {
+    const client = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.id, id))
+      .limit(1);
+
+    if (client.length === 0) {
+      return undefined;
+    }
+
+    const contacts = await db
+      .select()
+      .from(clientContacts)
+      .where(eq(clientContacts.clientId, id))
+      .orderBy(asc(clientContacts.name));
+
+    return {
+      ...client[0],
+      contacts,
+    };
+  }
+
+  // Client contact operations
+  async getClientContacts(clientId: string): Promise<ClientContact[]> {
+    const contacts = await db
+      .select()
+      .from(clientContacts)
+      .where(eq(clientContacts.clientId, clientId))
+      .orderBy(asc(clientContacts.name));
+    return contacts;
+  }
+
+  async getClientContact(id: string): Promise<ClientContact | undefined> {
+    const [contact] = await db
+      .select()
+      .from(clientContacts)
+      .where(eq(clientContacts.id, id))
+      .limit(1);
+    return contact;
+  }
+
+  async createClientContact(contact: InsertClientContact): Promise<ClientContact> {
+    const [newContact] = await db
+      .insert(clientContacts)
+      .values(contact)
+      .returning();
+    return newContact;
+  }
+
+  async updateClientContact(id: string, contact: Partial<InsertClientContact>): Promise<ClientContact> {
+    const [updatedContact] = await db
+      .update(clientContacts)
+      .set({ ...contact, updatedAt: new Date() })
+      .where(eq(clientContacts.id, id))
+      .returning();
+    return updatedContact;
+  }
+
+  async deleteClientContact(id: string): Promise<void> {
+    await db.delete(clientContacts).where(eq(clientContacts.id, id));
   }
 
   // Job operations

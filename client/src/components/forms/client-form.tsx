@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { insertClientSchema, type InsertClient, type Client } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { insertClientSchema, insertClientContactSchema, type InsertClient, type Client, type ClientContact, type InsertClientContact } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface ClientFormProps {
   client?: Client | null;
@@ -18,6 +20,33 @@ interface ClientFormProps {
 
 export default function ClientForm({ client, onSuccess }: ClientFormProps) {
   const { toast } = useToast();
+  const [contacts, setContacts] = useState<InsertClientContact[]>([]);
+
+  // Load existing contacts for edit mode
+  const { data: existingContacts = [] } = useQuery({
+    queryKey: ["/api/clients", client?.id, "contacts"],
+    queryFn: async () => {
+      if (client?.id) {
+        const result = await apiRequest("GET", `/api/clients/${client.id}/contacts`);
+        return result as ClientContact[];
+      }
+      return [];
+    },
+    enabled: !!client?.id,
+  });
+
+  // Initialize contacts when existing contacts are loaded
+  useEffect(() => {
+    if (existingContacts.length > 0) {
+      setContacts(existingContacts.map(contact => ({
+        name: contact.name,
+        phone: contact.phone || "",
+        email: contact.email || "",
+        position: contact.position || "",
+        clientId: contact.clientId,
+      })));
+    }
+  }, [existingContacts]);
 
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -104,11 +133,73 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
     },
   });
 
-  const onSubmit = (data: InsertClient) => {
-    if (client) {
-      updateClient.mutate(data);
-    } else {
-      createClient.mutate(data);
+  // Contact management functions
+  const addContact = () => {
+    setContacts([...contacts, {
+      name: "",
+      phone: "",
+      email: "",
+      position: "",
+      clientId: "", // Will be set after client creation
+    }]);
+  };
+
+  const removeContact = (index: number) => {
+    setContacts(contacts.filter((_, i) => i !== index));
+  };
+
+  const updateContact = (index: number, field: keyof InsertClientContact, value: string) => {
+    setContacts(contacts.map((contact, i) => 
+      i === index ? { ...contact, [field]: value } : contact
+    ));
+  };
+
+  // Save contacts after client is created/updated
+  const saveContacts = async (clientId: string) => {
+    try {
+      // Delete existing contacts (for edit mode)
+      if (client?.id) {
+        for (const existingContact of existingContacts) {
+          await apiRequest("DELETE", `/api/client-contacts/${existingContact.id}`);
+        }
+      }
+
+      // Create new contacts
+      for (const contact of contacts) {
+        if (contact.name.trim()) { // Only save contacts with names
+          await apiRequest("POST", `/api/clients/${clientId}/contacts`, {
+            ...contact,
+            clientId,
+          });
+        }
+      }
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "contacts"] });
+    } catch (error) {
+      console.error("Error saving contacts:", error);
+      toast({
+        title: "שגיאה",
+        description: "שגיאה בשמירת אנשי הקשר",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const onSubmit = async (data: InsertClient) => {
+    try {
+      if (client) {
+        await updateClient.mutateAsync(data);
+        await saveContacts(client.id);
+      } else {
+        const newClient = await createClient.mutateAsync(data);
+        if (newClient && typeof newClient === 'object' && 'id' in newClient) {
+          await saveContacts(newClient.id as string);
+        }
+      }
+    } catch (error) {
+      // Error handling is already done in the mutations
+      console.error("Error in form submission:", error);
     }
   };
 
@@ -275,6 +366,83 @@ export default function ClientForm({ client, onSuccess }: ClientFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Client Contacts Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">אנשי קשר</h3>
+            <Button
+              type="button"
+              onClick={addContact}
+              variant="outline"
+              size="sm"
+              data-testid="button-add-contact"
+            >
+              <Plus className="h-4 w-4 ml-2" />
+              הוסף איש קשר
+            </Button>
+          </div>
+
+          {contacts.map((contact, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-4" data-testid={`contact-card-${index}`}>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">איש קשר {index + 1}</h4>
+                <Button
+                  type="button"
+                  onClick={() => removeContact(index)}
+                  variant="outline"
+                  size="sm"
+                  data-testid={`button-remove-contact-${index}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">שם *</label>
+                  <Input
+                    placeholder="שם איש הקשר"
+                    value={contact.name}
+                    onChange={(e) => updateContact(index, "name", e.target.value)}
+                    data-testid={`input-contact-name-${index}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">תפקיד</label>
+                  <Input
+                    placeholder="תפקיד (מנהל משאבי אנוש, מנכ״ל וכו')"
+                    value={contact.position}
+                    onChange={(e) => updateContact(index, "position", e.target.value)}
+                    data-testid={`input-contact-position-${index}`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">אימייל</label>
+                  <Input
+                    type="email"
+                    placeholder="example@company.com"
+                    value={contact.email}
+                    onChange={(e) => updateContact(index, "email", e.target.value)}
+                    data-testid={`input-contact-email-${index}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">טלפון</label>
+                  <Input
+                    placeholder="050-1234567"
+                    value={contact.phone}
+                    onChange={(e) => updateContact(index, "phone", e.target.value)}
+                    data-testid={`input-contact-phone-${index}`}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
         <FormField
           control={form.control}

@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { insertJobSchema, type InsertJob, type JobWithClient, type Client } from "@shared/schema";
+import { insertJobSchema, type InsertJob, type JobWithClient, type Client, type ClientContact } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
 interface JobFormProps {
@@ -22,9 +22,22 @@ interface JobFormProps {
 export default function JobForm({ job, onSuccess }: JobFormProps) {
   const { toast } = useToast();
   const [additionalCodesInput, setAdditionalCodesInput] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState(job?.clientId || "");
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>(job?.selectedContactIds || []);
 
   const { data: clientsData } = useQuery<{ clients: Client[]; total: number }>({
     queryKey: ["/api/clients"],
+  });
+
+  // Load client contacts when a client is selected
+  const { data: clientContacts = [] } = useQuery<ClientContact[]>({
+    queryKey: ["/api/clients", selectedClientId, "contacts"],
+    queryFn: async () => {
+      if (!selectedClientId) return [];
+      const result = await apiRequest("GET", `/api/clients/${selectedClientId}/contacts`);
+      return result as ClientContact[];
+    },
+    enabled: !!selectedClientId,
   });
 
   const form = useForm({
@@ -41,10 +54,34 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
       priority: job?.priority || "medium",
       deadline: job?.deadline ? new Date(job.deadline).toISOString().split('T')[0] : undefined,
       clientId: job?.clientId || "",
+      selectedContactIds: job?.selectedContactIds || [],
       positions: job?.positions || 1,
       additionalCodes: job?.additionalCodes || [],
     },
   });
+
+  // Update selected client when client changes
+  useEffect(() => {
+    const clientId = form.watch("clientId");
+    if (clientId !== selectedClientId) {
+      setSelectedClientId(clientId);
+      setSelectedContactIds([]); // Reset selected contacts when client changes
+      form.setValue("selectedContactIds", []);
+    }
+  }, [form.watch("clientId")]);
+
+  // Update form when selectedContactIds change
+  useEffect(() => {
+    form.setValue("selectedContactIds", selectedContactIds);
+  }, [selectedContactIds]);
+
+  const handleContactToggle = (contactId: string) => {
+    setSelectedContactIds(prev => 
+      prev.includes(contactId) 
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
+    );
+  };
 
   const createJob = useMutation({
     mutationFn: async (data: InsertJob) => {
@@ -218,6 +255,40 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
                     </FormItem>
                   )}
                 />
+
+                {/* Client Contacts Selection */}
+                {selectedClientId && clientContacts.length > 0 && (
+                  <div className="space-y-4">
+                    <div>
+                      <FormLabel className="text-right">אנשי קשר לקבלת מועמדים:</FormLabel>
+                      <p className="text-sm text-gray-600 mt-1">בחר את אנשי הקשר שיקבלו את המועמדים במייל</p>
+                    </div>
+                    <div className="space-y-2" data-testid="contacts-selection">
+                      {clientContacts.map((contact) => (
+                        <div key={contact.id} className="flex items-center space-x-2 space-x-reverse">
+                          <Checkbox
+                            id={contact.id}
+                            checked={selectedContactIds.includes(contact.id)}
+                            onCheckedChange={() => handleContactToggle(contact.id)}
+                            data-testid={`checkbox-contact-${contact.id}`}
+                          />
+                          <label 
+                            htmlFor={contact.id} 
+                            className="text-sm cursor-pointer flex-1"
+                            data-testid={`label-contact-${contact.id}`}
+                          >
+                            <span className="font-medium">{contact.name}</span>
+                            {contact.position && <span className=" text-gray-600"> - {contact.position}</span>}
+                            {contact.email && <span className="text-gray-500 block text-xs">{contact.email}</span>}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedContactIds.length === 0 && (
+                      <p className="text-sm text-orange-600">לא נבחרו אנשי קשר - הודעות יישלחו לכתובת הלקוח הראשית</p>
+                    )}
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}

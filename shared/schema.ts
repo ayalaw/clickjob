@@ -176,6 +176,19 @@ export const clients = pgTable("clients", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Client contacts table
+export const clientContacts = pgTable("client_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull(),
+  name: varchar("name").notNull(),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  position: varchar("position"), // תפקיד
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Jobs table
 export const jobs = pgTable("jobs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -192,6 +205,7 @@ export const jobs = pgTable("jobs", {
   priority: varchar("priority").default('medium'), // low, medium, high
   deadline: timestamp("deadline"),
   clientId: varchar("client_id").references(() => clients.id),
+  selectedContactIds: text("selected_contact_ids").array().default(sql`'{}'`), // רשימת אנשי קשר נבחרים לקבלת מועמדים
   positions: integer("positions").default(1),
   // Landing page fields
   landingImage: varchar("landing_image"), // תמונה לדף הנחיתה
@@ -311,6 +325,14 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   tasks: many(tasks),
   reminders: many(reminders),
   interviewEvents: many(interviewEvents),
+  contacts: many(clientContacts),
+}));
+
+export const clientContactsRelations = relations(clientContacts, ({ one }) => ({
+  client: one(clients, {
+    fields: [clientContacts.clientId],
+    references: [clients.id],
+  }),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
@@ -569,6 +591,12 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+export const insertClientContactSchema = createInsertSchema(clientContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertEmail = z.infer<typeof insertEmailSchema>;
 export type Email = typeof emails.$inferSelect;
 export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
@@ -587,6 +615,9 @@ export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;
+export type ClientWithContacts = Client & { contacts: ClientContact[] };
+export type InsertClientContact = z.infer<typeof insertClientContactSchema>;
+export type ClientContact = typeof clientContacts.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;
 export type JobWithClient = Job & { client: Client };
