@@ -1423,6 +1423,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('❌ Error extracting DOCX text:', error instanceof Error ? error.message : 'Unknown error');
             fileText = '';
           }
+        } else if (req.file.mimetype.startsWith('image/')) {
+          // תמונות - שימוש ב-OCR
+          console.log('🖼️ Image file detected - attempting OCR text extraction');
+          try {
+            const { extractTextFromCVFile } = await import('./storage');
+            fileText = await extractTextFromCVFile(req.file.path);
+            console.log('🖼️ OCR text extracted successfully, length:', fileText.length);
+            console.log('🖼️ OCR content preview:', fileText.substring(0, 200) + '...');
+          } catch (error) {
+            console.log('❌ Error extracting text with OCR:', error instanceof Error ? error.message : 'Unknown error');
+            fileText = '';
+          }
         } else {
           // קבצי טקסט רגילים או קבצים שניתן לקרוא כטקסט
           try {
