@@ -632,7 +632,7 @@ export default function CandidateDetail() {
         gender: candidate.gender || '',
         maritalStatus: candidate.maritalStatus || '',
         birthDate: candidate.birthDate || '',
-        age: candidate.age || '',
+        age: candidate.age?.toString() || '',
         mobile: candidate.mobile || '',
         drivingLicense: candidate.drivingLicense || '',
       });
@@ -1342,6 +1342,17 @@ export default function CandidateDetail() {
                             src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + candidate.cvPath?.replace('uploads/', ''))}`}
                             className="w-full h-full border-0"
                             title="קורות חיים"
+                          />
+                        ) : (candidate.cvPath?.toLowerCase().includes('.jpg') || 
+                             candidate.cvPath?.toLowerCase().includes('.jpeg') || 
+                             candidate.cvPath?.toLowerCase().includes('.png') || 
+                             candidate.cvPath?.toLowerCase().includes('.gif') || 
+                             candidate.cvPath?.toLowerCase().includes('.bmp') || 
+                             candidate.cvPath?.toLowerCase().includes('.tiff')) ? (
+                          <img
+                            src={`/uploads/${candidate.cvPath?.replace('uploads/', '')}`}
+                            alt="קורות חיים"
+                            className="w-full h-full object-contain"
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full">
