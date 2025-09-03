@@ -2377,22 +2377,45 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             ${candidate.experience ? `<p><strong>ניסיון תעסוקתי:</strong> ${candidate.experience}</p>` : ''}
           </div>
 
+          ${candidate.manualCv ? `
+          <div style="background: #fffbeb; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #f59e0b;">
+            <h3 style="color: #92400e; margin-top: 0;">תמצית קורות חיים</h3>
+            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #374151;">${candidate.manualCv}</div>
+          </div>
+          ` : ''}
+
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
             <p style="color: #6b7280; font-size: 14px;">נשלח ממערכת ניהול גיוס H-Group</p>
           </div>
         </div>
       `;
       
-      // Prepare attachments if CV exists
+      // Prepare attachments - CV file or manual CV as text file
       const attachments = [];
-      if (candidate.cvFile) {
-        const cvPath = path.join('uploads', candidate.cvFile);
+      
+      // First try to attach actual CV file
+      if (candidate.cvPath) {
+        const cvPath = candidate.cvPath.startsWith('uploads/') ? candidate.cvPath : `uploads/${candidate.cvPath}`;
         if (fs.existsSync(cvPath)) {
+          const ext = path.extname(cvPath) || '.pdf';
           attachments.push({
-            filename: `קורות_חיים_${candidate.firstName}_${candidate.lastName}.pdf`,
-            path: cvPath
+            filename: `קורות_חיים_${candidate.firstName}_${candidate.lastName}${ext}`,
+            content: fs.readFileSync(cvPath).toString('base64'),
+            contentType: ext === '.pdf' ? 'application/pdf' : 
+                        ext === '.doc' ? 'application/msword' :
+                        ext === '.docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                        ext.includes('image') ? `image/${ext.replace('.', '')}` : 'application/octet-stream'
           });
         }
+      }
+      
+      // If no CV file but has manual CV, attach as text file
+      else if (candidate.manualCv && candidate.manualCv.trim()) {
+        attachments.push({
+          filename: `קורות_חיים_${candidate.firstName}_${candidate.lastName}.txt`,
+          content: Buffer.from(candidate.manualCv, 'utf8').toString('base64'),
+          contentType: 'text/plain; charset=utf-8'
+        });
       }
 
       const emailData = {
