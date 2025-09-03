@@ -333,7 +333,7 @@ export default function Candidates() {
                             <Badge variant={candidate.source === 'landing_page' ? 'default' : candidate.source === 'email' ? 'secondary' : 'outline'}>
                               {candidate.source === 'landing_page' ? 'דף פרסום' :
                                candidate.source === 'email' ? 'מייל' :
-                               candidate.source === 'manual' ? (candidate.creatorUsername || 'משתמש לא ידוע') :
+                               candidate.source === 'manual' ? (candidate.recruitmentSource || 'משתמש לא ידוע') :
                                candidate.source === 'cv_upload' ? 'העלאת קורות חיים' :
                                candidate.source || 'לא צוין'}
                             </Badge>
