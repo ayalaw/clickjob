@@ -25,11 +25,11 @@ export function requirePermission(resource: string, action: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const sessionUser = req.user as any;
-      if (!sessionUser?.claims?.sub) {
+      if (!sessionUser?.id) {
         return res.status(401).json({ message: "Unauthorized - No user found" });
       }
 
-      const userId = sessionUser.claims.sub;
+      const userId = sessionUser.id;
       const hasPermission = await storage.hasPermission(userId, resource, action);
 
       if (!hasPermission) {
@@ -63,11 +63,11 @@ export function requireRole(roleType: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const sessionUser = req.user as any;
-      if (!sessionUser?.claims?.sub) {
+      if (!sessionUser?.id) {
         return res.status(401).json({ message: "Unauthorized - No user found" });
       }
 
-      const userId = sessionUser.claims.sub;
+      const userId = sessionUser.id;
       const hasRole = await storage.hasRole(userId, roleType);
 
       if (!hasRole) {
