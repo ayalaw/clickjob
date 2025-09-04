@@ -1,223 +1,240 @@
-import fs from 'fs';
-import path from 'path';
-import bcrypt from 'bcrypt';
-import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
-import session from 'express-session';
-import connectPg from 'connect-pg-simple';
-import type { Express } from 'express';
+import bcrypt from "bcrypt";
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import session from "express-session";
+import type { Express, RequestHandler } from "express";
+import connectPg from "connect-pg-simple";
+import { storage } from "./storage";
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  password: string;
-  role: string;
-  createdAt: string;
-}
-
-interface UsersDB {
-  [key: string]: User;
-}
-
-const USERS_FILE = path.join(process.cwd(), 'users', 'users.json');
-
-// Load users from JSON file
-function loadUsers(): UsersDB {
-  try {
-    if (fs.existsSync(USERS_FILE)) {
-      const data = fs.readFileSync(USERS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading users:', error);
-  }
-  return {};
-}
-
-// Save users to JSON file
-function saveUsers(users: UsersDB): void {
-  try {
-    const dir = path.dirname(USERS_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-  } catch (error) {
-    console.error('Error saving users:', error);
-  }
-}
-
-// Find user by email
-function findUserByEmail(email: string): User | undefined {
-  const users = loadUsers();
-  return Object.values(users).find(user => user.email === email);
-}
-
-// Find user by ID
-function findUserById(id: string): User | undefined {
-  const users = loadUsers();
-  return users[id];
-}
-
-// Create initial admin user if none exists
-function createInitialAdmin(): void {
-  const users = loadUsers();
-  if (Object.keys(users).length === 0) {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@localhost.local';
-    
-    const hashedPassword = bcrypt.hashSync(adminPassword, 10);
-    
-    const admin: User = {
-      id: 'admin',
-      email: adminEmail,
-      name: 'Administrator',
-      password: hashedPassword,
-      role: 'admin',
-      createdAt: new Date().toISOString()
-    };
-    
-    users.admin = admin;
-    saveUsers(users);
-    
-    console.log('✅ נוצר משתמש מנהל ראשי:');
-    console.log(`📧 אימייל: ${adminEmail}`);
-    console.log(`🔑 סיסמה: ${adminPassword}`);
-  }
-}
-
-// Setup local authentication
-export function setupLocalAuth(app: Express): void {
-  console.log('🔐 מגדיר מערכת אימות מקומית...');
+export function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
   
-  // Create initial admin user
-  createInitialAdmin();
-  
-  // Session configuration
-  const PgSession = connectPg(session);
-  
-  app.use(session({
-    store: new PgSession({
-      conString: process.env.DATABASE_URL,
-      tableName: 'user_sessions',
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+  return session({
+    secret: process.env.SESSION_SECRET!,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: sessionTtl,
     },
-  }));
+  });
+}
+
+async function createDefaultAdminUser() {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@localhost';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    
+    // Check if admin user already exists
+    const existingAdmin = await storage.getUserByEmail(adminEmail);
+    if (existingAdmin) {
+      console.log('✅ משתמש מנהל קיים כבר');
+      return;
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(adminPassword, 12);
+
+    // Create admin user
+    await storage.createUser({
+      email: adminEmail,
+      firstName: 'מנהל',
+      lastName: 'מערכת',
+      password: passwordHash,
+      username: 'admin',
+      isActive: true
+    });
+
+    console.log('✅ נוצר משתמש מנהל ראשי:');
+    console.log(`📧 אימייל: ${adminEmail}`);
+    console.log(`🔑 סיסמה: ${adminPassword}`);
+  } catch (error) {
+    console.error('שגיאה ביצירת משתמש מנהל:', error);
+  }
+}
+
+export async function setupAuth(app: Express) {
+  console.log('🔐 מגדיר מערכת אימות מקומית...');
   
-  // Initialize Passport
+  app.set("trust proxy", 1);
+  app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
-  
-  // Local strategy
+
+  // Create default admin user
+  await createDefaultAdminUser();
+
+  // Local authentication strategy
   passport.use(new LocalStrategy(
-    {
-      usernameField: 'email',
-      passwordField: 'password'
-    },
+    { usernameField: 'email' },
     async (email: string, password: string, done) => {
       try {
-        const user = findUserByEmail(email);
+        const user = await storage.getUserByEmail(email);
         
-        if (!user) {
-          return done(null, false, { message: 'משתמש לא נמצא' });
+        if (!user || !user.isActive) {
+          return done(null, false, { message: 'משתמש לא נמצא או לא פעיל' });
         }
-        
+
+        if (!user.password) {
+          return done(null, false, { message: 'משתמש לא מוגדר עם סיסמה' });
+        }
+
         const isValidPassword = await bcrypt.compare(password, user.password);
         
         if (!isValidPassword) {
           return done(null, false, { message: 'סיסמה שגויה' });
         }
-        
+
+        // Update last login
+        await storage.updateUser(user.id, { lastLogin: new Date() });
+
         return done(null, user);
       } catch (error) {
+        console.error('Authentication error:', error);
         return done(error);
       }
     }
   ));
-  
-  // Serialize user for session
+
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
   });
-  
-  // Deserialize user from session
-  passport.deserializeUser((id: string, done) => {
-    const user = findUserById(id);
-    done(null, user || null);
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUser(id);
+      if (!user) {
+        return done(null, false);
+      }
+      done(null, user);
+    } catch (error) {
+      console.error('Deserialize user error:', error);
+      done(null, false);
+    }
   });
-  
+
+  // Login route
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ message: 'שגיאה במערכת' });
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: info?.message || 'פרטי התחברות שגויים' });
+      }
+
+      req.logIn(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'שגיאה בהתחברות' });
+        }
+        
+        res.json({ 
+          success: true, 
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username
+          }
+        });
+      });
+    })(req, res, next);
+  });
+
+  // Registration route
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, username } = req.body;
+      
+      // Validation
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ message: 'כל השדות נדרשים' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'משתמש עם האימייל הזה כבר קיים' });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 12);
+
+      // Create user
+      const newUser = await storage.createUser({
+        email,
+        password: passwordHash,
+        firstName,
+        lastName,
+        username: username || email.split('@')[0],
+        isActive: true
+      });
+
+      // Log the user in
+      req.login(newUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'שגיאה בהתחברות' });
+        }
+        res.json({ 
+          success: true, 
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            username: newUser.username
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ message: 'שגיאה ביצירת משתמש' });
+    }
+  });
+
+  // Get current user
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "לא מחובר" });
+    }
+
+    const user = req.user as any;
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username
+    });
+  });
+
+  // Logout route
+  app.post("/api/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'שגיאה בהתנתקות' });
+      }
+      res.json({ success: true });
+    });
+  });
+
   console.log('✅ מערכת אימות מקומית הוגדרה בהצלחה');
 }
 
-// Middleware to check if user is authenticated
-export function isAuthenticated(req: any, res: any, next: any): void {
-  if (req.isAuthenticated()) {
-    return next();
+export const isAuthenticated: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  
-  res.status(401).json({ message: 'לא מאומת - נדרש כניסה למערכת' });
-}
-
-// Create new user (for registration)
-export function createUser(userData: Omit<User, 'id' | 'createdAt' | 'password'> & { password: string }): User {
-  const users = loadUsers();
-  
-  const hashedPassword = bcrypt.hashSync(userData.password, 10);
-  
-  const newUser: User = {
-    id: Date.now().toString(),
-    email: userData.email,
-    name: userData.name,
-    password: hashedPassword,
-    role: userData.role || 'user',
-    createdAt: new Date().toISOString()
-  };
-  
-  users[newUser.id] = newUser;
-  saveUsers(users);
-  
-  return newUser;
-}
-
-// Update user password
-export function updateUserPassword(userId: string, newPassword: string): boolean {
-  const users = loadUsers();
-  const user = users[userId];
-  
-  if (!user) {
-    return false;
-  }
-  
-  user.password = bcrypt.hashSync(newPassword, 10);
-  saveUsers(users);
-  
-  return true;
-}
-
-// Get all users (without passwords)
-export function getAllUsers(): Omit<User, 'password'>[] {
-  const users = loadUsers();
-  return Object.values(users).map(({ password, ...user }) => user);
-}
-
-// Delete user
-export function deleteUser(userId: string): boolean {
-  const users = loadUsers();
-  
-  if (users[userId]) {
-    delete users[userId];
-    saveUsers(users);
-    return true;
-  }
-  
-  return false;
-}
+  next();
+};

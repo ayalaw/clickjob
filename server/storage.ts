@@ -177,7 +177,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: { email: string; firstName?: string | null; lastName?: string | null; password?: string }): Promise<User>;
+  createUser(user: { email: string; firstName?: string | null; lastName?: string | null; password?: string; username?: string; isActive?: boolean }): Promise<User>;
+  updateUser(id: string, updates: Partial<{ firstName: string; lastName: string; email: string; username: string; lastLogin: Date; isActive: boolean }>): Promise<void>;
   deleteUser(id: string): Promise<void>;
 
   // Candidate operations
@@ -360,6 +361,16 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<{ firstName: string; lastName: string; email: string; username: string; lastLogin: Date; isActive: boolean }>): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        ...updates,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id));
   }
 
   async updateUserPassword(userId: string, passwordHash: string): Promise<void> {

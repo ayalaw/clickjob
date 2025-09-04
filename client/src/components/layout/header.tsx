@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, LogOut } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 interface HeaderProps {
   title: string;
@@ -9,8 +10,23 @@ interface HeaderProps {
 export default function Header({ title }: HeaderProps) {
   const { user } = useAuth();
 
-  const handleLogout = () => {
-    window.location.href = '/api/logout';
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        // Clear any cached data and redirect to landing page
+        queryClient.clear();
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: force redirect even if there's an error
+      window.location.href = '/';
+    }
   };
 
   const getInitials = (firstName?: string, lastName?: string) => {

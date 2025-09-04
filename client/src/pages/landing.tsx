@@ -16,7 +16,7 @@ export default function Landing() {
           <Button 
             size="lg" 
             className="btn-primary px-8 py-4 text-lg"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/login'}
             data-testid="button-login"
           >
             התחבר למערכת
@@ -114,7 +114,7 @@ export default function Landing() {
           <Button 
             size="lg" 
             className="btn-primary px-8 py-3"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/login'}
             data-testid="button-start"
           >
             התחל עכשיו
