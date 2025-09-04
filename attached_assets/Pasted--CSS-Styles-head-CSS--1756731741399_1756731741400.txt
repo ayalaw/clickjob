@@ -1,0 +1,439 @@
+// =====================================
+// CSS Styles - הוסף ל-head או לקובץ CSS נפרד
+// =====================================
+
+const fileViewerStyles = `
+<style>
+.file-viewer-container {
+    width: 100%;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.file-viewer-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-viewer-content {
+    min-height: 400px;
+    position: relative;
+    background: #f9f9f9;
+}
+
+.file-viewer-image {
+    text-align: center;
+    padding: 20px;
+    background: white;
+}
+
+.file-viewer-image img {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.file-viewer-pdf {
+    background: white;
+}
+
+.file-viewer-pdf-controls {
+    background: #f8f9fa;
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.file-viewer-pdf-controls button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    margin: 0 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.file-viewer-pdf-controls button:hover:not(:disabled) {
+    background: #5a6fd8;
+}
+
+.file-viewer-pdf-controls button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.file-viewer-pdf canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.file-viewer-document {
+    padding: 30px;
+    line-height: 1.6;
+    background: white;
+    color: #333;
+}
+
+.file-viewer-loading {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+    font-size: 16px;
+}
+
+.file-viewer-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #f1b0b7;
+    margin: 20px;
+    border-radius: 5px;
+}
+
+.file-viewer-loading::after {
+    content: '...';
+    animation: file-viewer-dots 1.5s infinite;
+}
+
+@keyframes file-viewer-dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+@media (max-width: 768px) {
+    .file-viewer-container {
+        margin: 10px 0;
+    }
+    
+    .file-viewer-header {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    .file-viewer-document {
+        padding: 20px 15px;
+    }
+}
+</style>
+`;
+
+// =====================================
+// File Viewer Class - הקלאס הראשי
+// =====================================
+
+class FileViewer {
+    constructor() {
+        this.currentPDF = null;
+        this.currentPage = 1;
+        this.totalPages = 0;
+        this.loadExternalLibraries();
+    }
+
+    // טעינת ספריות חיצוניות
+    loadExternalLibraries() {
+        // PDF.js
+        if (!window.pdfjsLib) {
+            const pdfScript = document.createElement('script');
+            pdfScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            document.head.appendChild(pdfScript);
+            
+            const workerScript = document.createElement('script');
+            workerScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            document.head.appendChild(workerScript);
+            
+            pdfScript.onload = () => {
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            };
+        }
+
+        // Mammoth for DOCX
+        if (!window.mammoth) {
+            const mammothScript = document.createElement('script');
+            mammothScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+            document.head.appendChild(mammothScript);
+        }
+
+        // הוספת CSS
+        if (!document.querySelector('#file-viewer-styles')) {
+            const styleElement = document.createElement('div');
+            styleElement.id = 'file-viewer-styles';
+            styleElement.innerHTML = fileViewerStyles;
+            document.head.appendChild(styleElement);
+        }
+    }
+
+    // הפונקציה הראשית להצגת קובץ
+    displayFile(file, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`Container with ID '${containerId}' not found`);
+            return;
+        }
+
+        const fileType = file.type.toLowerCase();
+        const fileName = file.name.toLowerCase();
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+
+        // יצירת מבנה הHTML
+        container.innerHTML = `
+            <div class="file-viewer-container">
+                <div class="file-viewer-header">
+                    <span>📄 ${file.name}</span>
+                    <span>${fileSize} MB</span>
+                </div>
+                <div class="file-viewer-content" id="viewer-content-${containerId}">
+                    <div class="file-viewer-loading">טוען קובץ</div>
+                </div>
+            </div>
+        `;
+
+        const viewerContent = document.getElementById(`viewer-content-${containerId}`);
+
+        // זיהוי סוג הקובץ והצגה מתאימה
+        if (this.isImage(fileType, fileName)) {
+            this.displayImage(file, viewerContent);
+        } else if (this.isPDF(fileType, fileName)) {
+            this.displayPDF(file, viewerContent, containerId);
+        } else if (this.isDocument(fileType, fileName)) {
+            this.displayDocument(file, viewerContent);
+        } else {
+            viewerContent.innerHTML = '<div class="file-viewer-error">פורמט קובץ לא נתמך</div>';
+        }
+    }
+
+    // בדיקת תמונה
+    isImage(fileType, fileName) {
+        return fileType.includes('image/') || 
+               fileName.endsWith('.jpg') || 
+               fileName.endsWith('.jpeg') || 
+               fileName.endsWith('.png');
+    }
+
+    // בדיקת PDF
+    isPDF(fileType, fileName) {
+        return fileType.includes('pdf') || fileName.endsWith('.pdf');
+    }
+
+    // בדיקת מסמך
+    isDocument(fileType, fileName) {
+        return fileType.includes('document') || 
+               fileName.endsWith('.doc') || 
+               fileName.endsWith('.docx');
+    }
+
+    // הצגת תמונה
+    displayImage(file, container) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            container.innerHTML = `
+                <div class="file-viewer-image">
+                    <img src="${e.target.result}" alt="${file.name}" />
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // הצגת PDF
+    displayPDF(file, container, containerId) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const typedarray = new Uint8Array(e.target.result);
+            
+            window.pdfjsLib.getDocument(typedarray).promise.then((pdf) => {
+                this.currentPDF = pdf;
+                this.totalPages = pdf.numPages;
+                this.currentPage = 1;
+                
+                const pdfId = `pdf-${containerId}-${Date.now()}`;
+                
+                container.innerHTML = `
+                    <div class="file-viewer-pdf">
+                        <div class="file-viewer-pdf-controls">
+                            <button onclick="fileViewer.previousPage('${pdfId}')">◀️ עמוד קודם</button>
+                            <span>עמוד <span id="current-page-${pdfId}">1</span> מתוך ${this.totalPages}</span>
+                            <button onclick="fileViewer.nextPage('${pdfId}')">עמוד הבא ▶️</button>
+                        </div>
+                        <canvas id="canvas-${pdfId}" class="file-viewer-pdf canvas"></canvas>
+                    </div>
+                `;
+                
+                this.renderPDFPage(1, pdfId);
+            }).catch(() => {
+                container.innerHTML = '<div class="file-viewer-error">שגיאה בטעינת קובץ PDF</div>';
+            });
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // רנדור עמוד PDF
+    renderPDFPage(pageNum, pdfId) {
+        if (!this.currentPDF) return;
+
+        this.currentPDF.getPage(pageNum).then((page) => {
+            const canvas = document.getElementById(`canvas-${pdfId}`);
+            if (!canvas) return;
+
+            const context = canvas.getContext('2d');
+            const viewport = page.getViewport({ scale: 1.5 });
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            page.render({
+                canvasContext: context,
+                viewport: viewport
+            });
+            
+            const currentPageElement = document.getElementById(`current-page-${pdfId}`);
+            if (currentPageElement) {
+                currentPageElement.textContent = pageNum;
+            }
+        });
+    }
+
+    // עמוד קודם ב-PDF
+    previousPage(pdfId) {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.renderPDFPage(this.currentPage, pdfId);
+        }
+    }
+
+    // עמוד הבא ב-PDF
+    nextPage(pdfId) {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.renderPDFPage(this.currentPage, pdfId);
+        }
+    }
+
+    // הצגת מסמך Word
+    displayDocument(file, container) {
+        if (file.name.toLowerCase().endsWith('.docx')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (window.mammoth) {
+                    window.mammoth.convertToHtml({ arrayBuffer: e.target.result })
+                        .then((result) => {
+                            container.innerHTML = `
+                                <div class="file-viewer-document">
+                                    ${result.value}
+                                </div>
+                            `;
+                        })
+                        .catch(() => {
+                            container.innerHTML = '<div class="file-viewer-error">שגיאה בטעינת מסמך Word</div>';
+                        });
+                } else {
+                    container.innerHTML = '<div class="file-viewer-error">טוען ספרייה לעיבוד Word...</div>';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            container.innerHTML = `
+                <div class="file-viewer-error">
+                    קבצי DOC (פורמט ישן) אינם נתמכים.<br>
+                    אנא המר ל-DOCX או שמור מחדש בפורמט חדש.
+                </div>
+            `;
+        }
+    }
+
+    // פונקציית עזר - יצירת viewer מהיר
+    createQuickViewer(file, parentElement) {
+        const viewerId = `file-viewer-${Date.now()}`;
+        const viewerDiv = document.createElement('div');
+        viewerDiv.id = viewerId;
+        parentElement.appendChild(viewerDiv);
+        
+        this.displayFile(file, viewerId);
+        return viewerId;
+    }
+}
+
+// =====================================
+// אתחול הקלאס הגלובלי
+// =====================================
+
+// יצירת instance גלובלי
+window.fileViewer = new FileViewer();
+
+// =====================================
+// דוגמאות שימוש
+// =====================================
+
+/*
+// דוגמה 1: שימוש בסיסי
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        fileViewer.displayFile(file, 'myViewerContainer');
+    }
+});
+
+// דוגמה 2: יצירת viewer חדש באופן דינמי
+function showFile(file) {
+    const container = document.getElementById('fileDisplayArea');
+    fileViewer.createQuickViewer(file, container);
+}
+
+// דוגמה 3: הטמעה במערכת קיימת עם callback
+function handleFileUpload(file) {
+    // הצגת הקובץ מיד לאחר בחירה
+    fileViewer.displayFile(file, 'previewContainer');
+    
+    // כאן תוכל להוסיף לוגיקה נוספת כמו שמירה בשרת
+    uploadFileToServer(file);
+}
+*/
+
+// =====================================
+// HTML דוגמה למבנה הנדרש
+// =====================================
+
+/*
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>מערכת הצגת קבצים</title>
+</head>
+<body>
+    <!-- אזור בחירת קובץ -->
+    <div>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+    </div>
+    
+    <!-- אזור הצגת הקובץ -->
+    <div id="fileViewerContainer"></div>
+    
+    <!-- הטמעת הקוד -->
+    <script src="path/to/fileViewer.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileViewer.displayFile(file, 'fileViewerContainer');
+            }
+        });
+    </script>
+</body>
+</html>
+*/

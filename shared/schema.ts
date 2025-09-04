@@ -10,7 +10,6 @@ import {
   integer,
   boolean,
   pgEnum,
-  serial,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -28,7 +27,7 @@ export const sessions = pgTable(
 
 // User storage table for Replit Auth
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   username: varchar("username").unique(), // שם משתמש לכניסה
   firstName: varchar("first_name"),
@@ -52,7 +51,7 @@ export const roleTypeEnum = pgEnum('role_type', ['super_admin', 'admin', 'user',
 
 // Roles table
 export const roles = pgTable("roles", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull().unique(),
   type: roleTypeEnum("type").notNull(),
   description: text("description"),
@@ -63,7 +62,7 @@ export const roles = pgTable("roles", {
 
 // Permissions table
 export const permissions = pgTable("permissions", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull().unique(),
   resource: varchar("resource").notNull(), // כמו 'candidates', 'jobs', 'settings'
   action: varchar("action").notNull(), // כמו 'create', 'read', 'update', 'delete'
@@ -73,7 +72,7 @@ export const permissions = pgTable("permissions", {
 
 // User roles junction table
 export const userRoles = pgTable("user_roles", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
   roleId: varchar("role_id").notNull(),
   assignedBy: varchar("assigned_by"), // מי הקצה את התפקיד
@@ -85,7 +84,7 @@ export const userRoles = pgTable("user_roles", {
 
 // Role permissions junction table
 export const rolePermissions = pgTable("role_permissions", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   roleId: varchar("role_id").notNull(),
   permissionId: varchar("permission_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -93,7 +92,7 @@ export const rolePermissions = pgTable("role_permissions", {
 
 // Message templates table
 export const messageTemplates = pgTable("message_templates", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name").notNull(),
   content: text("content").notNull(),
   icon: varchar("icon").default("💬"),
@@ -102,7 +101,7 @@ export const messageTemplates = pgTable("message_templates", {
 });
 
 export const systemSettings = pgTable("system_settings", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   key: varchar("key").notNull().unique(),
   value: text("value").notNull(),
   description: text("description"),
@@ -112,7 +111,7 @@ export const systemSettings = pgTable("system_settings", {
 
 // Candidates table
 export const candidates = pgTable("candidates", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   candidateNumber: integer("candidate_number").unique(),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
@@ -161,33 +160,17 @@ export const candidates = pgTable("candidates", {
 
 // Clients table
 export const clients = pgTable("clients", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   companyName: varchar("company_name").notNull(),
-  address: text("address"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  // Legacy fields - kept for compatibility
-  contactName: varchar("contact_name"),
-  email: varchar("email"),
+  contactName: varchar("contact_name").notNull(),
+  email: varchar("email").notNull(),
   phone: varchar("phone"),
+  address: text("address"),
   website: varchar("website"),
   industry: varchar("industry"),
-  commissionRate: integer("commission_rate"),
+  commissionRate: integer("commission_rate"), // percentage
   paymentTerms: varchar("payment_terms"),
   notes: text("notes"),
-  isActive: boolean("is_active").default(true),
-}, (table) => [
-  index("clients_company_name_idx").on(table.companyName),
-]);
-
-// Client contacts table
-export const clientContacts = pgTable("client_contacts", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
-  clientId: varchar("client_id").notNull(),
-  name: varchar("name").notNull(),
-  phone: varchar("phone"),
-  email: varchar("email"),
-  position: varchar("position"), // תפקיד
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -195,28 +178,21 @@ export const clientContacts = pgTable("client_contacts", {
 
 // Jobs table
 export const jobs = pgTable("jobs", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobCode: varchar("job_code", { length: 7 }).unique(), // קוד משרה בן 7 ספרות
-  additionalCode: varchar("additional_code"), // קוד נוסף ידני
+  additionalCodes: text("additional_codes").array(), // קודים נוספים (אופציונלי)
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   requirements: text("requirements"),
-  recruiterNotes: text("recruiter_notes"), // הערות לרכזים
-  clientId: varchar("client_id").references(() => clients.id),
-  selectedContactIds: text("selected_contact_ids").array().default(sql`'{}'`), // רשימת אנשי קשר נבחרים לקבלת מועמדים
-  isUrgent: boolean("is_urgent").default(false), // משרה דחופה - ירוק בהיר
-  isSuperUrgent: boolean("is_super_urgent").default(false), // משרה סופר דחופה - אדום בהיר
-  workMethod: varchar("work_method").default('interview'), // interview, automatic, bot (not active)
-  status: jobStatusEnum("status").default('active'),
-  // Legacy fields - need to be kept nullable until migration
   location: varchar("location"),
   salaryRange: varchar("salary_range"),
-  jobType: varchar("job_type"),
+  jobType: varchar("job_type"), // full-time, part-time, contract
   isRemote: boolean("is_remote").default(false),
-  priority: varchar("priority").default('medium'),
+  status: jobStatusEnum("status").default('active'),
+  priority: varchar("priority").default('medium'), // low, medium, high
   deadline: timestamp("deadline"),
+  clientId: varchar("client_id").references(() => clients.id),
   positions: integer("positions").default(1),
-  additionalCodes: text("additional_codes").array(),
   // Landing page fields
   landingImage: varchar("landing_image"), // תמונה לדף הנחיתה
   landingImageOriginalName: varchar("landing_image_original_name"), // שם המקורי של התמונה
@@ -238,12 +214,13 @@ export const jobs = pgTable("jobs", {
   index("jobs_title_idx").on(table.title),
   index("jobs_status_idx").on(table.status),
   index("jobs_client_id_idx").on(table.clientId),
+  index("jobs_priority_idx").on(table.priority),
   index("jobs_created_at_idx").on(table.createdAt),
 ]);
 
 // Job Applications (many-to-many between candidates and jobs)
 export const jobApplications = pgTable("job_applications", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   candidateId: varchar("candidate_id").references(() => candidates.id),
   jobId: varchar("job_id").references(() => jobs.id),
   status: applicationStatusEnum("status").default('submitted'),
@@ -259,7 +236,7 @@ export const jobApplications = pgTable("job_applications", {
 
 // Tasks table
 export const tasks = pgTable("tasks", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   description: text("description"),
   dueDate: timestamp("due_date"),
@@ -274,7 +251,7 @@ export const tasks = pgTable("tasks", {
 
 // Events table for tracking candidate interactions
 export const candidateEvents = pgTable("candidate_events", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   candidateId: varchar("candidate_id").references(() => candidates.id).notNull(),
   eventType: varchar("event_type").notNull(), // email_application, phone_call, interview, status_change, etc.
   description: text("description").notNull(),
@@ -284,7 +261,7 @@ export const candidateEvents = pgTable("candidate_events", {
 
 // Reminders table
 export const reminders = pgTable("reminders", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   description: text("description"),
   reminderDate: timestamp("reminder_date").notNull(),
@@ -300,7 +277,7 @@ export const reminders = pgTable("reminders", {
 
 // Interview Events table - for tracking interview schedules and appointments
 export const interviewEvents = pgTable("interview_events", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   description: text("description"),
   eventDate: timestamp("event_date").notNull(),
@@ -334,14 +311,6 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   tasks: many(tasks),
   reminders: many(reminders),
   interviewEvents: many(interviewEvents),
-  contacts: many(clientContacts),
-}));
-
-export const clientContactsRelations = relations(clientContacts, ({ one }) => ({
-  client: one(clients, {
-    fields: [clientContacts.clientId],
-    references: [clients.id],
-  }),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
@@ -509,7 +478,7 @@ export type User = typeof users.$inferSelect;
 
 // Email table for tracking sent emails
 export const emails = pgTable("emails", {
-  id: varchar("id").primaryKey().default(sql`substring(md5(random()::text || clock_timestamp()::text) from 1 for 8) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 9 for 4) || '-4' || substring(md5(random()::text || clock_timestamp()::text) from 13 for 3) || '-' || (8 + (random() * 4)::int)::text || substring(md5(random()::text || clock_timestamp()::text) from 17 for 3) || '-' || substring(md5(random()::text || clock_timestamp()::text) from 21 for 12)`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   from: varchar("from").notNull(),
   to: varchar("to").notNull(),
   cc: varchar("cc"),
@@ -600,12 +569,6 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
-export const insertClientContactSchema = createInsertSchema(clientContacts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 export type InsertEmail = z.infer<typeof insertEmailSchema>;
 export type Email = typeof emails.$inferSelect;
 export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
@@ -624,9 +587,6 @@ export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;
-export type ClientWithContacts = Client & { contacts: ClientContact[] };
-export type InsertClientContact = z.infer<typeof insertClientContactSchema>;
-export type ClientContact = typeof clientContacts.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;
 export type JobWithClient = Job & { client: Client };

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { storage } from "./storage.js";
+import { storage } from "./storage";
 
 // Extend Express Request type to include user permissions
 declare global {
@@ -25,11 +25,11 @@ export function requirePermission(resource: string, action: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const sessionUser = req.user as any;
-      if (!sessionUser?.id) {
+      if (!sessionUser?.claims?.sub) {
         return res.status(401).json({ message: "Unauthorized - No user found" });
       }
 
-      const userId = sessionUser.id;
+      const userId = sessionUser.claims.sub;
       const hasPermission = await storage.hasPermission(userId, resource, action);
 
       if (!hasPermission) {
@@ -63,11 +63,11 @@ export function requireRole(roleType: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const sessionUser = req.user as any;
-      if (!sessionUser?.id) {
+      if (!sessionUser?.claims?.sub) {
         return res.status(401).json({ message: "Unauthorized - No user found" });
       }
 
-      const userId = sessionUser.id;
+      const userId = sessionUser.claims.sub;
       const hasRole = await storage.hasRole(userId, roleType);
 
       if (!hasRole) {

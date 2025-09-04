@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
-import { storage } from './storage.js';
+import { google } from 'googleapis';
+import { storage } from './storage';
 
 // Create transporter based on configuration
 let transporter: nodemailer.Transporter;
@@ -116,7 +117,21 @@ export async function reloadEmailConfig() {
   return emailConfigLoaded;
 }
 
-// cPanel-only email service - no external dependencies
+// Gmail API setup for reading incoming emails
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  'http://localhost:3000/oauth2callback'
+);
+
+if (process.env.GMAIL_ACCESS_TOKEN && process.env.GMAIL_REFRESH_TOKEN) {
+  oauth2Client.setCredentials({
+    access_token: process.env.GMAIL_ACCESS_TOKEN,
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+  });
+}
+
+export const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
 interface EmailParams {
   to: string;
@@ -151,7 +166,7 @@ export async function sendEmail(params: EmailParams): Promise<{ success: boolean
   try {
     // Get the email user from database settings
     const emailUser = await storage.getSystemSetting('CPANEL_EMAIL_USER');
-    const defaultFrom = emailUser?.value || 'noreply@localhost.local';
+    const defaultFrom = emailUser?.value || process.env.GMAIL_USER;
 
     const mailOptions = {
       from: params.from || defaultFrom,

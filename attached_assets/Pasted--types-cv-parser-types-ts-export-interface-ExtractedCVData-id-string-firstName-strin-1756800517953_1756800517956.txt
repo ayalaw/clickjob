@@ -1,0 +1,362 @@
+// types/cv-parser.types.ts
+export interface ExtractedCVData {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  street?: string;
+  houseNumber?: string;
+  age?: number;
+  birthDate?: string;
+  gender?: 'male' | 'female' | 'unknown';
+  lastPosition?: string;
+  confidence: {
+    firstName: number;
+    lastName: number;
+    email: number;
+    phone: number;
+    address: number;
+    age: number;
+    gender: number;
+    lastPosition: number;
+  };
+  rawText: string;
+  isApproved: boolean;
+  extractedAt: Date;
+}
+
+// hooks/useCVParser.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
+interface ParseCVPayload {
+  file?: File;
+  text?: string;
+  candidateId?: string;
+}
+
+interface ApproveDataPayload {
+  id: string;
+  data: Partial<ExtractedCVData>;
+}
+
+export const useCVParser = () => {
+  const queryClient = useQueryClient();
+
+  const parseCVMutation = useMutation({
+    mutationFn: async ({ file, text, candidateId }: ParseCVPayload) => {
+      const formData = new FormData();
+      
+      if (file) {
+        formData.append('cv', file);
+      }
+      if (text) {
+        formData.append('text', text);
+      }
+      if (candidateId) {
+        formData.append('candidateId', candidateId);
+      }
+
+      const response = await fetch('/api/cv-parser/parse', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to parse CV');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success('קורות החיים עובדו בהצלחה');
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`שגיאה בעיבוד קורות החיים: ${error.message}`);
+    },
+  });
+
+  const approveDataMutation = useMutation({
+    mutationFn: async ({ id, data }: ApproveDataPayload) => {
+      const response = await fetch(`/api/cv-parser/approve/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to approve data');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success('הנתונים אושרו ונשמרו בהצלחה');
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`שגיאה באישור הנתונים: ${error.message}`);
+    },
+  });
+
+  return {
+    parseCV: parseCVMutation.mutate,
+    approveData: approveDataMutation.mutate,
+    isParsingCV: parseCVMutation.isPending,
+    isApprovingData: approveDataMutation.isPending,
+  };
+};
+
+// components/CVUploader.tsx
+import React, { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCVParser } from '../hooks/useCVParser';
+
+interface CVUploaderProps {
+  onDataExtracted: (data: ExtractedCVData) => void;
+  candidateId?: string;
+}
+
+export const CVUploader: React.FC<CVUploaderProps> = ({ onDataExtracted, candidateId }) => {
+  const [textInput, setTextInput] = useState('');
+  const [activeTab, setActiveTab] = useState('file');
+  const { parseCV, isParsingCV } = useCVParser();
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      try {
+        const result = await parseCV({ file, candidateId });
+        onDataExtracted(result.data);
+      } catch (error) {
+        console.error('Error parsing CV:', error);
+      }
+    }
+  }, [parseCV, candidateId, onDataExtracted]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
+      'text/plain': ['.txt'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+    },
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10MB
+  });
+
+  const handleTextSubmit = async () => {
+    if (textInput.trim()) {
+      try {
+        const result = await parseCV({ text: textInput, candidateId });
+        onDataExtracted(result.data);
+        setTextInput('');
+      } catch (error) {
+        console.error('Error parsing text:', error);
+      }
+    }
+  };
+
+  return (
+    <Card className="w-full">
+      <CardContent className="p-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="file">העלאת קובץ</TabsTrigger>
+            <TabsTrigger value="text">הדבקת טקסט</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="file">
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <input {...getInputProps()} />
+              {isParsingCV ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+                  <p className="text-gray-600">מעבד קורות חיים...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <Upload className="w-12 h-12 text-gray-400" />
+                  <div>
+                    <p className="text-lg font-medium text-gray-700">
+                      {isDragActive ? 'שחרר כאן את הקובץ' : 'גרור קובץ קורות חיים או לחץ לבחירה'}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      PDF, Word, TXT, JPG, PNG - עד 10MB
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="text">
+            <div className="space-y-4">
+              <Textarea
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder="הדבק כאן את טקסט קורות החיים..."
+                className="min-h-[200px] resize-vertical"
+                disabled={isParsingCV}
+              />
+              <Button
+                onClick={handleTextSubmit}
+                disabled={!textInput.trim() || isParsingCV}
+                className="w-full"
+              >
+                {isParsingCV ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    מעבד...
+                  </>
+                ) : (
+                  'עבד טקסט'
+                )}
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+// components/CVDataReview.tsx
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, AlertCircle, Edit, Save, X } from 'lucide-react';
+import { ExtractedCVData } from '../types/cv-parser.types';
+import { useCVParser } from '../hooks/useCVParser';
+
+const reviewSchema = z.object({
+  firstName: z.string().min(1, 'שם פרטי נדרש').optional(),
+  lastName: z.string().min(1, 'שם משפחה נדרש').optional(),
+  email: z.string().email('כתובת אימייל לא תקינה').optional(),
+  phone: z.string().min(9, 'מספר טלפון לא תקין').optional(),
+  city: z.string().optional(),
+  street: z.string().optional(),
+  houseNumber: z.string().optional(),
+  age: z.number().min(16).max(100).optional(),
+  birthDate: z.string().optional(),
+  gender: z.enum(['male', 'female', 'unknown']).optional(),
+  lastPosition: z.string().optional(),
+});
+
+type ReviewFormData = z.infer<typeof reviewSchema>;
+
+interface CVDataReviewProps {
+  data: ExtractedCVData;
+  onApproved: () => void;
+  onCancel: () => void;
+}
+
+const ConfidenceBadge: React.FC<{ confidence: number }> = ({ confidence }) => {
+  const getVariant = (conf: number) => {
+    if (conf > 0.8) return 'default';
+    if (conf > 0.5) return 'secondary';
+    return 'destructive';
+  };
+
+  const getLabel = (conf: number) => {
+    if (conf > 0.8) return 'גבוה';
+    if (conf > 0.5) return 'בינוני';
+    return 'נמוך';
+  };
+
+  return (
+    <Badge variant={getVariant(confidence)} className="text-xs">
+      {getLabel(confidence)} ({Math.round(confidence * 100)}%)
+    </Badge>
+  );
+};
+
+export const CVDataReview: React.FC<CVDataReviewProps> = ({ data, onApproved, onCancel }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const { approveData, isApprovingData } = useCVParser();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<ReviewFormData>({
+    resolver: zodResolver(reviewSchema),
+    defaultValues: {
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      city: data.city || '',
+      street: data.street || '',
+      houseNumber: data.houseNumber || '',
+      age: data.age,
+      birthDate: data.birthDate || '',
+      gender: data.gender || 'unknown',
+      lastPosition: data.lastPosition || '',
+    },
+  });
+
+  const onSubmit = async (formData: ReviewFormData) => {
+    if (data.id) {
+      await approveData({ id: data.id, data: formData });
+      onApproved();
+    }
+  };
+
+  const FormField: React.FC<{
+    label: string;
+    name: keyof ReviewFormData;
+    confidence: number;
+    type?: string;
+    options?: { value: string; label: string }[];
+  }> = ({ label, name, confidence, type = 'text', options }) => {
+    const value = watch(name);
+    const error = errors[name];
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor={name} className="text-sm font-medium">
+            {label}
+          </Label>
+          <ConfidenceBadge confidence={confidence} />
+        </div>
+
+        {isEditing ? (
+          options ? (
+            <Select value={value as string} onValueChange={(val) => setValue(name, val as any)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>

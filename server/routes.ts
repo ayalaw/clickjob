@@ -4,13 +4,12 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { storage } from "./storage.js";
-import { setupLocalAuth, isAuthenticated } from "./localAuth.js";
-import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware.js";
+import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
+import { requireRole, requirePermission, injectUserPermissions } from "./authMiddleware";
 import { 
   insertCandidateSchema, 
-  insertClientSchema,
-  insertClientContactSchema,
+  insertClientSchema, 
   insertJobSchema, 
   insertJobApplicationSchema, 
   insertTaskSchema, 
@@ -25,9 +24,9 @@ import { z } from "zod";
 import mammoth from 'mammoth';
 import { execSync } from 'child_process';
 import mime from 'mime-types';
-import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService.js';
-import { generateSecurePassword } from './passwordUtils.js';
-// import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email.js';
+import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
+import { generateSecurePassword } from './passwordUtils';
+import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email';
 import nodemailer from 'nodemailer';
 import { 
   hasPermission, 
@@ -39,7 +38,7 @@ import {
   MENU_PERMISSIONS,
   COMPONENT_PERMISSIONS,
   ROLE_PERMISSIONS
-} from './detailedPermissions.js';
+} from './detailedPermissions';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -877,12 +876,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth middleware
-  setupLocalAuth(app);
+  await setupAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
+      const userId = (req.user as any).claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -1324,7 +1323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'attended_interview': 'הגיע לראיון אצל מעסיק',
           'missed_interview': 'לא הגיע לראיון',
           'passed_interview': 'עבר ראיון אצל מעסיק',
-          'rejected_by_employer': 'נפסל בראיון',
+          'rejected_by_employer': 'נפסל ע"י מעסיק',
           'hired': 'התקבל לעבודה',
           'employment_ended': 'סיים העסקה'
         };
@@ -1819,85 +1818,6 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
     } catch (error) {
       console.error("Error deleting client:", error);
       res.status(500).json({ message: "Failed to delete client" });
-    }
-  });
-
-  // Client with contacts route
-  app.get('/api/clients/:id/with-contacts', isAuthenticated, async (req, res) => {
-    try {
-      const client = await storage.getClientWithContacts(req.params.id);
-      if (!client) {
-        return res.status(404).json({ message: "לקוח לא נמצא" });
-      }
-      res.json(client);
-    } catch (error) {
-      console.error("Error fetching client with contacts:", error);
-      res.status(500).json({ message: "שגיאה בטעינת לקוח עם אנשי קשר" });
-    }
-  });
-
-  // Client contacts routes
-  app.get('/api/clients/:clientId/contacts', isAuthenticated, async (req, res) => {
-    try {
-      const contacts = await storage.getClientContacts(req.params.clientId);
-      res.json(contacts);
-    } catch (error) {
-      console.error("Error fetching client contacts:", error);
-      res.status(500).json({ message: "שגיאה בטעינת אנשי קשר" });
-    }
-  });
-
-  app.get('/api/client-contacts/:id', isAuthenticated, async (req, res) => {
-    try {
-      const contact = await storage.getClientContact(req.params.id);
-      if (!contact) {
-        return res.status(404).json({ message: "איש קשר לא נמצא" });
-      }
-      res.json(contact);
-    } catch (error) {
-      console.error("Error fetching client contact:", error);
-      res.status(500).json({ message: "שגיאה בטעינת איש קשר" });
-    }
-  });
-
-  app.post('/api/clients/:clientId/contacts', isAuthenticated, async (req, res) => {
-    try {
-      const contactData = insertClientContactSchema.parse({
-        ...req.body,
-        clientId: req.params.clientId
-      });
-      const contact = await storage.createClientContact(contactData);
-      res.status(201).json(contact);
-    } catch (error) {
-      console.error("Error creating client contact:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "שגיאת אימות", errors: error.errors });
-      }
-      res.status(500).json({ message: "שגיאה ביצירת איש קשר" });
-    }
-  });
-
-  app.put('/api/client-contacts/:id', isAuthenticated, async (req, res) => {
-    try {
-      const contactData = insertClientContactSchema.partial().parse(req.body);
-      const contact = await storage.updateClientContact(req.params.id, contactData);
-      res.json(contact);
-    } catch (error) {
-      console.error("Error updating client contact:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "שגיאת אימות", errors: error.errors });
-      }
-      res.status(500).json({ message: "שגיאה בעדכון איש קשר" });
-    }
-  });
-
-  app.delete('/api/client-contacts/:id', isAuthenticated, async (req, res) => {
-    try {
-      await storage.deleteClientContact(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting client contact:", error);
-      res.status(500).json({ message: "שגיאה במחיקת איש קשר" });
     }
   });
 
@@ -2517,33 +2437,11 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Email routes
   app.post('/api/emails/send-candidate-profile', isAuthenticated, async (req: any, res) => {
     try {
-      const { candidateId, to, cc, notes, includeSummary, jobId } = req.body;
+      const { candidateId, to, cc, notes, includeSummary } = req.body;
       
       const candidate = await storage.getCandidate(candidateId);
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
-      }
-
-      // Check if jobId is provided and has selected contacts
-      let recipients = [{ email: to, name: 'לקוח' }];
-      if (jobId) {
-        const job = await storage.getJob(jobId);
-        if (job && job.selectedContactIds && job.selectedContactIds.length > 0) {
-          // Get selected contacts
-          const selectedContacts = await Promise.all(
-            job.selectedContactIds.map(contactId => storage.getClientContact(contactId))
-          );
-          
-          // Filter valid contacts with emails
-          const validContacts = selectedContacts.filter(contact => contact && contact.email);
-          
-          if (validContacts.length > 0) {
-            recipients = validContacts.map(contact => ({
-              email: contact.email!,
-              name: contact.name
-            }));
-          }
-        }
       }
 
       const template = emailTemplates.candidateProfile(candidate);
@@ -2578,64 +2476,38 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         }
       }
 
-      // Send emails to all recipients
-      const results = [];
-      let allSuccessful = true;
-      let errorMessage = '';
+      const emailData = {
+        to,
+        cc,
+        subject: template.subject,
+        html: template.html,
+        attachments: attachments
+      };
 
-      for (const recipient of recipients) {
-        const emailData = {
-          to: recipient.email,
+      const result = await sendEmail(emailData);
+      
+      if (result.success) {
+        // Save email to database
+        await storage.createEmail({
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+          to,
           cc,
           subject: template.subject,
-          html: template.html,
-          attachments: attachments
-        };
-
-        const result = await sendEmail(emailData);
-        results.push({ recipient: recipient.email, success: result.success, error: result.error });
+          body: template.html,
+          isHtml: true,
+          status: 'sent',
+          sentAt: new Date(),
+          candidateId,
+          sentBy: req.user.id,
+        });
         
-        if (result.success) {
-          // Save email to database
-          await storage.createEmail({
-            from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
-            to: recipient.email,
-            cc,
-            subject: template.subject,
-            body: template.html,
-            isHtml: true,
-            status: 'sent',
-            sentAt: new Date(),
-            candidateId,
-            sentBy: req.user.id,
-          });
-        } else {
-          allSuccessful = false;
-          errorMessage += `נכשל בשליחה ל-${recipient.name} (${recipient.email}): ${result.error}; `;
-          
-          await storage.createEmail({
-            from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
-            to: recipient.email,
-            cc,
-            subject: template.subject,
-            body: template.html,
-            isHtml: true,
-            status: 'failed',
-            candidateId,
-            sentBy: req.user.id,
-            errorMessage: result.error,
-          });
-        }
-      }
-
-      if (allSuccessful) {
         // Add event for sending candidate profile to employer
         await storage.addCandidateEvent({
           candidateId,
           eventType: 'sent_to_employer',
-          description: `פרופיל המועמד נשלח ל-${recipients.length} אנשי קשר`,
+          description: `פרופיל המועמד נשלח למעסיק`,
           metadata: {
-            recipients: recipients.map(r => r.email),
+            recipient: to,
             cc: cc,
             notes: notes,
             sentBy: req.user.id,
@@ -2646,19 +2518,22 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         // Update candidate status automatically when sent to employer
         await storage.updateCandidate(candidateId, { status: 'sent_to_employer' });
         
-        res.json({ 
-          success: true, 
-          message: `נשלח בהצלחה ל-${recipients.length} אנשי קשר`,
-          recipients: recipients.map(r => r.email)
-        });
+        res.json({ success: true });
       } else {
-        const successfulCount = results.filter(r => r.success).length;
-        res.status(500).json({ 
-          success: false, 
-          error: errorMessage,
-          message: `נשלח ל-${successfulCount} מתוך ${recipients.length} אנשי קשר`,
-          results
+        await storage.createEmail({
+          from: process.env.GMAIL_USER || 'noreply@yourcompany.com',
+          to,
+          cc,
+          subject: template.subject,
+          body: template.html,
+          isHtml: true,
+          status: 'failed',
+          candidateId,
+          sentBy: req.user.id,
+          errorMessage: result.error,
         });
+        
+        res.status(500).json({ success: false, error: result.error });
       }
     } catch (error) {
       console.error("Error sending candidate profile email:", error);
@@ -2971,7 +2846,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Manual check for incoming emails route
   app.post('/api/emails/check-incoming', isAuthenticated, async (req: any, res) => {
     try {
-      // await checkCpanelEmails(); // Disabled for local development
+      await checkCpanelEmails();
       res.json({ success: true, message: "בדיקת מיילים נכנסים הושלמה" });
     } catch (error) {
       console.error("Error checking incoming emails:", error);
@@ -3821,8 +3696,7 @@ ${recommendation}
 
   // Start automatic email monitoring 
   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-  // Disabled email monitoring for local development
-  // startCpanelEmailMonitoring();
+  startCpanelEmailMonitoring();
 
   // RBAC Routes - Role & Permission Management
   
@@ -3830,7 +3704,7 @@ ${recommendation}
   app.get('/api/roles', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.id;
+    const userId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3853,7 +3727,7 @@ ${recommendation}
   app.get('/api/roles/:id', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.id;
+    const userId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3916,7 +3790,7 @@ ${recommendation}
   app.get('/api/permissions', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.id;
+    const userId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3950,7 +3824,7 @@ ${recommendation}
   app.post('/api/users/:userId/roles', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.id;
+    const userId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3990,7 +3864,7 @@ ${recommendation}
   app.delete('/api/users/:userId/roles/:roleId', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const sessionUserId = sessionUser.id;
+    const sessionUserId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(sessionUserId, 'admin') || await storage.hasRole(sessionUserId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -4040,7 +3914,7 @@ ${recommendation}
   app.get('/api/users/all', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.id;
+    const userId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -4065,7 +3939,7 @@ ${recommendation}
   app.post('/api/users', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.id;
+    const userId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -4149,7 +4023,7 @@ ${recommendation}
   app.delete('/api/users/:userId', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const sessionUserId = sessionUser.id;
+    const sessionUserId = sessionUser.claims.sub;
     const hasAdminRole = await storage.hasRole(sessionUserId, 'admin') || await storage.hasRole(sessionUserId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -4289,7 +4163,7 @@ ${recommendation}
   // Route לבדיקה ידנית של כל המיילים
   app.post('/api/check-all-emails', isAuthenticated, async (req, res) => {
     try {
-      // await checkCpanelEmails(); // Disabled for local development
+      await checkCpanelEmails();
       res.json({ message: 'בדיקה ידנית של כל המיילים הופעלה' });
     } catch (error) {
       console.error('שגיאה בבדיקה ידנית:', error);
@@ -4543,7 +4417,7 @@ ${recommendation}
   app.get('/api/permissions/detailed/:userId?', isAuthenticated, async (req, res) => {
     try {
       const sessionUser = req.user as any;
-      const requestingUserId = sessionUser.id;
+      const requestingUserId = sessionUser.claims.sub;
       const targetUserId = req.params.userId || requestingUserId;
       
       // משתמשים יכולים לראות רק את ההרשאות שלהם, חוץ מאדמינים
@@ -4677,8 +4551,8 @@ ${recommendation}
       
       // בדיקת הרשאות - רק אדמינים יכולים לאפס סיסמאות
       const sessionUser = req.user as any;
-      const hasAdminRole = await storage.hasRole(sessionUser.id, 'admin') || 
-                          await storage.hasRole(sessionUser.id, 'super_admin');
+      const hasAdminRole = await storage.hasRole(sessionUser.claims.sub, 'admin') || 
+                          await storage.hasRole(sessionUser.claims.sub, 'super_admin');
       
       if (!hasAdminRole) {
         return res.status(403).json({ message: "אין הרשאה לאיפוס סיסמאות" });

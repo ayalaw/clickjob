@@ -1,7 +1,6 @@
-import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes.js";
-import { setupVite, serveStatic, log } from "./vite.js";
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
@@ -69,16 +68,16 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Start cPanel email system after server starts (disabled for standalone deployment)
-    // import('./cpanel-email').then(async ({ testAllCpanelEmail, reloadCpanelConfig }) => {
-    //   setTimeout(async () => {
-    //     console.log('🚀 מפעיל מערכת cPanel מלאה...');
-    //     console.log('🔄 טוען הגדרות cPanel מבסיס הנתונים...');
-    //     await reloadCpanelConfig();
-    //     setTimeout(() => {
-    //       testAllCpanelEmail();
-    //     }, 2000); // Give time for config to load
-    //   }, 5000); // Wait 5 seconds after server start
-    // });
+    // Start cPanel email system after server starts
+    import('./cpanel-email').then(async ({ testAllCpanelEmail, reloadCpanelConfig }) => {
+      setTimeout(async () => {
+        console.log('🚀 מפעיל מערכת cPanel מלאה...');
+        console.log('🔄 טוען הגדרות cPanel מבסיס הנתונים...');
+        await reloadCpanelConfig();
+        setTimeout(() => {
+          testAllCpanelEmail();
+        }, 2000); // Give time for config to load
+      }, 5000); // Wait 5 seconds after server start
+    });
   });
 })();
