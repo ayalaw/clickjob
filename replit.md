@@ -1,6 +1,8 @@
 # Overview
 
-This is a comprehensive Recruitment Management System (RMS) built as a full-stack web application. The system manages candidates, clients, jobs, applications, and tasks for recruitment agencies. It features a modern React frontend with shadcn/ui components and an Express.js backend with PostgreSQL database integration using Drizzle ORM. The application supports Hebrew language interface and includes authentication, file uploads, and real-time data management capabilities.
+This is a recruitment management system built as a full-stack web application. The system manages candidates, clients, jobs, interviews, and email communications for recruitment agencies. It features a modern React frontend with a Node.js/Express backend, using PostgreSQL for data persistence and Drizzle ORM for database operations.
+
+The application supports both Replit authentication and local password-based authentication, with a comprehensive role-based permission system. It includes advanced features like CV search, email integration, interview scheduling, and automated candidate status tracking.
 
 # User Preferences
 
@@ -9,89 +11,98 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-- **React 18** with TypeScript for type safety and modern development
-- **Vite** for fast development server and optimized builds
-- **Wouter** for lightweight client-side routing
-- **TanStack Query (React Query)** for server state management and caching
-- **React Hook Form** with Zod validation for form handling
-- **shadcn/ui** component library built on Radix UI primitives
-- **Tailwind CSS** for styling with CSS variables for theming
-- **Right-to-Left (RTL)** layout support for Hebrew interface
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter for client-side routing
+- **State Management**: TanStack Query (React Query) for server state management
+- **UI Components**: Radix UI primitives with custom Tailwind CSS styling
+- **Styling**: Tailwind CSS with CSS custom properties for theming
+- **Build Tool**: Vite for development and production builds
+- **Form Handling**: React Hook Form with Zod validation
 
 ## Backend Architecture
-- **Express.js** server with TypeScript
-- **RESTful API** design with proper HTTP status codes and error handling
-- **Modular route structure** separating concerns by resource type
-- **Storage abstraction layer** for database operations
-- **Middleware-based architecture** for authentication and request processing
-- **File upload handling** with Multer for resume management
-
-## Authentication System
-- **Replit OAuth** integration for seamless authentication
-- **Passport.js** with OpenID Connect strategy
-- **Session-based authentication** with PostgreSQL session storage
-- **User profile management** with automatic user creation/update
+- **Runtime**: Node.js with TypeScript (tsx for development)
+- **Framework**: Express.js for REST API endpoints
+- **Authentication**: Dual authentication system supporting both Replit OIDC and local password-based auth
+- **Session Management**: Express session with PostgreSQL session store
+- **File Handling**: Multer for file uploads with support for CV/resume processing
+- **Email Processing**: IMAP integration for incoming emails and SMTP for outgoing emails
 
 ## Database Design
-- **PostgreSQL** as the primary database
-- **Drizzle ORM** for type-safe database operations
-- **Schema-first approach** with shared type definitions
-- **Relational data model** with proper foreign key constraints
-- **Migration system** for database versioning
+- **Database**: PostgreSQL with connection pooling
+- **ORM**: Drizzle ORM for type-safe database operations
+- **Schema**: Comprehensive relational schema with proper foreign key relationships
+- **Key Tables**:
+  - Users with role-based permissions
+  - Candidates with detailed tracking
+  - Clients and client contacts
+  - Jobs with status management
+  - Email communications
+  - Interview events and reminders
+  - System settings for configuration
 
-### Core Entities:
-- **Users**: Authentication and profile management
-- **Candidates**: Comprehensive candidate profiles with resume storage
-- **Clients**: Company and contact management
-- **Jobs**: Job postings with client relationships
-- **Job Applications**: Candidate-job matching with status tracking
-- **Tasks**: Task management for recruitment workflows
-- **Sessions**: Secure session storage
+## Permission System
+- **Role Types**: Super admin, admin, and user roles
+- **Resource-Based Permissions**: Granular permissions for different resources (candidates, jobs, clients)
+- **Action-Based Control**: Create, read, update, delete permissions per resource
+- **Page-Level Security**: Permission checks for accessing different application pages
+- **Data Filtering**: Role-based data visibility (e.g., hiding client names for certain users)
 
 ## File Management
-- **Resume upload** support for PDF and DOC formats
-- **File validation** with size and type restrictions
-- **Local file storage** with organized directory structure
-- **File metadata** tracking in database
-- **Automatic CV processing** from incoming emails with attachment extraction
-- **Email integration** with cPanel IMAP for automatic candidate creation
+- **Upload Handling**: Supports PDF, DOC, DOCX file uploads for CVs
+- **File Processing**: Automatic text extraction from uploaded documents using mammoth for Word documents
+- **Storage**: Local file system storage with proper MIME type validation
+
+## Email Integration
+- **Incoming Email**: IMAP integration for monitoring and processing incoming emails
+- **Outgoing Email**: SMTP configuration for sending emails to candidates and clients
+- **Email Templates**: Configurable message templates for common communications
+- **cPanel Support**: Specific configurations for cPanel-based email hosting
+
+## Development Configuration
+- **Multiple Environments**: Support for Replit, standalone, and clean configurations
+- **Hot Reload**: Vite development server with HMR
+- **TypeScript**: Full TypeScript support across frontend and backend
+- **Path Aliases**: Organized import structure with @ aliases
 
 # External Dependencies
 
 ## Core Framework Dependencies
-- **@neondatabase/serverless**: PostgreSQL connection for Neon database hosting
-- **drizzle-orm**: Type-safe SQL query builder and ORM
-- **express**: Web application framework
-- **react**: UI library
-- **@tanstack/react-query**: Server state management
+- **React Ecosystem**: React 18, React DOM, React Hook Form, TanStack Query
+- **Backend Framework**: Express.js with TypeScript support via tsx
+- **Database**: PostgreSQL with Drizzle ORM and connection pooling via @neondatabase/serverless
+- **Authentication**: Passport.js with OpenID Connect strategy for Replit auth
 
 ## UI and Styling
-- **@radix-ui/***: Comprehensive set of UI primitives for accessible components
-- **tailwindcss**: Utility-first CSS framework
-- **class-variance-authority**: Component variant management
-- **lucide-react**: Icon library
+- **Component Library**: Extensive Radix UI primitives for accessible components
+- **Styling**: Tailwind CSS with custom configuration
+- **Icons**: Lucide React icon library
+- **Utilities**: clsx and tailwind-merge for conditional styling
 
-## Authentication and Security
-- **passport**: Authentication middleware
-- **openid-client**: OAuth/OpenID Connect implementation
-- **express-session**: Session management
-- **connect-pg-simple**: PostgreSQL session store
-
-## Form Handling and Validation
-- **react-hook-form**: Form state management
-- **@hookform/resolvers**: Form validation resolvers
-- **zod**: Schema validation library
+## File and Email Processing
+- **File Upload**: Multer for handling multipart/form-data
+- **Document Processing**: Mammoth for Word document text extraction
+- **Email**: nodemailer for SMTP, imap for incoming email processing
+- **Email Parsing**: mailparser for processing email content
 
 ## Development and Build Tools
-- **vite**: Build tool and development server
-- **typescript**: Static type checking
-- **tsx**: TypeScript execution engine
-- **esbuild**: JavaScript bundler for production builds
+- **Build Tool**: Vite with React plugin
+- **Bundling**: esbuild for server-side bundling
+- **Type Checking**: TypeScript with strict configuration
+- **Database Migrations**: Drizzle Kit for schema management
+- **Session Storage**: connect-pg-simple for PostgreSQL session store
 
-## Utility Libraries
-- **date-fns**: Date manipulation and formatting
-- **multer**: File upload middleware
-- **clsx**: Conditional className utility
-- **cmdk**: Command menu component
+## Authentication Services
+- **Replit Integration**: OpenID Connect client for Replit authentication
+- **Password Hashing**: bcrypt for secure password storage
+- **Session Management**: express-session with PostgreSQL backing store
 
-The system is designed for deployment on Replit with environment-based configuration for database connections and authentication settings.
+## External Integrations
+- **Email Services**: Support for cPanel SMTP/IMAP configurations
+- **Database Hosting**: Neon PostgreSQL with serverless connections
+- **Development Platform**: Replit-specific plugins and error handling
+
+## Security and Validation
+- **Input Validation**: Zod schema validation for API endpoints and forms
+- **MIME Type Detection**: mime-types for file validation
+- **CORS and Security**: Standard Express security middleware
+- **Environment Variables**: dotenv for configuration management
