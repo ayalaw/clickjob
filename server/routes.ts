@@ -1343,7 +1343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             previousStatus: currentCandidate?.status,
             newStatus: candidateData.status,
             changeType: 'manual',
-            updatedBy: req.user?.claims?.sub,
+            updatedBy: req.user?.id,
             timestamp: new Date().toISOString()
           }
         });
@@ -2206,7 +2206,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
           metadata: {
             jobId: applicationData.jobId,
             status: applicationData.status || 'submitted',
-            appliedBy: req.user?.claims?.sub,
+            appliedBy: req.user?.id,
             timestamp: new Date().toISOString()
           }
         });
@@ -2255,7 +2255,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             newStatus: applicationData.status,
             notes: applicationData.notes,
             feedback: applicationData.clientFeedback || applicationData.reviewerFeedback,
-            updatedBy: req.user?.claims?.sub,
+            updatedBy: req.user?.id,
             timestamp: new Date().toISOString()
           }
         });
@@ -2306,7 +2306,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             newStatus: updates.status,
             notes: updates.notes,
             feedback: updates.clientFeedback || updates.reviewerFeedback,
-            updatedBy: req.user?.claims?.sub,
+            updatedBy: req.user?.id,
             timestamp: new Date().toISOString()
           }
         });
@@ -2384,7 +2384,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
             taskTitle: taskData.title,
             taskType: taskData.type,
             dueDate: taskData.dueDate?.toISOString(),
-            createdBy: req.user?.claims?.sub,
+            createdBy: req.user?.id,
             timestamp: new Date().toISOString()
           }
         });
@@ -3711,7 +3711,7 @@ ${recommendation}
   app.get('/api/roles', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.claims.sub;
+    const userId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3734,7 +3734,7 @@ ${recommendation}
   app.get('/api/roles/:id', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.claims.sub;
+    const userId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3797,7 +3797,7 @@ ${recommendation}
   app.get('/api/permissions', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.claims.sub;
+    const userId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3831,7 +3831,7 @@ ${recommendation}
   app.post('/api/users/:userId/roles', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.claims.sub;
+    const userId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3871,7 +3871,7 @@ ${recommendation}
   app.delete('/api/users/:userId/roles/:roleId', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const sessionUserId = sessionUser.claims.sub;
+    const sessionUserId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(sessionUserId, 'admin') || await storage.hasRole(sessionUserId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3921,7 +3921,7 @@ ${recommendation}
   app.get('/api/users/all', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.claims.sub;
+    const userId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -3946,7 +3946,7 @@ ${recommendation}
   app.post('/api/users', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const userId = sessionUser.claims.sub;
+    const userId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(userId, 'admin') || await storage.hasRole(userId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -4030,7 +4030,7 @@ ${recommendation}
   app.delete('/api/users/:userId', isAuthenticated, async (req, res) => {
     // Check if user has admin or super_admin role
     const sessionUser = req.user as any;
-    const sessionUserId = sessionUser.claims.sub;
+    const sessionUserId = sessionUser.id;
     const hasAdminRole = await storage.hasRole(sessionUserId, 'admin') || await storage.hasRole(sessionUserId, 'super_admin');
     
     if (!hasAdminRole) {
@@ -4424,7 +4424,7 @@ ${recommendation}
   app.get('/api/permissions/detailed/:userId?', isAuthenticated, async (req, res) => {
     try {
       const sessionUser = req.user as any;
-      const requestingUserId = sessionUser.claims.sub;
+      const requestingUserId = sessionUser.id;
       const targetUserId = req.params.userId || requestingUserId;
       
       // משתמשים יכולים לראות רק את ההרשאות שלהם, חוץ מאדמינים
@@ -4558,8 +4558,8 @@ ${recommendation}
       
       // בדיקת הרשאות - רק אדמינים יכולים לאפס סיסמאות
       const sessionUser = req.user as any;
-      const hasAdminRole = await storage.hasRole(sessionUser.claims.sub, 'admin') || 
-                          await storage.hasRole(sessionUser.claims.sub, 'super_admin');
+      const hasAdminRole = await storage.hasRole(sessionUser.id, 'admin') || 
+                          await storage.hasRole(sessionUser.id, 'super_admin');
       
       if (!hasAdminRole) {
         return res.status(403).json({ message: "אין הרשאה לאיפוס סיסמאות" });
