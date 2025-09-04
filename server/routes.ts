@@ -27,7 +27,7 @@ import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService.js';
 import { generateSecurePassword } from './passwordUtils.js';
-import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email.js';
+// import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email.js';
 import nodemailer from 'nodemailer';
 import { 
   hasPermission, 
@@ -2971,7 +2971,7 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Manual check for incoming emails route
   app.post('/api/emails/check-incoming', isAuthenticated, async (req: any, res) => {
     try {
-      await checkCpanelEmails();
+      // await checkCpanelEmails(); // Disabled for local development
       res.json({ success: true, message: "בדיקת מיילים נכנסים הושלמה" });
     } catch (error) {
       console.error("Error checking incoming emails:", error);
@@ -3821,7 +3821,8 @@ ${recommendation}
 
   // Start automatic email monitoring 
   console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-  startCpanelEmailMonitoring();
+  // Disabled email monitoring for local development
+  // startCpanelEmailMonitoring();
 
   // RBAC Routes - Role & Permission Management
   
@@ -4288,7 +4289,7 @@ ${recommendation}
   // Route לבדיקה ידנית של כל המיילים
   app.post('/api/check-all-emails', isAuthenticated, async (req, res) => {
     try {
-      await checkCpanelEmails();
+      // await checkCpanelEmails(); // Disabled for local development
       res.json({ message: 'בדיקה ידנית של כל המיילים הופעלה' });
     } catch (error) {
       console.error('שגיאה בבדיקה ידנית:', error);
