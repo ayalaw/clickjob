@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+.env
+.envm
+.env.example
+.replit
+package-lock.json
+
+.idea
+.local

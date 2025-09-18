@@ -8,7 +8,7 @@ import Navbar from "@/components/layout/navbar";
 import { ReminderPopup } from "@/components/reminder-popup";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
-import Login from "@/pages/login";
+import Login from "@/pages/login.tsx";
 import JobLanding from "@/pages/job-landing";
 import Dashboard from "@/pages/dashboard";
 import Candidates from "@/pages/candidates";
