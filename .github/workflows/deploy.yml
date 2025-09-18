@@ -1,0 +1,60 @@
+name: Deploy CRM-LINK
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # שרת: מעלה את dist ל- /home/click/public_html/api/dist
+      - name: Upload server dist
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz --delete
+          path: dist/
+          remote_path: /home/click/public_html/api/dist/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.SSH_KEY }}
+          # אם ה-SSH שלך לא על פורט 22, הוסיפי:
+          # remote_port: ${{ secrets.SSH_PORT }}
+
+      # פרונט: מעלה את build הסטטי לשורש האתר
+      - name: Upload frontend build
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz --delete
+          path: dist/public/
+          remote_path: /home/click/public_html/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.SSH_KEY }}
+          # remote_port: ${{ secrets.SSH_PORT }}
+
+      # יצירת app.js (אם חסר), התקנת חבילות שרת, ואתחול Passenger
+      - name: Server deps & restart Passenger
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd /home/click/public_html/api
+            mkdir -
