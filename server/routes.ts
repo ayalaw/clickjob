@@ -26,7 +26,8 @@ import { execSync } from 'child_process';
 import mime from 'mime-types';
 import { sendEmail, emailTemplates, sendWelcomeEmail, reloadEmailConfig } from './emailService';
 import { generateSecurePassword } from './passwordUtils';
-import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email';
+// cPanel email functionality disabled for standalone deployment
+// import { checkCpanelEmails, startCpanelEmailMonitoring } from './cpanel-email';
 import nodemailer from 'nodemailer';
 import { 
   hasPermission, 
@@ -2853,8 +2854,10 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Manual check for incoming emails route
   app.post('/api/emails/check-incoming', isAuthenticated, async (req: any, res) => {
     try {
-      await checkCpanelEmails();
-      res.json({ success: true, message: "בדיקת מיילים נכנסים הושלמה" });
+      // cPanel email check disabled for standalone deployment
+      console.log('ℹ️ בדיקת מיילים cPanel מנוטרלת למערכת עצמאית');
+      // await checkCpanelEmails();
+      res.json({ success: true, message: "בדיקת מיילים נכנסים מנוטרלת למערכת עצמאית" });
     } catch (error) {
       console.error("Error checking incoming emails:", error);
       res.status(500).json({ message: "Failed to check incoming emails" });
@@ -2864,13 +2867,14 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
   // Test IMAP connection route
   app.post('/api/emails/test-imap', async (req: any, res) => {
     try {
-      const { testCpanelImap, reloadCpanelConfig } = require('./cpanel-email');
+      // cPanel functionality disabled for standalone deployment
+      console.log('ℹ️ בדיקת cPanel מנוטרלת למערכת עצמאית');
+      // const { testCpanelImap, reloadCpanelConfig } = require('./cpanel-email');
+      // await reloadCpanelConfig();
       
-      console.log('🔄 טוען הגדרות cPanel מחדש לבדיקה...');
-      await reloadCpanelConfig();
-      
-      console.log('🧪 בודק חיבור IMAP...');
-      const result = await testCpanelImap();
+      console.log('🧪 בדיקת IMAP מנוטרלת למערכת עצמאית');
+      const result = { success: false, message: 'cPanel functionality disabled for standalone deployment' };
+      // const result = await testCpanelImap();
       
       res.json({ 
         success: result, 
@@ -2968,7 +2972,8 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
         const emailService = await import('./emailService');
         const cpanelEmail = await import('./cpanel-email');
         if (emailService.reloadEmailConfig) await emailService.reloadEmailConfig();
-        if (cpanelEmail.reloadCpanelConfig) await cpanelEmail.reloadCpanelConfig();
+        // cPanel reload disabled for standalone deployment
+        // if (cpanelEmail.reloadCpanelConfig) await cpanelEmail.reloadCpanelConfig();
         console.log('✅ הגדרות מייל נפרדות נטענו מחדש');
       } catch (reloadError) {
         console.warn('⚠️ שגיאה ברענון הגדרות:', reloadError);
@@ -3107,9 +3112,10 @@ ${extractedData.achievements ? `הישגים ופעילות נוספת: ${cleanS
       console.log('🔄 כפיית רענון הגדרות מייל...');
       try {
         const { reloadEmailConfig } = require('./emailService');
-        const { reloadCpanelConfig } = require('./cpanel-email');
+        // cPanel reload disabled for standalone deployment  
+        // const { reloadCpanelConfig } = require('./cpanel-email');
         await reloadEmailConfig();
-        await reloadCpanelConfig();
+        // await reloadCpanelConfig();
         console.log('✅ הגדרות מייל נטענו מחדש');
       } catch (reloadError) {
         console.warn('⚠️ שגיאה ברענון הגדרות:', reloadError);
@@ -3701,9 +3707,8 @@ ${recommendation}
     }
   });
 
-  // Start automatic email monitoring 
-  console.log('🚀 מתחיל מעקב אוטומטי אחרי מיילים נכנסים...');
-  startCpanelEmailMonitoring();
+  // cPanel email monitoring disabled for standalone deployment
+  console.log('ℹ️ מעקב מיילים cPanel מנוטרל למערכת עצמאית');
 
   // RBAC Routes - Role & Permission Management
   
@@ -4170,8 +4175,10 @@ ${recommendation}
   // Route לבדיקה ידנית של כל המיילים
   app.post('/api/check-all-emails', isAuthenticated, async (req, res) => {
     try {
-      await checkCpanelEmails();
-      res.json({ message: 'בדיקה ידנית של כל המיילים הופעלה' });
+      // cPanel email check disabled for standalone deployment
+      console.log('ℹ️ בדיקה ידנית של מיילים cPanel מנוטרלת למערכת עצמאית');
+      // await checkCpanelEmails();
+      res.json({ message: 'בדיקה ידנית של כל המיילים מנוטרלת למערכת עצמאית' });
     } catch (error) {
       console.error('שגיאה בבדיקה ידנית:', error);
       res.status(500).json({ error: 'שגיאה בבדיקה ידנית של מיילים' });

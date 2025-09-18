@@ -39,17 +39,22 @@ async function loadEmailConfig() {
           socketTimeout: 10000
         });
         
-        // Test the connection
-        try {
-          await transporter.verify();
-          console.log("📧 Email configured with cPanel SMTP from database");
-          emailConfigLoaded = true;
-          return;
-        } catch (verifyError) {
-          console.error("❌ שגיאה באימות הגדרות SMTP:", verifyError);
-          console.log("🔄 ינסה הגדרות cPanel חלופיות...");
-          transporter = null;
-        }
+        // Skip automatic connection verification for standalone deployment
+        console.log("📧 Email configured from database (verification skipped for standalone)");
+        emailConfigLoaded = true;
+        return;
+        
+        // Disabled automatic verification to avoid external dependencies
+        // try {
+        //   await transporter.verify();
+        //   console.log("📧 Email configured with cPanel SMTP from database");
+        //   emailConfigLoaded = true;
+        //   return;
+        // } catch (verifyError) {
+        //   console.error("❌ שגיאה באימות הגדרות SMTP:", verifyError);
+        //   console.log("🔄 ינסה הגדרות cPanel חלופיות...");
+        //   transporter = null;
+        // }
       } catch (transportError) {
         console.warn("❌ שגיאה ביצירת transporter עם הגדרות cPanel:", transportError);
       }
