@@ -68,7 +68,7 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }, 500);
         return;
       }
@@ -102,7 +102,7 @@ export default function JobForm({ job, onSuccess }: JobFormProps) {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }, 500);
         return;
       }
