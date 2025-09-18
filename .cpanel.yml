@@ -1,0 +1,32 @@
+---
+deployment:
+  tasks:
+    # נתיבי יעד בשרת
+    - export APP_ROOT=/home/click/public_html/api
+    - export WEB_ROOT=/home/click/public_html
+
+    # מציאת npm בסביבת cPanel:
+    # קודם חפשי ב-PATH, ואם אין – נסי את נתיבי ea-nodejs22/20
+    - export NPM="$(command -v npm || test -x /opt/cpanel/ea-nodejs22/bin/npm && echo /opt/cpanel/ea-nodejs22/bin/npm || echo /opt/cpanel/ea-nodejs20/bin/npm)"
+
+    - echo "Using NPM at: $NPM"
+    - $NPM --version
+
+    # התקנות ובילד (ב-root של הפרויקט)
+    - $NPM ci
+    - $NPM run build
+
+    # הכנת תיקיית ה-API
+    - /bin/mkdir -p $APP_ROOT $APP_ROOT/tmp
+
+    # העתקת ה-Frontend (Vite build) ל-public_html
+    - /usr/bin/rsync -a --delete dist/public/ $WEB_ROOT/
+
+    # העתקת ה-Server build ל-/public_html/api/dist
+    - /usr/bin/rsync -a --delete dist/ $APP_ROOT/dist/
+
+    # יצירת קובץ אתחול ל-Passenger (אם חסר)
+    - if [ ! -f $APP_ROOT/app.js ]; then echo "require('./dist/index.js');" > $APP_ROOT/app.js; fi
+
+    # ריסטארט עדין לאפליקציה
+    - /usr/bin/touch $APP_ROOT/tmp/restart.txt
