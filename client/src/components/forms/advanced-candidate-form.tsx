@@ -492,17 +492,12 @@ export default function AdvancedCandidateForm({
                     ) : selectedFile.type.includes('word') || 
                          selectedFile.name.toLowerCase().includes('.doc') ||
                          selectedFile.name.toLowerCase().includes('.docx') ? (
-                      <div className="w-full h-full relative">
-                        <iframe
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + selectedFile.url)}`}
-                          className="w-full h-full border-0"
-                          title={selectedFile.name}
-                          onError={(e) => {
-                            console.log('Office viewer error:', e);
-                          }}
-                        />
-                        <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs text-gray-600 shadow-sm">
-                          📄 {selectedFile.name}
+                      <div className="flex items-center justify-center h-full bg-gray-50">
+                        <div className="text-center">
+                          <FileText className="w-12 h-12 text-blue-500 mx-auto mb-3" />
+                          <p className="text-sm font-medium text-gray-700 mb-1">📄 {selectedFile.name}</p>
+                          <p className="text-xs text-gray-600">תצוגה מקדימה לא זמינה במצב עצמאי</p>
+                          <p className="text-xs text-gray-500 mt-1">הקובץ יישמר ויהיה זמין להורדה</p>
                         </div>
                       </div>
                     ) : (

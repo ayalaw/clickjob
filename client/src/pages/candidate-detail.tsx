@@ -1451,11 +1451,21 @@ export default function CandidateDetail() {
                             title="קורות חיים"
                           />
                         ) : candidate.cvPath?.toLowerCase().includes('.doc') ? (
-                          <iframe
-                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/uploads/' + candidate.cvPath?.replace('uploads/', ''))}`}
-                            className="w-full h-full border-0"
-                            title="קורות חיים"
-                          />
+                          <div className="flex items-center justify-center h-full bg-gray-50">
+                            <div className="text-center">
+                              <FileText className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                              <p className="text-gray-700 font-medium mb-2">קובץ Microsoft Office</p>
+                              <p className="text-sm text-gray-600 mb-4">תצוגה מקדימה לא זמינה במצב עצמאי</p>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(`/uploads/${candidate.cvPath?.replace('uploads/', '')}`, '_blank')}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                הורד קובץ
+                              </Button>
+                            </div>
+                          </div>
                         ) : (candidate.cvPath?.toLowerCase().includes('.jpg') || 
                              candidate.cvPath?.toLowerCase().includes('.jpeg') || 
                              candidate.cvPath?.toLowerCase().includes('.png') || 

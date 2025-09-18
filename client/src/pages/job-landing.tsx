@@ -118,27 +118,13 @@ export default function JobLanding() {
   const handleShare = (platform: string) => {
     const url = window.location.href;
     const title = `${job?.title} - ${job?.client?.companyName}`;
-    const description = job?.description?.substring(0, 100) || "";
-
-    let shareUrl = "";
-    switch (platform) {
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        break;
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
-        break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        break;
-      case 'whatsapp':
-        shareUrl = `https://wa.me/?text=${encodeURIComponent(`${title} - ${url}`)}`;
-        break;
-    }
-
-    if (shareUrl) {
-      window.open(shareUrl, '_blank', 'width=600,height=400');
-    }
+    
+    // For standalone deployment, copy to clipboard and show helpful message
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "קישור הועתק!",
+      description: `הקישור לעמוד התפקיד הועתק ללוח. תוכל לשתף אותו ב${platform === 'facebook' ? 'פייסבוק' : platform === 'twitter' ? 'טוויטר' : platform === 'linkedin' ? 'לינקדאין' : 'ווטסאפ'}`,
+    });
   };
 
   const copyToClipboard = () => {
