@@ -49,7 +49,7 @@ export default function LoginPage() {
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         
         // Navigate to dashboard
-        navigate('/dashboard');
+        navigate('/');
       } else {
         const errorData = await response.json();
         toast({
