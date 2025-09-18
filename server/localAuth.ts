@@ -203,21 +203,6 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // Get current user
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "לא מחובר" });
-    }
-
-    const user = req.user as any;
-    res.json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username
-    });
-  });
 
   // Logout route
   app.post("/api/logout", (req, res) => {
